@@ -1,0 +1,50 @@
+version: '3'
+services:
+  netvision-backend:
+    build:
+      context: ./
+      dockerfile: docker/Dockerfile
+    deploy:
+      restart_policy:
+        condition: on-failure
+    depends_on:
+      - database
+    ports:
+      - target: 3000
+        published: 3005
+    env_file:
+      - ./.env
+    environment:
+      - APP_NAME=netvision-backend
+      - APP_PORT=3000
+      - APP_HOST=0.0.0.0
+      - EXCEPTION_FILTER_LOG=true
+      - APP_KEY=UhkY9Kvd21N08nbYhfCqGv42
+      - APP_JWT_EXPIRES_IN=24d
+      - APP_JWT_SECRET=b3CRK6de2je4x455d4m94d4ce8d4ldvX6m9sd
+      - APP_DB_HOST=database
+      - APP_DB_PORT=3306
+      - APP_DB_NAME=netvision_db
+      - APP_DB_USERNAME=root
+      - APP_DB_PASSWORD=aeygfdgdg
+  
+  database:
+    image: mysql:8.0
+    deploy:
+      restart_policy:
+        condition: on-failure
+    command:
+      - "--default-authentication-plugin=mysql_native_password"
+      - "--character-set-server=utf8mb4"
+      - "--collation-server=utf8mb4_unicode_ci"
+    environment:
+      - MYSQL_DATABASE=netvision_db
+      - MYSQL_ROOT_PASSWORD=aeygfdgdg
+    ports:
+      - target: 3306
+        published: 3307
+    volumes:
+      - netvision-data:/var/lib/mysql
+
+volumes:
+  netvision-data:

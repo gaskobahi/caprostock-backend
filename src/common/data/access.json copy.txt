@@ -1,0 +1,176 @@
+import {
+  AbilityActionEnum,
+  AbilitySubjectEnum,
+} from '../../core/definitions/enums';
+import {
+  AccessFieldPermissionsType,
+  AccessPermissionsType,
+} from '../../core/definitions/types';
+import { CreateAccessDto } from '../../core/dto/user/create-access.dto';
+
+// Default Front accesss
+export const getDefaultAccesss = () => {
+  return <CreateAccessDto[]>[
+    // Administrateur
+    {
+      name: 'owner',
+      displayName: 'Proprietaire',
+      description: 'Proprietaire',
+      adminPermission: true,
+      permissions: <AccessPermissionsType>{manage:'all'},
+      fieldPermissions: <AccessFieldPermissionsType>{},
+    },
+
+    // Gestionnaire de vente
+    {
+      name: 'manager',
+      displayName: 'Gestionnaire de vente',
+      description: 'Gestionnaire de vente',
+      adminPermission: false,
+      permissions: <AccessPermissionsType>{
+        [AbilitySubjectEnum.User]: {
+          [AbilityActionEnum.read]: false,
+          [AbilityActionEnum.create]: false,
+          [AbilityActionEnum.edit]: false,
+          [AbilityActionEnum.delete]: false,
+        },
+        [AbilitySubjectEnum.Branch]: {
+          [AbilityActionEnum.read]: true,
+          [AbilityActionEnum.create]: false,
+          [AbilityActionEnum.edit]: false,
+          [AbilityActionEnum.delete]: false,
+          [AbilityActionEnum.stream]: false,
+        },
+        [AbilitySubjectEnum.Product]: {
+          [AbilityActionEnum.read]: true,
+          [AbilityActionEnum.create]: false,
+          [AbilityActionEnum.edit]: false,
+          [AbilityActionEnum.delete]: false,
+          [AbilityActionEnum.stream]: false,
+        },
+        [AbilitySubjectEnum.Order]: {
+          [AbilityActionEnum.read]: true,
+          [AbilityActionEnum.create]: true,
+          [AbilityActionEnum.edit]: true,
+          [AbilityActionEnum.delete]: false,
+          [AbilityActionEnum.stream]: true,
+        },
+        [AbilitySubjectEnum.Sale]: {
+          [AbilityActionEnum.read]: true,
+          [AbilityActionEnum.create]: true,
+          [AbilityActionEnum.edit]: true,
+          [AbilityActionEnum.delete]: false,
+          [AbilityActionEnum.stream]: true,
+        },
+        [AbilitySubjectEnum.SalePayment]: {
+          [AbilityActionEnum.read]: true,
+          [AbilityActionEnum.create]: true,
+          [AbilityActionEnum.delete]: false,
+        },
+        [AbilitySubjectEnum.Treatment]: {
+          [AbilityActionEnum.create]: false,
+          [AbilityActionEnum.edit]: false,
+          [AbilityActionEnum.delete]: false,
+        },
+        [AbilitySubjectEnum.Supplier]: {
+          [AbilityActionEnum.read]: true,
+          [AbilityActionEnum.create]: true,
+          [AbilityActionEnum.edit]: true,
+          [AbilityActionEnum.delete]: false,
+          [AbilityActionEnum.stream]: true,
+        },
+        [AbilitySubjectEnum.InsuranceCompany]: {
+          [AbilityActionEnum.read]: true,
+          [AbilityActionEnum.create]: true,
+          [AbilityActionEnum.edit]: true,
+          [AbilityActionEnum.delete]: false,
+          [AbilityActionEnum.stream]: true,
+        },
+        [AbilitySubjectEnum.Doctor]: {
+          [AbilityActionEnum.read]: false,
+          [AbilityActionEnum.create]: false,
+          [AbilityActionEnum.edit]: false,
+          [AbilityActionEnum.delete]: false,
+          [AbilityActionEnum.stream]: false,
+        },
+      },
+      fieldPermissions: <AccessFieldPermissionsType>{},
+    },
+
+      // Gestionnaire de vente
+      {
+        name: 'seller',
+        displayName: 'Vendeur',
+        description: 'Vendeur',
+        adminPermission: false,
+        permissions: <AccessPermissionsType>{
+          [AbilitySubjectEnum.User]: {
+            [AbilityActionEnum.read]: false,
+            [AbilityActionEnum.create]: false,
+            [AbilityActionEnum.edit]: false,
+            [AbilityActionEnum.delete]: false,
+          },
+          [AbilitySubjectEnum.Branch]: {
+            [AbilityActionEnum.read]: true,
+            [AbilityActionEnum.create]: false,
+            [AbilityActionEnum.edit]: false,
+            [AbilityActionEnum.delete]: false,
+            [AbilityActionEnum.stream]: false,
+          },
+          [AbilitySubjectEnum.Product]: {
+            [AbilityActionEnum.read]: true,
+            [AbilityActionEnum.create]: false,
+            [AbilityActionEnum.edit]: false,
+            [AbilityActionEnum.delete]: false,
+            [AbilityActionEnum.stream]: false,
+          },
+          [AbilitySubjectEnum.Order]: {
+            [AbilityActionEnum.read]: true,
+            [AbilityActionEnum.create]: true,
+            [AbilityActionEnum.edit]: true,
+            [AbilityActionEnum.delete]: false,
+            [AbilityActionEnum.stream]: true,
+          },
+          [AbilitySubjectEnum.Sale]: {
+            [AbilityActionEnum.read]: true,
+            [AbilityActionEnum.create]: true,
+            [AbilityActionEnum.edit]: true,
+            [AbilityActionEnum.delete]: false,
+            [AbilityActionEnum.stream]: true,
+          },
+          [AbilitySubjectEnum.SalePayment]: {
+            [AbilityActionEnum.read]: true,
+            [AbilityActionEnum.create]: true,
+            [AbilityActionEnum.delete]: false,
+          },
+          [AbilitySubjectEnum.Treatment]: {
+            [AbilityActionEnum.create]: false,
+            [AbilityActionEnum.edit]: false,
+            [AbilityActionEnum.delete]: false,
+          },
+          [AbilitySubjectEnum.Supplier]: {
+            [AbilityActionEnum.read]: true,
+            [AbilityActionEnum.create]: true,
+            [AbilityActionEnum.edit]: true,
+            [AbilityActionEnum.delete]: false,
+            [AbilityActionEnum.stream]: true,
+          },
+          [AbilitySubjectEnum.InsuranceCompany]: {
+            [AbilityActionEnum.read]: true,
+            [AbilityActionEnum.create]: true,
+            [AbilityActionEnum.edit]: true,
+            [AbilityActionEnum.delete]: false,
+            [AbilityActionEnum.stream]: true,
+          },
+          [AbilitySubjectEnum.Doctor]: {
+            [AbilityActionEnum.read]: false,
+            [AbilityActionEnum.create]: false,
+            [AbilityActionEnum.edit]: false,
+            [AbilityActionEnum.delete]: false,
+            [AbilityActionEnum.stream]: false,
+          },
+        },
+        fieldPermissions: <AccessFieldPermissionsType>{},
+      },
+  ];
+};

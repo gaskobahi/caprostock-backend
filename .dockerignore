@@ -1,6 +1,13 @@
 #Custom
-.env
 package-lock.json
+.env
+.env.example
+extras
+docker-compose.yml
+.gitlab-ci.yml
+.git
+README.md
+.gitignore
 
 # compiled output
 /dist
