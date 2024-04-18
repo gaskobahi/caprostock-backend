@@ -1,0 +1,296 @@
+import { Inject, Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { DeepPartial, FindOptionsWhere, In, Repository } from 'typeorm';
+import { PaginatedService } from '@app/typeorm';
+import { REQUEST } from '@nestjs/core';
+import { AbstractService } from '../abstract.service';
+import { Sale } from '../../entities/selling/sale.entity';
+import {
+  AddSalePaymentDto,
+  CreateSaleDto,
+} from '../../dto/selling/create-sale.dto';
+import { OrderService } from '../supply/order.service';
+import { OrderSourceEnum, ProductTypeEnum } from '../../definitions/enums';
+import { SalePrintingHistory } from '../../entities/selling/sale-printing-history.entity';
+import { SalePaymentService } from './sale-payment.service';
+import { UpdateSaleDto } from '../../dto/selling/update-sale.dto';
+import { arraySize } from 'class-validator-extended';
+import { InvalidBodyFieldException } from '@app/nestjs';
+import { ProductService } from '../product/product.service';
+import { SaleToProduct } from '../../entities/selling/sale-to-product.entity';
+import { BranchToProductService } from '../subsidiary/branch-to-product.service';
+import { BranchToProduct } from '../../entities/subsidiary/branch-to-product.entity';
+import { REQUEST_AUTH_USER_KEY } from 'src/modules/auth/definitions/constants';
+import { AuthUser } from '../../entities/session/auth-user.entity';
+import { isUUID } from 'class-validator';
+
+@Injectable()
+export class SaleService extends AbstractService<Sale> {
+  public NOT_FOUND_MESSAGE = `Vente non trouvée`;
+
+  constructor(
+    @InjectRepository(Sale)
+    private _repository: Repository<Sale>,
+    protected paginatedService: PaginatedService<Sale>,
+    protected orderService: OrderService,
+    protected productService: ProductService,
+    private salePaymentservice: SalePaymentService,
+    private branchToProductService: BranchToProductService,
+    @Inject(REQUEST) protected request: any,
+  ) {
+    super();
+  }
+
+  get repository(): Repository<Sale> {
+    return this._repository;
+  }
+
+  async createRecord(dto: CreateSaleDto): Promise<Sale> {
+    const authUser = await super.checkSessionBranch();
+
+    // process isGlassBundle sale
+    dto = (await this.processIsGlassBundleData(dto)) as CreateSaleDto;
+
+    // Clean dto
+    dto = (await this.cleanDto(dto)) as CreateSaleDto;
+
+    const sale = await super.createRecord({
+      ...dto,
+      branchId: authUser.targetBranchId,
+    });
+
+    return sale;
+  }
+
+  async updateRecord(optionsWhere: FindOptionsWhere<Sale>, dto: UpdateSaleDto) {
+    // process isGlassBundle sale
+    const sale = await this.readOneRecord({ where: optionsWhere });
+    dto = (await this.processIsGlassBundleData(dto, sale)) as UpdateSaleDto;
+
+    // Clean dto
+    dto = (await this.cleanDto(dto)) as UpdateSaleDto;
+
+    return await super.updateRecord(optionsWhere, dto);
+  }
+
+  private async cleanDto(dto: DeepPartial<Sale>) {
+    // Delete saleToProducts prescription and generating order on no 'eyeglassLens' products
+    if (Array.isArray(dto.saleToProducts)) {
+      const newSaleToProducts = dto.saleToProducts.map(
+        async (saleToProductDto: DeepPartial<SaleToProduct>) => {
+          const product = await this.productService.readOneRecord({
+            where: { id: saleToProductDto.productId ?? '' },
+          });
+
+          if (product.type !== ProductTypeEnum.eyeglassLens) {
+            // Delete prescription
+            saleToProductDto.prescription = null;
+
+            // Clear generating order data
+            saleToProductDto.hasOrder = false;
+            saleToProductDto.orderSupplierId = null;
+          }
+
+          return saleToProductDto;
+        },
+      );
+
+      dto.saleToProducts = await Promise.all(newSaleToProducts);
+    }
+
+    return dto;
+  }
+
+  private async processIsGlassBundleData(dto: DeepPartial<Sale>, sale?: Sale) {
+    // Vérifier si le reçu de la vente est déjà imprimé
+    if (sale?.printingActorId) {
+      delete dto['isGlassBundle'];
+      return dto;
+    }
+
+    // Vérifier s'il s'agit d'une vente de lunette
+    if (dto.isGlassBundle === true) {
+      // s'il contient deux produits
+      if (!arraySize(dto.saleToProducts, 2)) {
+        throw new InvalidBodyFieldException([
+          {
+            saleToProducts: [
+              `Une vente de lunette doit contenir deux (2) produits.`,
+            ],
+          },
+        ]);
+      }
+    } else {
+      // Sinon sortir
+      return dto;
+    }
+
+    const productIds = dto.saleToProducts.map(
+      (stp: DeepPartial<SaleToProduct>) => stp.productId,
+    );
+    const products = await this.productService.readListRecord({
+      where: { id: In(productIds) },
+    });
+
+    // Vérifier si la vente de lunette (verre + monture) contient un verre
+    if (!products.find((p) => p.type === ProductTypeEnum.eyeglassLens)) {
+      throw new InvalidBodyFieldException([
+        {
+          saleToProducts: [
+            `Une vente de lunette doit contenir au moins un verre.`,
+          ],
+        },
+      ]);
+    }
+
+    // Vérifier si la vente de lunette (verre + monture) contient une monture
+    if (!products.find((p) => p.type === ProductTypeEnum.eyeglassFrame)) {
+      throw new InvalidBodyFieldException([
+        {
+          saleToProducts: [
+            `Une vente de lunette doit contenir au moins une monture.`,
+          ],
+        },
+      ]);
+    }
+
+    return dto;
+  }
+
+  async printRecord(optionsWhere: FindOptionsWhere<Sale>): Promise<Sale> {
+    let sale = await this.readOneRecord({
+      where: optionsWhere,
+      relations: { printingHistories: true, payments: true },
+    });
+    const isFirstPrinting = !isUUID(sale.printingActorId);
+    const authUser = await super.checkSessionBranch();
+    sale.printingActorId = authUser?.id;
+    sale.printingHistories.push(
+      SalePrintingHistory.create({ createdById: authUser?.id }),
+    );
+    sale = await this.repository.save(sale);
+
+    sale.payments.forEach(async (payment) => {
+      if (!payment.printingActorId) {
+        await this.salePaymentservice.printRecord({ id: payment.id });
+      }
+    });
+
+    // Check if is first printing
+    if (isFirstPrinting) {
+      // Generate sale orders
+      await this.generateOrders({ id: sale.id });
+
+      // Update product stock
+      await this.updateProductStock({ id: sale.id });
+    }
+
+    return sale;
+  }
+
+  async addPaymentRecord(
+    optionsWhere: FindOptionsWhere<Sale>,
+    dto: AddSalePaymentDto,
+  ) {
+    let sale = await this.readOneRecord({
+      where: optionsWhere,
+      relations: { payments: true },
+    });
+
+    sale.payments.push(this.salePaymentservice.repository.create(dto));
+
+    sale = await super.updateRecord(
+      { id: sale.id },
+      { payments: sale.payments },
+    );
+
+    return sale.payments[sale.payments.length - 1];
+  }
+
+  async removePaymentRecord(
+    optionsWhere: FindOptionsWhere<Sale>,
+    paymentId: string,
+  ) {
+    let sale = await this.readOneRecord({
+      where: optionsWhere,
+      relations: { payments: true },
+    });
+
+    sale.payments = sale.payments.filter((p) => p.id !== paymentId);
+
+    sale = await super.updateRecord(
+      { id: sale.id },
+      { payments: sale.payments },
+    );
+  }
+
+  async getFilterByAuthUserBranch(): Promise<FindOptionsWhere<Sale>> {
+    const authUser = await super.checkSessionBranch();
+    if (!(await authUser.can('manage', 'all'))) {
+      return {
+        branchId: authUser.targetBranchId,
+      };
+    }
+
+    return {};
+  }
+
+  private async generateOrders(optionsWhere: FindOptionsWhere<Sale>) {
+    const sale = await this.repository.findOne({
+      where: optionsWhere,
+      relations: { saleToProducts: { product: true } },
+    });
+    if (!sale) return;
+
+    for (const saleToProduct of sale.saleToProducts ?? []) {
+      if (saleToProduct.product?.isBundle) continue;
+
+      if (saleToProduct.hasOrder) {
+        await this.orderService.createRecord({
+          title: `Commande produit #${sale.reference}`,
+          source: OrderSourceEnum.supplier,
+          sourceSupplierId: saleToProduct.orderSupplierId,
+          date: new Date(),
+          saleId: sale.id,
+          saleToProductId: saleToProduct.id,
+          orderToProducts: [
+            {
+              price: saleToProduct.price,
+              productId: saleToProduct.productId,
+              quantity: saleToProduct.quantity,
+            },
+          ],
+        });
+      }
+    }
+  }
+
+  private async updateProductStock(
+    optionsWhere: FindOptionsWhere<Sale>,
+  ): Promise<void> {
+    const sale = await this.repository.findOne({
+      where: optionsWhere,
+      relations: { saleToProducts: { product: true } },
+    });
+    if (!sale) return;
+
+    const authUser = this.request[REQUEST_AUTH_USER_KEY] as AuthUser;
+    let branchToProduct: BranchToProduct;
+
+    for (const saleToProduct of sale.saleToProducts) {
+      // If is bundled product, skipping
+      if (saleToProduct.product.isBundle) continue;
+
+      branchToProduct = await this.branchToProductService.repository.findOneBy({
+        branchId: sale.branchId,
+        productId: saleToProduct.productId,
+      });
+      if (!branchToProduct) continue;
+
+      branchToProduct.availableStock -= saleToProduct.quantity;
+      branchToProduct.updatedById = authUser?.id ?? branchToProduct.updatedById;
+      await this.branchToProductService.repository.save(branchToProduct);
+    }
+    return;
+  }
+}

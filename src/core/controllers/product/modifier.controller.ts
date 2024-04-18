@@ -22,48 +22,43 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { merge } from 'lodash';
 import { ApiAuthJwtHeader } from 'src/modules/auth/decorators/api-auth-jwt-header.decorator';
 import { ApiRequestIssuerHeader } from 'src/modules/auth/decorators/api-request-issuer-header.decorator';
 import { CurrentUser } from 'src/modules/auth/decorators/current-user.decorator';
 import { AbilityActionEnum, AbilitySubjectEnum } from '../../definitions/enums';
 import { AuthUser } from '../../entities/session/auth-user.entity';
-import { User } from '../../entities/user/user.entity';
-import { UserService } from '../../services/user/user.service';
-import { CreateUserDto } from '../../dto/user/create-user.dto';
-import { UpdateUserDto } from '../../dto/user/update-user.dto';
+import { ModifierService } from '../../services/product/modifier.service';
+import { Modifier } from '../../entities/product/modifier.entity';
+import { CreateModifierDto } from 'src/core/dto/product/create-modifier.dto';
+import { UpdateModifierDto } from 'src/core/dto/product/update-modifier.dto';
 
 @ApiAuthJwtHeader()
 @ApiRequestIssuerHeader()
 @CustomApiErrorResponse()
-@ApiTags('user')
-@Controller('user')
-export class UserController {
-  constructor(private service: UserService) {}
+@ApiTags('modifier')
+@Controller('modifier')
+export class ModifierController {
+  constructor(private service: ModifierService) {}
 
   @ApiSearchQueryFilter()
-  @CustomApiPaginatedResponse(User)
+  @CustomApiPaginatedResponse(Modifier)
   @Get()
-  async findAll(
+  async findPaginated(
     @CurrentUser() authUser: AuthUser,
     @Query() query?: any,
-  ): Promise<Paginated<User>> {
+  ): Promise<Paginated<Modifier>> {
     // Permission check
     await authUser?.throwUnlessCan(
       AbilityActionEnum.read,
-      AbilitySubjectEnum.User,
+      AbilitySubjectEnum.Modifier,
     );
 
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
       query as ApiSearchParamOptions,
       {
-        textFilterFields: [
-          'username',
-          'firstName',
-          'lastName',
-          'phoneNumber',
-          'email',
-        ],
+        textFilterFields: ['displayName'],
       },
     );
 
@@ -73,16 +68,16 @@ export class UserController {
       await this.service.getFilterByAuthUserBranch(),
     );*/
 
-    return await this.service.readPaginatedListRecord(options);
+    return this.service.readPaginatedListRecord(options);
   }
 
   @ApiSearchOneQueryFilter()
-  @Get(':userId')
+  @Get(':modifierId')
   async findOne(
     @CurrentUser() authUser: AuthUser,
-    @Param('userId', ParseUUIDPipe) id: string,
+    @Param('modifierId', ParseUUIDPipe) id: string,
     @Query() query?: any,
-  ): Promise<User> {
+  ): Promise<Modifier> {
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
       query as ApiSearchOneParamOptions,
@@ -94,90 +89,83 @@ export class UserController {
       await this.service.getFilterByAuthUserBranch(),
     );*/
 
-    const user = await this.service.readOneRecord({
+    const modifier = await this.service.readOneRecord({
       ...options,
       where: { ...options?.where, id: id ?? '' },
     });
 
     // Permission check
-    await authUser?.throwUnlessCan(AbilityActionEnum.read, user);
+    await authUser?.throwUnlessCan(AbilityActionEnum.read, modifier);
 
-    return user;
+    return modifier;
   }
 
+
   /**
-   * Create user
+   * Create modifier
    */
   @ApiSearchOneQueryFilter()
   @Post()
   async create(
-    @Body() dto: CreateUserDto,
-    @Query() query?: any,
-  ): Promise<User> {
-    console.log('Z100', dto);
-
-    const user = await this.service.createRecord(dto);
+    @Body() dto: CreateModifierDto,
+    @Query() queryParams?: any,
+  ): Promise<Modifier> {
+    const modifier = await this.service.createRecord(dto);
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
-      query as ApiSearchOneParamOptions,
+      queryParams as ApiSearchOneParamOptions,
     );
+
     // Apply auth user branch filter
-    /*options.where = merge(
+    options.where = merge(
       options?.where,
       await this.service.getFilterByAuthUserBranch(),
-    );*/
+    );
 
     return this.service.readOneRecord({
       ...options,
-      where: { ...options?.where, id: user.id },
+      where: { ...options?.where, id: modifier.id },
     });
   }
 
   /**
-   * Update user
+   * Update modifier
    */
   @ApiSearchOneQueryFilter()
-  @Patch(':userId')
+  @Patch(':modifierId')
   async update(
-    @Param('userId', ParseUUIDPipe) id: string,
-    @Body() dto: UpdateUserDto,
+    @Param('modifierId', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateModifierDto,
     @Query() query?: any,
-  ): Promise<User> {
+  ): Promise<Modifier> {
     // Apply auth user branch filter
-    // const filter = await this.service.getFilterByAuthUserBranch();
-    /*
-    const user = await this.service.updateRecord(
+    const filter = await this.service.getFilterByAuthUserBranch();
+    const modifier = await this.service.updateRecord(
       { ...filter, id: id ?? '' },
       dto,
     );
-    */
-    const user = await this.service.updateRecord({ id: id ?? '' }, dto);
 
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
       query as ApiSearchOneParamOptions,
     );
+
     return this.service.readOneRecord({
       ...options,
-      where: { ...options?.where, id: user.id },
+      where: { ...options?.where, ...filter, id: modifier.id ?? '' },
     });
-
-    /*return this.service.readOneRecord({
-      ...options,
-      where: { ...options?.where, ...filter, id: user.id },
-    });*/
   }
 
   /**
-   * Remove user
+   * Remove modifier
    */
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Delete(':userId')
-  async remove(@Param('userId', ParseUUIDPipe) id: string) {
+  @Delete(':modifierId')
+  async remove(@Param('modifierId', ParseUUIDPipe) id: string) {
     // Apply auth user branch filter
-    //const filter = await this.service.getFilterByAuthUserBranch();
+    const filter = await this.service.getFilterByAuthUserBranch();
 
-    await this.service.deleteRecord({ id: id ?? '' });
+    await this.service.deleteRecord({ ...filter, id: id ?? '' });
     return;
   }
 }

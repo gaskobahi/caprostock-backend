@@ -110,7 +110,7 @@ export class OrderService extends AbstractService<Order> {
     const order = await this._repository.findOne({
       where: optionsWhere,
       relations: {
-        branch: true,
+        //branch: true,
         sale: true,
         orderToProducts: {
           product: true,

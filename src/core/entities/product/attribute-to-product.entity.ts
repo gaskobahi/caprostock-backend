@@ -46,12 +46,12 @@ export class AttributeToProduct extends CoreEntity {
   @Column({ name: 'product_id', type: 'uuid', nullable: false })
   productId: string;
 
-  @ApiProperty({ required: false, type: () => Product })
+  /*@ApiProperty({ required: false, type: () => Product })
   @ManyToOne(() => Product, (product) => product.attributeToProducts, {
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE',
     orphanedRowAction: 'delete',
   })
   @JoinColumn({ name: 'product_id' })
-  product: Product;
+  product: Product;*/
 }

@@ -33,7 +33,7 @@ import {
   OrderStatusEnum,
 } from '../../definitions/enums';
 import { AuthUser } from '../../entities/session/auth-user.entity';
-import { OrderService } from '../../services/supply/order.service';
+//import { OrderService } from '../../services/supply/order.service';
 import { Order } from '../../entities/supply/order.entity';
 import { CreateOrderDto } from '../../dto/supply/create-order.dto';
 import { UpdateOrderDto } from '../../dto/supply/update-order.dto';
@@ -45,7 +45,7 @@ import { ValidateOrderDto } from '../../dto/supply/validate-order.dto';
 @ApiTags('order')
 @Controller('order')
 export class OrderController {
-  constructor(private service: OrderService) {}
+  //constructor(private service: OrderService) {}
 
   @ApiSearchQueryFilter()
   @CustomApiPaginatedResponse(Order)

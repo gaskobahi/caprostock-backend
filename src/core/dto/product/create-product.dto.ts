@@ -2,7 +2,6 @@ import { ApiProperty, PickType } from '@nestjs/swagger';
 import { Product } from '../../entities/product/product.entity';
 import {
   IsArray,
-  IsBoolean,
   IsNotEmpty,
   IsNumber,
   IsObject,
@@ -20,8 +19,6 @@ import { ProductOption } from 'src/core/entities/product/product-option.entity';
 import { VariantToProduct } from 'src/core/entities/product/variant-to-product.entity';
 import { BranchVariantToProduct } from 'src/core/entities/subsidiary/branch-variant-to-product.entity';
 import { ProductsymbolTypeEnum } from 'src/core/definitions/enums';
-import { isBoolean } from 'lodash';
-import { Any } from 'typeorm';
 
 export class CreateColorShapeDto {
   @IsNotEmpty()

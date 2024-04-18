@@ -76,7 +76,7 @@ export class UserService extends AbstractService<User> {
     }
     // Check exists branchId
     if (dto?.branchToUsers.length > 0) {
-      console.log('tek',dto.branchToUsers)
+      console.log('tek', dto.branchToUsers);
       for (const el of dto.branchToUsers) {
         await existsConstraint(
           'branchId',
@@ -171,8 +171,10 @@ export class UserService extends AbstractService<User> {
         { message: `Le rôle sélectionné n'existe pas` },
       );
     }
+    console.log('P101131', dto?.branchToUsers);
+
     // Check exists branchId
-    if (dto?.branchToUsers.length > 0) {
+   if (dto?.branchToUsers.length > 0) {
       for (const el of dto.branchToUsers) {
         await existsConstraint(
           'branchId',
@@ -182,7 +184,6 @@ export class UserService extends AbstractService<User> {
         );
       }
     }
-    
 
     if (dto.username) {
       // Check unique username
@@ -307,10 +308,10 @@ export class UserService extends AbstractService<User> {
     authUser.branchId = user.branchToUsers[0].branchId;
     authUser.branch = user.branchToUsers[0].branch;
     authUser.targetBranchId = user.branchToUsers[0].branchId;
-    authUser.targetBranch =  user.branchToUsers[0].branch;
+    authUser.targetBranch = user.branchToUsers[0].branch;
     authUser.roleId = user.roleId;
     authUser.role = user.role;
-    authUser.applicationId='posgpt-app';
+    authUser.applicationId = 'posgpt-app';
     authUser.userData = {
       id: user.id,
       username: user.username,

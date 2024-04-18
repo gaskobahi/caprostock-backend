@@ -1,0 +1,25 @@
+import { Inject, Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { PaginatedService } from '@app/typeorm';
+import { REQUEST } from '@nestjs/core';
+import { AbstractService } from '../abstract.service';
+import { InsuranceCompany } from '../../entities/selling/insurance-company.entity';
+
+@Injectable()
+export class InsuranceCompanyService extends AbstractService<InsuranceCompany> {
+  public NOT_FOUND_MESSAGE = `Compagnie d'assurance non trouvée`;
+
+  constructor(
+    @InjectRepository(InsuranceCompany)
+    private _repository: Repository<InsuranceCompany>,
+    protected paginatedService: PaginatedService<InsuranceCompany>,
+    @Inject(REQUEST) protected request: any,
+  ) {
+    super();
+  }
+
+  get repository(): Repository<InsuranceCompany> {
+    return this._repository;
+  }
+}

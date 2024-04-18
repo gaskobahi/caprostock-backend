@@ -1,7 +1,4 @@
-import {
-  IsOptional,
-  IsUUID,
-} from 'class-validator';
+import { IsOptional, IsUUID } from 'class-validator';
 import {
   CreateProductDto,
   CreateBranchToProductDto,
@@ -12,8 +9,8 @@ import { ApiProperty, OmitType, PartialType } from '@nestjs/swagger';
 export class UpdateProductDto extends PartialType(
   OmitType(CreateProductDto, [
     //'reference',
-   // 'branchToProducts',
-   // 'bundleToProducts',
+    // 'branchToProducts',
+    // 'bundleToProducts',
   ] as const),
 ) {
   @IsOptional()

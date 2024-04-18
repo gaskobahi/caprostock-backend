@@ -10,6 +10,7 @@ export enum AbilitySubjectEnum {
   Product = 'Product',
   Attribute = 'Attribute',
   Role = 'Role',
+  Modifier = 'Modifier',
   AuthUser = 'AuthUser',
   Brand = 'Brand',
   Supplier = 'Supplier',
@@ -79,6 +80,13 @@ export enum CategoryTypeEnum {
   soft_drink = 'soft_drink',
   // boissons
   alcoholic_drink = 'alcoholic_drink',
+}
+
+export enum ProductTypeEnum {
+  // Repas
+  soft_drink = 'soft_drink',
+  // boissons
+  eyeglassFrame = 'eyeglassFrame',
 }
 
 /**

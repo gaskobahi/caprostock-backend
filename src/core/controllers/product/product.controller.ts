@@ -32,15 +32,12 @@ import { AbilityActionEnum, AbilitySubjectEnum } from '../../definitions/enums';
 import { AuthUser } from '../../entities/session/auth-user.entity';
 import { ProductService } from '../../services/product/product.service';
 import { Product } from '../../entities/product/product.entity';
-import { UpdateProductDto } from '../../dto/product/update-product.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
-  MYDRIVE,
   imageFileFilter,
   limitsParams,
   storageproducts,
 } from 'src/helpers/imageStorage';
-import { join } from 'path';
 
 @ApiAuthJwtHeader()
 @ApiRequestIssuerHeader()

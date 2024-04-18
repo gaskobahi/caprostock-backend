@@ -94,14 +94,14 @@ export class Sale extends CoreEntity {
   @Column({ name: 'branch_id', type: 'uuid', nullable: false })
   branchId: string;
 
-  @ApiProperty({ required: false, type: () => Branch })
+  /*@ApiProperty({ required: false, type: () => Branch })
   @ManyToOne(() => Branch, (branch) => branch.sales, {
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE',
     orphanedRowAction: 'delete',
   })
   @JoinColumn({ name: 'branch_id' })
-  branch: Branch;
+  branch: Branch;*/
 
   @IsUUID()
   @IsNotEmpty()

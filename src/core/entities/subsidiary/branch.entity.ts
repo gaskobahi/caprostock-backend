@@ -10,9 +10,10 @@ import { Column, Entity, OneToMany } from 'typeorm';
 import { CoreEntity } from '../base/core.entity';
 import { User } from '../user/user.entity';
 import { BranchToProduct } from './branch-to-product.entity';
-import { Order } from '../supply/order.entity';
+//import { Order } from '../supply/order.entity';
 import { Sale } from '../selling/sale.entity';
 import { BranchToUser } from './branch-to-user.entity';
+import { BranchToModifier } from './branch-to-modifier.entity';
 
 @Entity({
   orderBy: { createdAt: 'DESC', updatedAt: 'DESC' },
@@ -82,15 +83,25 @@ export class Branch extends CoreEntity {
   })
   branchToUsers: BranchToUser[];
 
-  @ApiProperty({ required: false, type: () => [Order] })
+  @ApiProperty({ required: false, type: () => [BranchToModifier] })
+  @OneToMany(
+    () => BranchToModifier,
+    (branchToModifier) => branchToModifier.modifier,
+    {
+      cascade: true,
+    },
+  )
+  branchToModifiers: BranchToModifier[];
+
+  /* @ApiProperty({ required: false, type: () => [Order] })
   @OneToMany(() => Order, (order) => order.branch, {
     cascade: true,
   })
-  orders: Order[];
+  orders: Order[];*/
 
-  @ApiProperty({ required: false, type: () => [Sale] })
+  /*@ApiProperty({ required: false, type: () => [Sale] })
   @OneToMany(() => Order, (sale) => sale.branch, {
     cascade: true,
   })
-  sales: Sale[];
+  sales: Sale[];*/
 }

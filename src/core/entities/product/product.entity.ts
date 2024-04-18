@@ -188,7 +188,7 @@ export class Product extends CoreEntity {
   })
   options: ProductOption[];
 
-  @ApiProperty({ required: false, type: () => [AttributeToProduct] })
+  /*@ApiProperty({ required: false, type: () => [AttributeToProduct] })
   @OneToMany(
     () => AttributeToProduct,
     (attributeToProducts) => attributeToProducts.product,
@@ -196,7 +196,7 @@ export class Product extends CoreEntity {
       cascade: true,
     },
   )
-  attributeToProducts: AttributeToProduct[];
+  attributeToProducts: AttributeToProduct[];*/
 
   @ApiProperty({ required: false, type: () => [BranchToProduct] })
   @OneToMany(

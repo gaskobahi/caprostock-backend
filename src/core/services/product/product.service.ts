@@ -21,6 +21,9 @@ import { validate } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
 import { ConfigService } from '../system/config.service';
 import * as fs from 'file-system';
+import { ProductsymbolTypeEnum } from 'src/core/definitions/enums';
+import { REQUEST_AUTH_USER_KEY } from 'src/modules/auth/definitions/constants';
+import { AuthUser } from 'src/core/entities/session/auth-user.entity';
 
 @Injectable()
 export class ProductService extends AbstractService<Product> {
@@ -95,11 +98,9 @@ export class ProductService extends AbstractService<Product> {
   ) {
     const filename = file?.filename;
     const dto = plainToInstance(UpdateProductDto, ddto);
-    const lastProduct = await this._repository.findOneBy({
+    const prevProduct = await this._repository.findOneBy({
       id: optionsWhere.id,
     });
-    console.log('TTTTTTT201', ddto);
-    console.log('a0000012', lastProduct);
 
     const errors = await validate(dto);
     if (errors.length > 0) {
@@ -119,8 +120,11 @@ export class ProductService extends AbstractService<Product> {
     if (filename) {
       dto.image = filename;
     } else {
-      //ignore update image
-      delete dto.image;
+      if (dto.symbolType == ProductsymbolTypeEnum.image) {
+        delete dto.image;
+      } else {
+        dto.image = null;
+      }
     }
     // Check unique displayName
     if (dto.displayName) {
@@ -138,11 +142,15 @@ export class ProductService extends AbstractService<Product> {
 
     //remove previus image of this product
     if (result) {
-      if (lastProduct.image && filename) {
-        removeImage(process.env.IMAGE_PATH, lastProduct.image);
+      if (prevProduct.image && filename) {
+        removeImage(process.env.IMAGE_PATH, prevProduct.image);
       }
-      if (lastProduct.image && !filename) {
-        removeImage(process.env.IMAGE_PATH, lastProduct.image);
+      //suprimer l'image si symbolType est egale à  colorShape
+      if (
+        prevProduct.image &&
+        dto.symbolType == ProductsymbolTypeEnum.colorShape
+      ) {
+        removeImage(process.env.IMAGE_PATH, prevProduct.image);
       }
     }
     return result;
@@ -219,7 +227,22 @@ export class ProductService extends AbstractService<Product> {
     if (!entity) {
       throw new BadRequestException(this.NOT_FOUND_MESSAGE);
     }
-    console.log('ZO202222', entity);
     return entity;
+  }
+
+  async deleteRecord(optionsWhere: FindOptionsWhere<Product>) {
+    const entity = await this.repository.findOneBy(optionsWhere);
+    if (!entity) {
+      throw new BadRequestException(this.NOT_FOUND_MESSAGE);
+    }
+    const authUser = this.request[REQUEST_AUTH_USER_KEY] as AuthUser;
+
+    entity.updatedById = authUser?.id;
+    entity.deletedById = authUser?.id;
+    const result = await this.repository.remove(entity);
+    if (result && entity.image) {
+      removeImage(process.env.IMAGE_PATH, entity.image);
+    }
+    return result;
   }
 }

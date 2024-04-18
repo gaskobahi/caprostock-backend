@@ -37,9 +37,9 @@ import { UpdateBranchDto } from '../../dto/subsidiary/update-branch.dto';
 import { BranchToProductService } from '../../services/subsidiary/branch-to-product.service';
 import { BranchToProduct } from '../../entities/subsidiary/branch-to-product.entity';
 import { Order } from '../../entities/supply/order.entity';
-import { OrderService } from '../../services/supply/order.service';
-import { SaleService } from '../../services/selling/sale.service';
-import { Sale } from '../../entities/selling/sale.entity';
+//import { OrderService } from '../../services/supply/order.service';
+//import { SaleService } from '../../services/selling/sale.service';
+//import { Sale } from '../../entities/selling/sale.entity';
 
 @ApiAuthJwtHeader()
 @ApiRequestIssuerHeader()
@@ -51,8 +51,8 @@ export class BranchController {
     private service: BranchService,
     private userService: UserService,
     private branchToProductService: BranchToProductService,
-    private orderService: OrderService,
-    private saleService: SaleService,
+    //private orderService: OrderService,
+    //private saleService: SaleService,
   ) {}
 
   /**
@@ -280,7 +280,7 @@ export class BranchController {
   /**
    * Get paginated branch orders
    */
-  @ApiSearchQueryFilter()
+ /* @ApiSearchQueryFilter()
   @CustomApiPaginatedResponse(Order)
   @Get(':branchId/order')
   async findOrders(
@@ -298,7 +298,7 @@ export class BranchController {
       where: { id: id ?? '' },
     });
 
-    const options = buildFilterFromApiSearchParams(
+   const options = buildFilterFromApiSearchParams(
       this.orderService.repository,
       query as ApiSearchParamOptions,
       {
@@ -313,12 +313,12 @@ export class BranchController {
         branchId: branch.id || '',
       },
     });
-  }
+  }*/
 
   /**
    * Get paginated branch sales
    */
-  @ApiSearchQueryFilter()
+ /* @ApiSearchQueryFilter()
   @CustomApiPaginatedResponse(Sale)
   @Get(':branchId/sale')
   async findSales(
@@ -336,20 +336,20 @@ export class BranchController {
       where: { id: id ?? '' },
     });
 
-    const options = buildFilterFromApiSearchParams(
+   /* const options = buildFilterFromApiSearchParams(
       this.saleService.repository,
       query as ApiSearchParamOptions,
       {
         textFilterFields: ['reference'],
       },
-    );
+    );*/
 
-    return this.saleService.readPaginatedListRecord({
+    /*return this.saleService.readPaginatedListRecord({
       ...options,
       where: {
         ...options?.where,
         branchId: branch.id || '',
       },
     });
-  }
+  }*/
 }
