@@ -58,14 +58,18 @@ export enum AccessTypeEnum {
   seller = 'seller',
 }
 
-
-
-
 export enum ProductSoldByEnum {
   // par Chaque
   each = 'each',
   // par poids/volume
   weight = 'weight',
+}
+
+export enum DiscountTypeEnum {
+  // par Pourcentage
+  percentage = 'percentage',
+  // par montant
+  amount = 'amount',
 }
 
 export enum ProductsymbolTypeEnum {

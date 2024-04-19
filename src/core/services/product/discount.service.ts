@@ -1,35 +1,31 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Category } from '../../entities/product/category.entity';
+import { Discount } from '../../entities/product/discount.entity';
 import { FindOptionsWhere, Repository } from 'typeorm';
-import {
-  PaginatedService,
-  isUniqueConstraint,
-  isUniqueConstraintUpdate,
-} from '@app/typeorm';
+import { PaginatedService, isUniqueConstraint, isUniqueConstraintUpdate } from '@app/typeorm';
 import { REQUEST } from '@nestjs/core';
 import { AbstractService } from '../abstract.service';
-import { UpdateCategoryDto } from 'src/core/dto/product/update-category.dto';
+import { UpdateDiscountDto } from 'src/core/dto/product/update-discount.dto';
 
 @Injectable()
-export class CategoryService extends AbstractService<Category> {
+export class DiscountService extends AbstractService<Discount> {
   public NOT_FOUND_MESSAGE = `Marque non trouvée`;
 
   constructor(
-    @InjectRepository(Category)
-    private _repository: Repository<Category>,
-    protected paginatedService: PaginatedService<Category>,
+    @InjectRepository(Discount)
+    private _repository: Repository<Discount>,
+    protected paginatedService: PaginatedService<Discount>,
     @Inject(REQUEST) protected request: any,
   ) {
     super();
   }
 
-  async createRecord(dto: any): Promise<Category> {
+  async createRecord(dto: any): Promise<Discount> {
     // Check unique displayName
     if (dto.displayName) {
       await isUniqueConstraint(
         'displayName',
-        Category,
+        Discount,
         { displayName: dto.displayName },
         {
           message: `Le nom "${dto.displayName}" est déjà utilisée`,
@@ -40,14 +36,14 @@ export class CategoryService extends AbstractService<Category> {
   }
 
   async updateRecord(
-    optionsWhere: FindOptionsWhere<Category>,
-    dto: UpdateCategoryDto,
+    optionsWhere: FindOptionsWhere<Discount>,
+    dto: UpdateDiscountDto,
   ) {
     // Check unique displayName
     if (dto.displayName) {
       await isUniqueConstraintUpdate(
         'displayName',
-        Category,
+        Discount,
         { displayName: dto.displayName, id: optionsWhere.id },
         { message: `Le nom "${dto.displayName}" est déjà utilisé` },
       );
@@ -58,7 +54,7 @@ export class CategoryService extends AbstractService<Category> {
     });
   }
 
-  get repository(): Repository<Category> {
+  get repository(): Repository<Discount> {
     return this._repository;
   }
 }

@@ -107,6 +107,9 @@ import { OptionToModifier } from './entities/product/option-to-modifier.entity';
 import { BranchToModifier } from './entities/subsidiary/branch-to-modifier.entity';
 import { ModifierService } from './services/product/modifier.service';
 import { ModifierController } from './controllers/product/modifier.controller';
+import { Discount } from './entities/product/discount.entity';
+import { DiscountController } from './controllers/product/discount.controller';
+import { DiscountService } from './services/product/discount.service';
 
 @Module({
   imports: [
@@ -125,6 +128,7 @@ import { ModifierController } from './controllers/product/modifier.controller';
       Modifier,
       OptionToModifier,
       BranchToModifier,
+      Discount,
 
       Attribute,
       AttributeValue,
@@ -168,6 +172,7 @@ import { ModifierController } from './controllers/product/modifier.controller';
     ProductController,
     CategoryController,
     ModifierController,
+    DiscountController,
     //TableController,
     ActionHistoryController,
     AttributeController,
@@ -198,6 +203,8 @@ import { ModifierController } from './controllers/product/modifier.controller';
     ProductSubscriber,
     CategoryService,
     ModifierService,
+    DiscountService,
+
     //TableService,
     AttributeService,
     //WaiterService,
