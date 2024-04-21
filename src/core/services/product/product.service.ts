@@ -97,12 +97,17 @@ export class ProductService extends AbstractService<Product> {
     file?: any,
   ) {
     const filename = file?.filename;
+    console.log('KYLIAN0', typeof ddto);
     const dto = plainToInstance(UpdateProductDto, ddto);
     const prevProduct = await this._repository.findOneBy({
       id: optionsWhere.id,
     });
 
+    console.log('KYLIANN', ddto);
+    console.log('KYLIAN2', dto);
+
     const errors = await validate(dto);
+    console.log('KYLIAN1', dto);
     if (errors.length > 0) {
       //remove file if with erro
       if (file) {
@@ -244,5 +249,21 @@ export class ProductService extends AbstractService<Product> {
       removeImage(process.env.IMAGE_PATH, entity.image);
     }
     return result;
+  }
+
+  async getProductsAndTaxToProducts(): Promise<Product[]> {
+    const products = await this._repository
+      .createQueryBuilder('product')
+      .leftJoinAndSelect('product.taxToProducts', 'taxToProduct')
+      .getMany();
+
+    // Map over the products and ensure taxToProducts is always an array
+   /* products.forEach((product) => {
+      if (!product.taxToProducts) {
+        product.taxToProducts = [];
+      }
+    });*/
+
+    return products;
   }
 }

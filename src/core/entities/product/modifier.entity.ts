@@ -5,6 +5,8 @@ import { CoreEntity } from '../base/core.entity';
 import { instanceToPlain } from 'class-transformer';
 import { OptionToModifier } from './option-to-modifier.entity';
 import { BranchToModifier } from '../subsidiary/branch-to-modifier.entity';
+import { Product } from './product.entity';
+import { ModifierToProduct } from './modifier-to-product.entity';
 
 @Entity({
   orderBy: { createdAt: 'DESC', updatedAt: 'DESC' },
@@ -36,6 +38,16 @@ export class Modifier extends CoreEntity {
     },
   )
   branchToModifiers: BranchToModifier[];
+
+  @ApiProperty({ required: false, type: () => [ModifierToProduct] })
+  @OneToMany(
+    () => ModifierToProduct,
+    (modifierToProduct) => modifierToProduct.modifier,
+    {
+      cascade: true,
+    },
+  )
+  modifierToProducts: ModifierToProduct[];
 
   toJSON() {
     return instanceToPlain(this);

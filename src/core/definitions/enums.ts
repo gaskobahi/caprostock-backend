@@ -11,6 +11,8 @@ export enum AbilitySubjectEnum {
   Attribute = 'Attribute',
   Role = 'Role',
   Modifier = 'Modifier',
+  Tax = 'Tax',
+
   AuthUser = 'AuthUser',
   Brand = 'Brand',
   Supplier = 'Supplier',
@@ -46,6 +48,20 @@ export enum ProductTypeEnum {
   // boissons
   drink = 'drink',
   // Autres
+  other = 'other',
+}
+
+export enum TaxTypeEnum {
+  // Inclut dans dans le prix
+  includeInPrice = 'includeInPrice',
+  // Ajouter au prix
+  addedInPrice = 'addedInPrice',
+}
+
+export enum TaxOptionEnum {
+  applyToNewItems = 'applyToNewItems',
+  applyToExitingItems = 'applyToExitingItems',
+  applyToNewAndExitingItems = 'applyToNewAndExitingItems',
   other = 'other',
 }
 

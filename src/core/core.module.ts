@@ -110,6 +110,13 @@ import { ModifierController } from './controllers/product/modifier.controller';
 import { Discount } from './entities/product/discount.entity';
 import { DiscountController } from './controllers/product/discount.controller';
 import { DiscountService } from './services/product/discount.service';
+import { ModifierToProduct } from './entities/product/modifier-to-product.entity';
+import { Tax } from './entities/setting/tax.entity';
+import { TaxController } from './controllers/setting/tax.controller';
+import { TaxService } from './services/setting/tax.service';
+import { BranchToTax } from './entities/subsidiary/branch-to-tax.entity';
+import { TaxToProduct } from './entities/product/tax-to-product.entity';
+import { TaxToProductService } from './services/product/tax-to-product.service';
 
 @Module({
   imports: [
@@ -129,6 +136,11 @@ import { DiscountService } from './services/product/discount.service';
       OptionToModifier,
       BranchToModifier,
       Discount,
+      ModifierToProduct,
+      Tax,
+      BranchToTax,
+      TaxToProduct,
+
 
       Attribute,
       AttributeValue,
@@ -173,7 +185,8 @@ import { DiscountService } from './services/product/discount.service';
     CategoryController,
     ModifierController,
     DiscountController,
-    //TableController,
+    TaxController,
+
     ActionHistoryController,
     AttributeController,
     SystemController,
@@ -204,6 +217,8 @@ import { DiscountService } from './services/product/discount.service';
     CategoryService,
     ModifierService,
     DiscountService,
+    TaxService,
+    TaxToProductService,
 
     //TableService,
     AttributeService,

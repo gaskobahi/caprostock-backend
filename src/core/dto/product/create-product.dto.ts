@@ -19,6 +19,8 @@ import { ProductOption } from 'src/core/entities/product/product-option.entity';
 import { VariantToProduct } from 'src/core/entities/product/variant-to-product.entity';
 import { BranchVariantToProduct } from 'src/core/entities/subsidiary/branch-variant-to-product.entity';
 import { ProductsymbolTypeEnum } from 'src/core/definitions/enums';
+import { ModifierToProduct } from 'src/core/entities/product/modifier-to-product.entity';
+import { TaxToProduct } from 'src/core/entities/product/tax-to-product.entity';
 
 export class CreateColorShapeDto {
   @IsNotEmpty()
@@ -62,8 +64,6 @@ export class CreateProductDto extends PickType(Product, [
     description: `boolean du produit composé`,
   })
   isBundle: boolean;
-
-  
 
   @IsNotEmpty()
   @Transform(({ value }) => {
@@ -123,7 +123,7 @@ export class CreateProductDto extends PickType(Product, [
   @Transform(({ value }) => {
     return JSON.parse(value);
   })
-  inStock: number
+  inStock: number;
 
   @IsNotEmpty()
   @ApiProperty({
@@ -133,7 +133,7 @@ export class CreateProductDto extends PickType(Product, [
   @Transform(({ value }) => {
     return JSON.parse(value);
   })
-  optimalStock: number
+  optimalStock: number;
 
   @IsNotEmpty()
   @ApiProperty({
@@ -160,7 +160,6 @@ export class CreateProductDto extends PickType(Product, [
   @ValidateIf(
     (p: CreateProductDto) => p.symbolType === ProductsymbolTypeEnum.colorShape,
   )
-  //@Type(() => CreateColorShapeDto)
   @ApiProperty({
     type: () => CreateColorShapeDto,
     description: `la couleur et symbole du produit`,
@@ -171,19 +170,13 @@ export class CreateProductDto extends PickType(Product, [
   colorShape: CreateColorShapeDto;
 
   @IsNotEmpty()
-  //@IsString()
   @ValidateIf(
     (p: CreateProductDto) => p.symbolType === ProductsymbolTypeEnum.image,
   )
-  //@ValidateNested()
-  //@Type(() => String)
   @ApiProperty({
     type: () => String,
     description: `l'image du produit`,
   })
-  /*@Transform(({ value }) => {
-    return JSON.parse(value);
-  })*/
   image: string;
 
   @IsNotEmpty()
@@ -241,6 +234,32 @@ export class CreateProductDto extends PickType(Product, [
     description: `Liste des produits lorsqu'il s'agit d'un pack`,
   })
   bundleToProducts: CreateBundleToProductDto[];
+
+  @IsNotEmpty()
+  @IsArray()
+  @ValidateNested()
+  @Transform(({ value }) => {
+    return JSON.parse(value);
+  })
+  @Type(() => CreateModifierToProductDto)
+  @ApiProperty({
+    type: () => [CreateModifierToProductDto],
+    description: `Liste des modificateurs du produit`,
+  })
+  modifierToProducts: CreateModifierToProductDto[];
+
+  @IsOptional()
+  //@IsArray()
+  @ValidateNested()
+  @Transform(({ value }) => {
+    return JSON.parse(value);
+  })
+  @Type(() => CreateTaxToProductDto)
+  @ApiProperty({
+    type: () => [CreateTaxToProductDto],
+    description: `Liste des taxes du produit`,
+  })
+  taxToProducts: CreateTaxToProductDto[];
 }
 
 export class CreateProductOptionDto extends PickType(ProductOption, [
@@ -312,4 +331,14 @@ export class CreateBundleToProductDto extends PickType(BundleToProduct, [
   'bundleId',
   'quantity',
   'cost',
+] as const) {}
+
+export class CreateModifierToProductDto extends PickType(ModifierToProduct, [
+  'modifierId',
+  'isEnable',
+] as const) {}
+
+export class CreateTaxToProductDto extends PickType(TaxToProduct, [
+  'taxId',
+  'isEnable',
 ] as const) {}

@@ -11,9 +11,9 @@ import { CoreEntity } from '../base/core.entity';
 import { User } from '../user/user.entity';
 import { BranchToProduct } from './branch-to-product.entity';
 //import { Order } from '../supply/order.entity';
-import { Sale } from '../selling/sale.entity';
 import { BranchToUser } from './branch-to-user.entity';
 import { BranchToModifier } from './branch-to-modifier.entity';
+import { BranchToTax } from './branch-to-tax.entity';
 
 @Entity({
   orderBy: { createdAt: 'DESC', updatedAt: 'DESC' },
@@ -92,6 +92,12 @@ export class Branch extends CoreEntity {
     },
   )
   branchToModifiers: BranchToModifier[];
+
+  @ApiProperty({ required: false, type: () => [BranchToTax] })
+  @OneToMany(() => BranchToTax, (branchToTax) => branchToTax.tax, {
+    cascade: true,
+  })
+  branchToTaxs: BranchToTax[];
 
   /* @ApiProperty({ required: false, type: () => [Order] })
   @OneToMany(() => Order, (order) => order.branch, {

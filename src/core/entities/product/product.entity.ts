@@ -25,10 +25,11 @@ import {
 import { instanceToPlain } from 'class-transformer';
 import { Brand } from './brand.entity';
 import { BundleToProduct } from './bundle-to-product.entity';
-import { AttributeToProduct } from './attribute-to-product.entity';
 import { Category } from './category.entity';
 import { ProductOption } from './product-option.entity';
 import { VariantToProduct } from './variant-to-product.entity';
+import { ModifierToProduct } from './modifier-to-product.entity';
+import { TaxToProduct } from './tax-to-product.entity';
 
 @Entity({
   orderBy: { createdAt: 'DESC', updatedAt: 'DESC' },
@@ -227,6 +228,22 @@ export class Product extends CoreEntity {
     },
   )
   variantToProducts: VariantToProduct[];
+
+  @ApiProperty({ required: false, type: () => [ModifierToProduct] })
+  @OneToMany(
+    () => ModifierToProduct,
+    (modifierToProduct) => modifierToProduct.product,
+    {
+      cascade: true,
+    },
+  )
+  modifierToProducts: ModifierToProduct[];
+
+  @ApiProperty({ required: false, type: () => [TaxToProduct] })
+  @OneToMany(() => TaxToProduct, (taxToProduct) => taxToProduct.product, {
+    cascade: true,
+  })
+  taxToProducts: TaxToProduct[];
 
   /**
    * Getters & Setters *******************************************

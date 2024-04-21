@@ -15,6 +15,7 @@ export class UpdateProductDto extends PartialType(
 ) {
   @IsOptional()
   variantOptions: [];
+
   /* @IsOptional()
   @IsArray()
   @ValidateNested()

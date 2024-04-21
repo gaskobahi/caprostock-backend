@@ -27,6 +27,7 @@ export abstract class AbstractService<T extends BaseCoreEntity> {
     page?: number,
     perPage?: number,
   ) {
+    console.log('zzzzz',options)
     return await this.paginatedService.paginate(
       this.repository,
       page,
