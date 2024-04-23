@@ -30,6 +30,7 @@ import { ProductOption } from './product-option.entity';
 import { VariantToProduct } from './variant-to-product.entity';
 import { ModifierToProduct } from './modifier-to-product.entity';
 import { TaxToProduct } from './tax-to-product.entity';
+import { DiscountToProduct } from './discount-to-product.entity';
 
 @Entity({
   orderBy: { createdAt: 'DESC', updatedAt: 'DESC' },
@@ -238,6 +239,16 @@ export class Product extends CoreEntity {
     },
   )
   modifierToProducts: ModifierToProduct[];
+
+  @ApiProperty({ required: false, type: () => [DiscountToProduct] })
+  @OneToMany(
+    () => DiscountToProduct,
+    (discountToProduct) => discountToProduct.product,
+    {
+      cascade: true,
+    },
+  )
+  discountToProducts: DiscountToProduct[];
 
   @ApiProperty({ required: false, type: () => [TaxToProduct] })
   @OneToMany(() => TaxToProduct, (taxToProduct) => taxToProduct.product, {

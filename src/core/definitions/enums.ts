@@ -12,7 +12,7 @@ export enum AbilitySubjectEnum {
   Role = 'Role',
   Modifier = 'Modifier',
   Tax = 'Tax',
-
+  Feature='Feature',
   AuthUser = 'AuthUser',
   Brand = 'Brand',
   Supplier = 'Supplier',

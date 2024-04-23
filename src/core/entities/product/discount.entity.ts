@@ -1,8 +1,16 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
-import { Column, Entity } from 'typeorm';
+import {
+  IsBoolean,
+  IsIn,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
+import { Column, Entity, OneToMany } from 'typeorm';
 import { CoreEntity } from '../base/core.entity';
 import { DiscountTypeEnum } from 'src/core/definitions/enums';
+import { DiscountToProduct } from './discount-to-product.entity';
 
 @Entity()
 export class Discount extends CoreEntity {
@@ -33,6 +41,16 @@ export class Discount extends CoreEntity {
   @ApiProperty({ required: false, description: `Restriction au POS` })
   @Column({ name: 'pos_access', default: false })
   posaccess: boolean;
+
+  @ApiProperty({ required: false, type: () => [DiscountToProduct] })
+  @OneToMany(
+    () => DiscountToProduct,
+    (discountToProduct) => discountToProduct.discount,
+    {
+      cascade: true,
+    },
+  )
+  discountToProducts: DiscountToProduct[];
 
   /**
    * Getters & Setters

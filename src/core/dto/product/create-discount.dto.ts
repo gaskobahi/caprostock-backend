@@ -5,5 +5,5 @@ export class CreateDiscountDto extends PickType(Discount, [
   'displayName',
   'type',
   'posaccess',
-  'value'
+  'value',
 ] as const) {}

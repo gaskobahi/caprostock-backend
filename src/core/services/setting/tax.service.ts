@@ -3,7 +3,7 @@ import {
   isUniqueConstraint,
   isUniqueConstraintUpdate,
 } from '@app/typeorm';
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, forwardRef } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Tax } from '../../entities/setting/tax.entity';
@@ -15,8 +15,6 @@ import { AuthUser } from 'src/core/entities/session/auth-user.entity';
 import { UpdateTaxDto } from 'src/core/dto/setting/update-tax.dto';
 import { CreateTaxDto } from 'src/core/dto/setting/create-tax.dto';
 import { ProductService } from '../product/product.service';
-import { TaxToProduct } from 'src/core/entities/product/tax-to-product.entity';
-import { UpdateProductDto } from 'src/core/dto/product/update-product.dto';
 import { TaxToProductService } from '../product/tax-to-product.service';
 import { TaxOptionEnum } from 'src/core/definitions/enums';
 
@@ -27,9 +25,10 @@ export class TaxService extends AbstractService<Tax> {
   constructor(
     @InjectRepository(Tax)
     private _repository: Repository<Tax>,
-    private readonly configService: ConfigService,
-    private readonly productService: ProductService,
+    @Inject(forwardRef(() => ProductService))
+     private readonly productService: ProductService,
     private taxToProductService: TaxToProductService,
+    private readonly configService: ConfigService,
 
     protected paginatedService: PaginatedService<Tax>,
     @Inject(REQUEST) protected request: any,

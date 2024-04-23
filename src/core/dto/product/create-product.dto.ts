@@ -21,6 +21,7 @@ import { BranchVariantToProduct } from 'src/core/entities/subsidiary/branch-vari
 import { ProductsymbolTypeEnum } from 'src/core/definitions/enums';
 import { ModifierToProduct } from 'src/core/entities/product/modifier-to-product.entity';
 import { TaxToProduct } from 'src/core/entities/product/tax-to-product.entity';
+import { DiscountToProduct } from 'src/core/entities/product/discount-to-product.entity';
 
 export class CreateColorShapeDto {
   @IsNotEmpty()
@@ -254,6 +255,19 @@ export class CreateProductDto extends PickType(Product, [
   @Transform(({ value }) => {
     return JSON.parse(value);
   })
+  @Type(() => CreateDiscountToProductDto)
+  @ApiProperty({
+    type: () => [CreateDiscountToProductDto],
+    description: `Liste des modificateur du produit`,
+  })
+  discountToProducts: CreateDiscountToProductDto[];
+
+  @IsOptional()
+  //@IsArray()
+  @ValidateNested()
+  @Transform(({ value }) => {
+    return JSON.parse(value);
+  })
   @Type(() => CreateTaxToProductDto)
   @ApiProperty({
     type: () => [CreateTaxToProductDto],
@@ -338,6 +352,10 @@ export class CreateModifierToProductDto extends PickType(ModifierToProduct, [
   'isEnable',
 ] as const) {}
 
+export class CreateDiscountToProductDto extends PickType(DiscountToProduct, [
+  'discountId',
+  'isEnable',
+] as const) {}
 export class CreateTaxToProductDto extends PickType(TaxToProduct, [
   'taxId',
   'isEnable',

@@ -4,7 +4,12 @@ import {
   isUniqueConstraintUpdate,
   removeImage,
 } from '@app/typeorm';
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  forwardRef,
+} from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from '../../entities/product/product.entity';
@@ -21,9 +26,14 @@ import { validate } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
 import { ConfigService } from '../system/config.service';
 import * as fs from 'file-system';
-import { ProductsymbolTypeEnum } from 'src/core/definitions/enums';
+import {
+  ProductsymbolTypeEnum,
+  TaxOptionEnum,
+} from 'src/core/definitions/enums';
 import { REQUEST_AUTH_USER_KEY } from 'src/modules/auth/definitions/constants';
 import { AuthUser } from 'src/core/entities/session/auth-user.entity';
+import { TaxService } from '../setting/tax.service';
+import { TaxToProductService } from './tax-to-product.service';
 
 @Injectable()
 export class ProductService extends AbstractService<Product> {
@@ -33,6 +43,10 @@ export class ProductService extends AbstractService<Product> {
     @InjectRepository(Product)
     private _repository: Repository<Product>,
     private readonly configService: ConfigService,
+    @Inject(forwardRef(() => TaxService))
+    private readonly taxService: TaxService,
+    private readonly taxToProductService: TaxToProductService,
+
     protected paginatedService: PaginatedService<Product>,
     @Inject(REQUEST) protected request: any,
   ) {
@@ -87,8 +101,24 @@ export class ProductService extends AbstractService<Product> {
         },
       );
     }
+    const result = await super.createRecord({ ...dto, isActive: true });
+    if (result) {
+      //associe le produit aux taxes existante
+      const listTax = await this.taxService.repository.find();
+      for (const el of listTax) {
+        if (
+          el.option == TaxOptionEnum.applyToNewAndExitingItems ||
+          el.option == TaxOptionEnum.applyToNewItems
+        ) {
+          await this.taxToProductService.createRecord({
+            taxId: el.id,
+            productId: result.id,
+          });
+        }
+      }
+    }
 
-    return await super.createRecord({ ...dto, isActive: true });
+    return result;
   }
 
   async updateRecord(
@@ -258,7 +288,7 @@ export class ProductService extends AbstractService<Product> {
       .getMany();
 
     // Map over the products and ensure taxToProducts is always an array
-   /* products.forEach((product) => {
+    /* products.forEach((product) => {
       if (!product.taxToProducts) {
         product.taxToProducts = [];
       }

@@ -5,21 +5,25 @@ import {
   getDefaultAccesss,
   getDefaultRoles,
   getDefaultUsers,
+  getDefaultFeatures,
 } from 'src/common';
 import { Branch } from '../../entities/subsidiary/branch.entity';
 import { User } from '../../entities/user/user.entity';
 import { isEmpty } from 'lodash';
 import { Access } from 'src/core/entities/user/access.entity';
 import { AccessTypeEnum } from 'src/core/definitions/enums';
+import { Feature } from 'src/core/entities/setting/feature.entity';
 
 @Injectable()
 export class DefaultDataService {
   async createDefaultData() {
+    const features = await this.createFeaturesDefaultData();
     const branches = await this.createBranchesDefaultData();
     const acccess = await this.createAccessDefaultData();
     const roles = await this.createRolesDefaultData();
     const users = await this.createUsersDefaultData();
     return {
+      features: features.length,
       branches: branches.length,
       acccess: acccess.length,
       roles: roles.length,
@@ -38,6 +42,23 @@ export class DefaultDataService {
       }
     }
     return branches;
+  }
+
+  async createFeaturesDefaultData(): Promise<Feature[]> {
+    const defaultFeatures = getDefaultFeatures();
+    const features: Feature[] = [];
+    let exists: number;
+    for (const dto of defaultFeatures) {
+      exists = await Feature.countBy({
+        displayName: dto.displayName,
+        pseudoName: dto.pseudoName,
+        description: dto.description,
+      });
+      if (exists <= 0) {
+        features.push(await Feature.save(dto as Feature));
+      }
+    }
+    return features;
   }
 
   private async createAccessDefaultData(): Promise<Access[]> {
