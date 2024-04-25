@@ -3,7 +3,12 @@ import {
   isUniqueConstraint,
   isUniqueConstraintUpdate,
 } from '@app/typeorm';
-import { BadRequestException, Inject, Injectable, forwardRef } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  forwardRef,
+} from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Tax } from '../../entities/setting/tax.entity';
@@ -26,7 +31,7 @@ export class TaxService extends AbstractService<Tax> {
     @InjectRepository(Tax)
     private _repository: Repository<Tax>,
     @Inject(forwardRef(() => ProductService))
-     private readonly productService: ProductService,
+    private readonly productService: ProductService,
     private taxToProductService: TaxToProductService,
     private readonly configService: ConfigService,
 
@@ -52,7 +57,13 @@ export class TaxService extends AbstractService<Tax> {
         },
       );
     }
+
+    if (!dto.hasDining) {
+      dto.diningToTaxs = [];
+    }
+    console.log('BORIS20022', dto);
     const result = await super.createRecord({ ...dto });
+
     if (result) {
       if (result.option) {
         //get la liste des produits
@@ -80,6 +91,10 @@ export class TaxService extends AbstractService<Tax> {
       );
     }
 
+    if (!dto.hasDining) {
+      dto.diningToTaxs = [];
+    }
+    console.log('YYYYYYYY',dto)
     const result = await super.updateRecord(optionsWhere, {
       ...dto,
     });

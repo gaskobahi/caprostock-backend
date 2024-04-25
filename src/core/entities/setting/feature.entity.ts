@@ -37,22 +37,6 @@ export class Feature extends CoreEntity {
   @Column({ type: 'text', nullable: true })
   description: string;
 
-  /* @ApiProperty({ required: false, type: () => [FeatureToProduct] })
-  @OneToMany(() => FeatureToProduct, (taxToProduct) => taxToProduct.tax, {
-    cascade: true,
-  })
-  taxToProducts: FeatureToProduct[];*/
-
-  /* @ApiProperty({ required: false, type: () => [FeatureToProduct] })
-  @OneToMany(
-    () => FeatureToProduct,
-    (taxToProduct) => taxToProduct.tax,
-    {
-      cascade: true,
-    },
-  )
-  taxToProducts: FeatureToProduct[];*/
-
   toJSON() {
     return instanceToPlain(this);
   }

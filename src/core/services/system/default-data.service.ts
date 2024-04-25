@@ -13,6 +13,9 @@ import { isEmpty } from 'lodash';
 import { Access } from 'src/core/entities/user/access.entity';
 import { AccessTypeEnum } from 'src/core/definitions/enums';
 import { Feature } from 'src/core/entities/setting/feature.entity';
+import { Dining } from 'src/core/entities/setting/dining.entity';
+import { getDefaultDinings } from 'src/common/data/dining.json';
+import { BranchToDining } from 'src/core/entities/subsidiary/branch-to-dining.entity';
 
 @Injectable()
 export class DefaultDataService {
@@ -22,9 +25,11 @@ export class DefaultDataService {
     const acccess = await this.createAccessDefaultData();
     const roles = await this.createRolesDefaultData();
     const users = await this.createUsersDefaultData();
+    const dinings = await this.createDiningsDefaultData();
     return {
       features: features.length,
       branches: branches.length,
+      dinings: dinings.length,
       acccess: acccess.length,
       roles: roles.length,
       users: users.length,
@@ -42,6 +47,41 @@ export class DefaultDataService {
       }
     }
     return branches;
+  }
+
+  async createDiningsDefaultData(): Promise<Dining[]> {
+    const defaultDinings = getDefaultDinings();
+    const dinings: Dining[] = [];
+    let exists: number;
+    const listBranches = await Branch.find();
+    for (const dto of defaultDinings) {
+      exists = await Dining.countBy({ displayName: dto.displayName });
+      if (exists <= 0) {
+        const _dining = await Dining.save(dto as Dining);
+        if (_dining) {
+          for (const br of listBranches) {
+            const _eexists = await BranchToDining.countBy({
+              diningId: _dining.id,
+              branchId: br.id,
+            });
+            if (_eexists <= 0) {
+              let isDefault = false;
+              if (_dining.displayName == process.env.DEFAULTDINING) {
+                isDefault = true;
+              }
+              await BranchToDining.save({
+                diningId: _dining.id,
+                branchId: br.id,
+                isAvailable: true,
+                isDefault: isDefault,
+              });
+            }
+          }
+        }
+        dinings.push(_dining);
+      }
+    }
+    return dinings;
   }
 
   async createFeaturesDefaultData(): Promise<Feature[]> {

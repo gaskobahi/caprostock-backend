@@ -109,6 +109,18 @@ export class FeatureController {
     return feature;
   }
 
+  @ApiSearchOneQueryFilter()
+  @Get('/by/:pseudoName')
+  async findOneByPseudoName(
+    @CurrentUser() authUser: AuthUser,
+    @Param('pseudoName') pseudoName: string,
+  ): Promise<Feature> {
+    const feature = await this.service.repository.findOneBy({
+      pseudoName: pseudoName ?? '',
+    });
+    return feature;
+  }
+
   /**
    * Create feature
    */
@@ -130,7 +142,6 @@ export class FeatureController {
       where: { ...options?.where, id: feature.id },
     });
   }
-
 
   @ApiSearchOneQueryFilter()
   @Post('/byarray')

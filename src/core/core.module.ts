@@ -121,6 +121,11 @@ import { DiscountToProduct } from './entities/product/discount-to-product.entity
 import { Feature } from './entities/setting/feature.entity';
 import { FeatureService } from './services/setting/feature.service';
 import { FeatureController } from './controllers/setting/feature.controller';
+import { BranchToDining } from './entities/subsidiary/branch-to-dining.entity';
+import { Dining } from './entities/setting/dining.entity';
+import { DiningController } from './controllers/setting/dining.controller';
+import { DiningService } from './services/setting/dining.service';
+import { DiningToTax } from './entities/setting/dining-to-tax.entity';
 
 @Module({
   imports: [
@@ -148,13 +153,20 @@ import { FeatureController } from './controllers/setting/feature.controller';
       TaxToProduct,
 
       Feature,
+      //FeatureToTax,
 
       Attribute,
       AttributeValue,
+
+      Dining,
+      BranchToDining,
+      DiningToTax,
+
       Branch,
       BranchVariantToProduct,
       BranchToProduct,
       BundleToProduct,
+
       ProductOption,
       VariantToProduct,
       BranchToUser,
@@ -194,6 +206,7 @@ import { FeatureController } from './controllers/setting/feature.controller';
     DiscountController,
     TaxController,
     FeatureController,
+    DiningController,
 
     ActionHistoryController,
     AttributeController,
@@ -229,7 +242,7 @@ import { FeatureController } from './controllers/setting/feature.controller';
     TaxToProductService,
 
     FeatureService,
-
+    DiningService,
     //TableService,
     AttributeService,
     //WaiterService,

@@ -1,11 +1,19 @@
 import { Column, Entity, Index, OneToMany } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsIn, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsIn,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { CoreEntity } from '../base/core.entity';
 import { instanceToPlain } from 'class-transformer';
 import { BranchToTax } from '../subsidiary/branch-to-tax.entity';
 import { TaxOptionEnum, TaxTypeEnum } from 'src/core/definitions/enums';
 import { TaxToProduct } from '../product/tax-to-product.entity';
+import { DiningToTax } from './dining-to-tax.entity';
 //import { OptionToTax } from './option-to-tax.entity';
 
 @Entity({
@@ -45,6 +53,16 @@ export class Tax extends CoreEntity {
   @Column({ name: 'option', default: TaxOptionEnum.other })
   option: TaxOptionEnum;
 
+  @IsOptional()
+  @IsBoolean()
+  @ApiProperty({
+    required: false,
+    default: false,
+    description: `option de restauration (livraison)`,
+  })
+  @Column({ name: 'has_dining', nullable: true })
+  hasDining: boolean;
+
   @ApiProperty({ required: false, type: () => [BranchToTax] })
   @OneToMany(() => BranchToTax, (branchToTax) => branchToTax.tax, {
     cascade: true,
@@ -56,6 +74,12 @@ export class Tax extends CoreEntity {
     cascade: true,
   })
   taxToProducts: TaxToProduct[];
+
+  @ApiProperty({ required: false, type: () => [DiningToTax] })
+  @OneToMany(() => DiningToTax, (diningToTax) => diningToTax.tax, {
+    cascade: true,
+  })
+  diningToTaxs: DiningToTax[];
 
   /* @ApiProperty({ required: false, type: () => [TaxToProduct] })
   @OneToMany(
