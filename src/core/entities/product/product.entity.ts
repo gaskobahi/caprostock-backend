@@ -31,6 +31,7 @@ import { VariantToProduct } from './variant-to-product.entity';
 import { ModifierToProduct } from './modifier-to-product.entity';
 import { TaxToProduct } from './tax-to-product.entity';
 import { DiscountToProduct } from './discount-to-product.entity';
+import { ProductToTax } from '../setting/product-to-tax.entity';
 
 @Entity({
   orderBy: { createdAt: 'DESC', updatedAt: 'DESC' },
@@ -190,16 +191,6 @@ export class Product extends CoreEntity {
   })
   options: ProductOption[];
 
-  /*@ApiProperty({ required: false, type: () => [AttributeToProduct] })
-  @OneToMany(
-    () => AttributeToProduct,
-    (attributeToProducts) => attributeToProducts.product,
-    {
-      cascade: true,
-    },
-  )
-  attributeToProducts: AttributeToProduct[];*/
-
   @ApiProperty({ required: false, type: () => [BranchToProduct] })
   @OneToMany(
     () => BranchToProduct,
@@ -254,7 +245,13 @@ export class Product extends CoreEntity {
   @OneToMany(() => TaxToProduct, (taxToProduct) => taxToProduct.product, {
     cascade: true,
   })
-  taxToProducts: TaxToProduct[];
+  taxToProducts: ProductToTax[];
+
+  @ApiProperty({ required: false, type: () => [ProductToTax] })
+  @OneToMany(() => ProductToTax, (taxToProduct) => taxToProduct.product, {
+    cascade: true,
+  })
+  productToTaxs: ProductToTax[];
 
   /**
    * Getters & Setters *******************************************

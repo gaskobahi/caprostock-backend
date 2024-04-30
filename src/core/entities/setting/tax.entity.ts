@@ -14,6 +14,7 @@ import { BranchToTax } from '../subsidiary/branch-to-tax.entity';
 import { TaxOptionEnum, TaxTypeEnum } from 'src/core/definitions/enums';
 import { TaxToProduct } from '../product/tax-to-product.entity';
 import { DiningToTax } from './dining-to-tax.entity';
+import { ProductToTax } from './product-to-tax.entity';
 //import { OptionToTax } from './option-to-tax.entity';
 
 @Entity({
@@ -81,15 +82,11 @@ export class Tax extends CoreEntity {
   })
   diningToTaxs: DiningToTax[];
 
-  /* @ApiProperty({ required: false, type: () => [TaxToProduct] })
-  @OneToMany(
-    () => TaxToProduct,
-    (taxToProduct) => taxToProduct.tax,
-    {
-      cascade: true,
-    },
-  )
-  taxToProducts: TaxToProduct[];*/
+  @ApiProperty({ required: false, type: () => [ProductToTax] })
+  @OneToMany(() => ProductToTax, (taxToProduct) => taxToProduct.tax, {
+    cascade: true,
+  })
+  productToTaxs: ProductToTax[];
 
   toJSON() {
     return instanceToPlain(this);

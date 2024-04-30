@@ -1,18 +1,11 @@
 import { Column, Entity, Index, OneToMany } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import {
-  IsBoolean,
-  IsIn,
   IsNotEmpty,
-  IsNumber,
-  IsOptional,
   IsString,
 } from 'class-validator';
 import { CoreEntity } from '../base/core.entity';
 import { instanceToPlain } from 'class-transformer';
-import { BranchToTax } from '../subsidiary/branch-to-tax.entity';
-import { TaxOptionEnum, TaxTypeEnum } from 'src/core/definitions/enums';
-import { TaxToProduct } from '../product/tax-to-product.entity';
 import { BranchToDining } from '../subsidiary/branch-to-dining.entity';
 import { DiningToTax } from './dining-to-tax.entity';
 //import { OptionToTax } from './option-to-tax.entity';

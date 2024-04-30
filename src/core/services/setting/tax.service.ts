@@ -60,8 +60,8 @@ export class TaxService extends AbstractService<Tax> {
 
     if (!dto.hasDining) {
       dto.diningToTaxs = [];
+      dto.productToTaxs = [];
     }
-    console.log('BORIS20022', dto);
     const result = await super.createRecord({ ...dto });
 
     if (result) {
@@ -93,8 +93,9 @@ export class TaxService extends AbstractService<Tax> {
 
     if (!dto.hasDining) {
       dto.diningToTaxs = [];
+      dto.productToTaxs = [];
     }
-    console.log('YYYYYYYY',dto)
+
     const result = await super.updateRecord(optionsWhere, {
       ...dto,
     });

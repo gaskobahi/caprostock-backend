@@ -126,6 +126,7 @@ import { Dining } from './entities/setting/dining.entity';
 import { DiningController } from './controllers/setting/dining.controller';
 import { DiningService } from './services/setting/dining.service';
 import { DiningToTax } from './entities/setting/dining-to-tax.entity';
+import { ProductToTax } from './entities/setting/product-to-tax.entity';
 
 @Module({
   imports: [
@@ -151,6 +152,7 @@ import { DiningToTax } from './entities/setting/dining-to-tax.entity';
       Tax,
       BranchToTax,
       TaxToProduct,
+      ProductToTax,
 
       Feature,
       //FeatureToTax,
