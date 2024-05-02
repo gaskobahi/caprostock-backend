@@ -57,6 +57,122 @@ export class ProductService extends AbstractService<Product> {
     return this._repository;
   }
 
+  /*
+  async readPaginatedListRecord(
+    options?: FindManyOptions<Product>,
+    page?: number,
+    perPage?: number,
+  ) {
+    const response = await this.paginatedService.paginate(
+      this.repository,
+      page,
+      perPage,
+      options,
+    );
+    const data2 = [];
+    for (const r of response.data) {
+      const dt: any = r;
+      dt.margin =  this.getMargin(r.price, r.cost);
+      if (!dt.isBundle) {
+        if (dt.hasVariant) {
+              const dataVariant2=[]
+              dt.price = null;
+              dt.cost = null;
+              dt.inStock = await this.getInStockVariantProductByBranch(dt.variantToProducts);
+              for(let vp of dt.variantToProducts){
+                const v: any = vp;
+                v.avgprice=await this.getAveragePriceByBranch(v.branchVariantToProducts)
+                v.margin =  this.getMargin(v.avgprice??v.price, v.cost);
+                v.inStock  = await this.getInStockItemVariantProductByBranch(v.branchVariantToProducts);
+                dataVariant2.push(v);
+              }
+              dt.margin=await this.getAverageMarginItemVariantProduct(dataVariant2)
+              dt.variantToProducts=dataVariant2;
+        } else {
+          dt.inStock = await this.getInStockProductByBranch(r.branchToProducts);
+        }
+      }else{
+        dt.inStock=0;
+      }
+      data2.push(dt);
+    }
+
+    response.data = data2;
+    return response;
+  }*/
+  async readPaginatedListRecord(
+    options?: FindManyOptions<Product>,
+    page: number = 1,
+    perPage: number = 25,
+  ) {
+    // Paginate using provided options, page, and perPage
+    const response = await this.paginatedService.paginate(
+      this.repository,
+      page,
+      perPage,
+      options,
+    );
+    console.log('RRRRRRRRR',perPage)
+
+    // Process each item in the paginated data asynchronously
+    await Promise.all(
+      response?.data.map(async (r) => {
+        const dt: any = r;
+        dt.avgprice = await this.getAveragePriceByBranch(dt.branchToProducts);
+        // Calculate margin for each item
+        dt.margin = this.getMargin(dt.avgprice ?? r.price, r.cost);
+        if (!dt.isBundle) {
+          if (dt.hasVariant) {
+            // If the item has variants, process them
+            dt.price = null;
+            dt.cost = null;
+            if (dt?.variantToProducts) {
+              // Calculate inStock for the item
+              dt.inStock = await this.getInStockVariantProductByBranch(
+                dt?.variantToProducts,
+              );
+              // Process each variant of the item asynchronously
+              const dataVariant2 = await Promise.all(
+                dt?.variantToProducts &&
+                  dt.variantToProducts?.map(async (vp) => {
+                    const v: any = vp;
+
+                    // Calculate average price for the variant
+                    v.avgprice = await this.getAveragePriceByBranch(
+                      v.branchVariantToProducts,
+                    );
+                    // Calculate margin for the variant
+                    v.margin = this.getMargin(v.avgprice ?? v.price, v.cost);
+                    // Calculate inStock for the variant
+                    v.inStock = await this.getInStockItemVariantProductByBranch(
+                      v.branchVariantToProducts,
+                    );
+                    return v;
+                  }),
+              );
+
+              // Calculate average margin for all variants
+              dt.margin =
+                await this.getAverageMarginItemVariantProduct(dataVariant2);
+              dt.variantToProducts = dataVariant2;
+            }
+          } else {
+            // If the item does not have variants, calculate inStock directly
+            dt.inStock = await this.getInStockProductByBranch(
+              r.branchToProducts,
+            );
+          }
+        } else {
+          // If the item is a bundle, set inStock to 0
+          dt.inStock = 0;
+        }
+      }),
+    );
+
+    // Update response data with processed items and return
+    return response;
+  }
+
   async createRecord(ddto: any, file?: any): Promise<Product> {
     const filename = file?.filename;
     const dto = plainToInstance(CreateProductDto, ddto);
@@ -133,11 +249,7 @@ export class ProductService extends AbstractService<Product> {
       id: optionsWhere.id,
     });
 
-    console.log('KYLIANN', ddto);
-    console.log('KYLIAN2', dto);
-
     const errors = await validate(dto);
-    console.log('KYLIAN1', dto);
     if (errors.length > 0) {
       //remove file if with erro
       if (file) {
@@ -295,5 +407,55 @@ export class ProductService extends AbstractService<Product> {
     });*/
 
     return products;
+  }
+
+  async getInStockProductByBranch(branchToProducts: any): Promise<number> {
+    let inStock: number = 0;
+    for (const el of branchToProducts) {
+      inStock += el.inStock ?? 0;
+    }
+
+    return inStock;
+  }
+
+  async getInStockVariantProductByBranch(
+    variantToProducts: any,
+  ): Promise<number> {
+    let inStock: number = 0;
+    for (const el of variantToProducts) {
+      for (const al of el.branchVariantToProducts) {
+        inStock += al.inStock ?? 0;
+      }
+    }
+
+    return inStock;
+  }
+
+  async getInStockItemVariantProductByBranch(
+    branchVariantToProducts: any,
+  ): Promise<number> {
+    let inStock: number = 0;
+    for (const al of branchVariantToProducts) {
+      inStock += al.inStock ?? 0;
+    }
+    return inStock;
+  }
+
+  async getAverageMarginItemVariantProduct(
+    VariantToProducts: any,
+  ): Promise<number> {
+    const arrayMargins = [];
+    for (const al of VariantToProducts) {
+      arrayMargins.push(al.margin ?? 0);
+    }
+    return this.calculateAveragePrice(arrayMargins);
+  }
+
+  async getAveragePriceByBranch(branchVariantToProducts: any): Promise<number> {
+    const arrayPrices = [];
+    for (const al of branchVariantToProducts) {
+      arrayPrices.push(al.price ?? 0);
+    }
+    return this.calculateAveragePrice(arrayPrices);
   }
 }

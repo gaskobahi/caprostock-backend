@@ -67,14 +67,17 @@ export class ProductController {
         textFilterFields: ['reference', 'displayName'],
       },
     );
-
     // Apply auth user branch filter
     /*options.where = merge(
       options?.where,
       await this.service.getFilterByAuthUserBranch(),
     );*/
 
-    return this.service.readPaginatedListRecord(options);
+    return this.service.readPaginatedListRecord(
+      options,
+      query.page,
+      query.perPage,
+    );
   }
 
   @ApiSearchQueryFilter()

@@ -27,7 +27,6 @@ export abstract class AbstractService<T extends BaseCoreEntity> {
     page?: number,
     perPage?: number,
   ) {
-    console.log('zzzzz',options)
     return await this.paginatedService.paginate(
       this.repository,
       page,
@@ -35,8 +34,6 @@ export abstract class AbstractService<T extends BaseCoreEntity> {
       options,
     );
   }
-
-  
 
   async readOneRecord(options?: FindOneOptions<T>) {
     const entity = await this.repository.findOne(options);
@@ -133,4 +130,23 @@ export abstract class AbstractService<T extends BaseCoreEntity> {
 
     return password;
   }
+
+  protected getMargin(price = 0, cost = 0){
+    const mb: number = price - cost;
+    const mTaux = (mb / price) * 100;
+    if (isNaN(mTaux)) {
+      return 0;
+    }
+    return parseFloat(mTaux.toFixed(2));
+  }
+
+  protected   calculateAveragePrice(array)  {
+    if (array.length === 0) {
+      return 0;
+    }
+    const total = array.reduce((sum, price) => sum + price, 0);
+    const average = total / array.length;
+    return parseFloat(average.toFixed(0));
+}
+
 }
