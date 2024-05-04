@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException } from '@nestjs/common';
 import { BaseEntity, Not } from 'typeorm';
 import * as fs from 'file-system';
+import { IsPhoneNumber } from 'class-validator';
 
 export type ConstraintOptions = {
   message?: string;
@@ -36,6 +37,9 @@ export async function isUniqueConstraintUpdate(
     id: Not(filter.id),
     code: filter?.code,
     displayName: filter?.displayName,
+    firstName: filter?.firstName,
+    phoneNumber: filter?.phoneNumber,
+    email: filter?.email,
   };
 
   const exists = await makeContraintQuery(target, option);

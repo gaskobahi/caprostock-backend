@@ -108,7 +108,7 @@ export class Sale extends CoreEntity {
   @Column({ name: 'customer_id', type: 'uuid', nullable: true })
   customerId: string;
 
-  @ApiProperty({ required: false, type: () => Customer })
+  /*@ApiProperty({ required: false, type: () => Customer })
   @ManyToOne(() => Customer, (customer) => customer.sales, {
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE',
@@ -116,7 +116,7 @@ export class Sale extends CoreEntity {
     cascade: true,
   })
   @JoinColumn({ name: 'customer_id' })
-  customer: Customer;
+  customer: Customer;*/
 
   @IsUUID()
   @IsNotEmpty()

@@ -31,7 +31,7 @@ export class SaleCustomerDto extends PartialType(
 ) {
   @IsNotEmpty()
   @IsUUID()
-  @ValidateIf((c: CreateCustomerDto) => !(c.lastName && c.firstName))
+  //@ValidateIf((c: CreateCustomerDto) => !(c.lastName && c.firstName))
   @ApiPropertyOptional()
   id: string;
 }

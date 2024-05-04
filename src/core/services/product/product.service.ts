@@ -57,49 +57,6 @@ export class ProductService extends AbstractService<Product> {
     return this._repository;
   }
 
-  /*
-  async readPaginatedListRecord(
-    options?: FindManyOptions<Product>,
-    page?: number,
-    perPage?: number,
-  ) {
-    const response = await this.paginatedService.paginate(
-      this.repository,
-      page,
-      perPage,
-      options,
-    );
-    const data2 = [];
-    for (const r of response.data) {
-      const dt: any = r;
-      dt.margin =  this.getMargin(r.price, r.cost);
-      if (!dt.isBundle) {
-        if (dt.hasVariant) {
-              const dataVariant2=[]
-              dt.price = null;
-              dt.cost = null;
-              dt.inStock = await this.getInStockVariantProductByBranch(dt.variantToProducts);
-              for(let vp of dt.variantToProducts){
-                const v: any = vp;
-                v.avgprice=await this.getAveragePriceByBranch(v.branchVariantToProducts)
-                v.margin =  this.getMargin(v.avgprice??v.price, v.cost);
-                v.inStock  = await this.getInStockItemVariantProductByBranch(v.branchVariantToProducts);
-                dataVariant2.push(v);
-              }
-              dt.margin=await this.getAverageMarginItemVariantProduct(dataVariant2)
-              dt.variantToProducts=dataVariant2;
-        } else {
-          dt.inStock = await this.getInStockProductByBranch(r.branchToProducts);
-        }
-      }else{
-        dt.inStock=0;
-      }
-      data2.push(dt);
-    }
-
-    response.data = data2;
-    return response;
-  }*/
   async readPaginatedListRecord(
     options?: FindManyOptions<Product>,
     page: number = 1,
@@ -112,7 +69,6 @@ export class ProductService extends AbstractService<Product> {
       perPage,
       options,
     );
-    console.log('RRRRRRRRR',perPage)
 
     // Process each item in the paginated data asynchronously
     await Promise.all(

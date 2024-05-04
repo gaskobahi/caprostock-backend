@@ -127,6 +127,9 @@ import { DiningController } from './controllers/setting/dining.controller';
 import { DiningService } from './services/setting/dining.service';
 import { DiningToTax } from './entities/setting/dining-to-tax.entity';
 import { ProductToTax } from './entities/setting/product-to-tax.entity';
+import { Customer } from './entities/selling/customer.entity';
+import { CustomerController } from './controllers/selling/customer.controller';
+import { CustomerService } from './services/selling/customer.service';
 
 @Module({
   imports: [
@@ -174,13 +177,15 @@ import { ProductToTax } from './entities/setting/product-to-tax.entity';
       BranchToUser,
       Brand,
       Supplier,
+
+      Customer,
+
       //Order,
       //OrderToProduct,
       //Consult,
       //ConsultType,
       //Doctor,
       /*Patient,
-      Customer,
       InsuranceCompany,
       SaleToProduct,
       Sale,
@@ -215,12 +220,13 @@ import { ProductToTax } from './entities/setting/product-to-tax.entity';
     SystemController,
     BrandController,
     SupplierController,
+    CustomerController,
+
     //OrderController,
     //ConsultController,
     //ConsultTypeController,
     //PatientController,
     //DoctorController,
-    //CustomerController,
     //WaiterController,
     //InsuranceCompanyController,
     //SaleController,
@@ -252,6 +258,8 @@ import { ProductToTax } from './entities/setting/product-to-tax.entity';
     DefaultDataService,
     BrandService,
     SupplierService,
+    CustomerService,
+
     //OrderService,
     //OrderSubscriber,
     //ConsultService,
@@ -260,7 +268,6 @@ import { ProductToTax } from './entities/setting/product-to-tax.entity';
     //DoctorService,
     //DoctorSubscriber,
     //PatientService,
-    //CustomerService,
     /*InsuranceCompanyService,
     SaleService,
     SaleSubscriber,
