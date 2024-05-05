@@ -12,7 +12,7 @@ export enum AbilitySubjectEnum {
   Role = 'Role',
   Modifier = 'Modifier',
   Tax = 'Tax',
-  Feature='Feature',
+  Feature = 'Feature',
   AuthUser = 'AuthUser',
   Brand = 'Brand',
   Supplier = 'Supplier',
@@ -93,6 +93,11 @@ export enum ProductsymbolTypeEnum {
   image = 'image',
   // par couleur et symbole
   colorShape = 'colorShape',
+}
+
+export enum SettingTypeEnum {
+  store = 'store',
+  system = 'system',
 }
 
 export enum CategoryTypeEnum {

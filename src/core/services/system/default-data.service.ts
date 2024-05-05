@@ -16,23 +16,31 @@ import { Feature } from 'src/core/entities/setting/feature.entity';
 import { Dining } from 'src/core/entities/setting/dining.entity';
 import { getDefaultDinings } from 'src/common/data/dining.json';
 import { BranchToDining } from 'src/core/entities/subsidiary/branch-to-dining.entity';
+import { Loyalty } from 'src/core/entities/setting/loyalty.entity';
+import { getDefaultLoyalty } from 'src/common/data/loyalty.json';
+import { Setting } from 'src/core/entities/setting/setting.entity';
+import { getDefaultSettings } from 'src/common/data/setting.json';
 
 @Injectable()
 export class DefaultDataService {
   async createDefaultData() {
+    const settings = await this.createSettingsDefaultData();
     const features = await this.createFeaturesDefaultData();
     const branches = await this.createBranchesDefaultData();
     const acccess = await this.createAccessDefaultData();
     const roles = await this.createRolesDefaultData();
     const users = await this.createUsersDefaultData();
     const dinings = await this.createDiningsDefaultData();
+    const loyalties = await this.createLoyaltyDefaultData();
     return {
       features: features.length,
       branches: branches.length,
       dinings: dinings.length,
+      loyalties: loyalties.length,
       acccess: acccess.length,
       roles: roles.length,
       users: users.length,
+      settings: settings.length,
     };
   }
 
@@ -84,6 +92,20 @@ export class DefaultDataService {
     return dinings;
   }
 
+  async createLoyaltyDefaultData(): Promise<Loyalty[]> {
+    const defaultLoyalty = getDefaultLoyalty();
+    const loyalty: Loyalty[] = [];
+    let exists: number;
+    for (const dto of defaultLoyalty) {
+      exists = await Loyalty.countBy({ uniqueName: dto.uniqueName });
+      if (exists <= 0) {
+        const _loyalty = await Loyalty.save(dto as Loyalty);
+        loyalty.push(_loyalty);
+      }
+    }
+    return loyalty;
+  }
+
   async createFeaturesDefaultData(): Promise<Feature[]> {
     const defaultFeatures = getDefaultFeatures();
     const features: Feature[] = [];
@@ -99,6 +121,24 @@ export class DefaultDataService {
       }
     }
     return features;
+  }
+
+  async createSettingsDefaultData(): Promise<Setting[]> {
+    const defaultSettings = getDefaultSettings();
+    const settings: Setting[] = [];
+    let exists: number;
+    for (const dto of defaultSettings) {
+      exists = await Setting.countBy({
+        name: dto.name,
+        displayName: dto.displayName,
+        type: dto.type,
+        position: dto.position,
+      });
+      if (exists <= 0) {
+        settings.push(await Setting.save(dto as Setting));
+      }
+    }
+    return settings;
   }
 
   private async createAccessDefaultData(): Promise<Access[]> {

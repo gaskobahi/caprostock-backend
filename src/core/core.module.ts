@@ -130,6 +130,12 @@ import { ProductToTax } from './entities/setting/product-to-tax.entity';
 import { Customer } from './entities/selling/customer.entity';
 import { CustomerController } from './controllers/selling/customer.controller';
 import { CustomerService } from './services/selling/customer.service';
+import { Loyalty } from './entities/setting/loyalty.entity';
+import { LoyaltyController } from './controllers/setting/loyalty.controller';
+import { LoyaltyService } from './services/setting/loyalty.service';
+import { Setting } from './entities/setting/setting.entity';
+import { SettingController } from './controllers/setting/setting.controller';
+import { SettingService } from './services/setting/setting.service';
 
 @Module({
   imports: [
@@ -180,6 +186,10 @@ import { CustomerService } from './services/selling/customer.service';
 
       Customer,
 
+      Loyalty,
+
+      Setting,
+
       //Order,
       //OrderToProduct,
       //Consult,
@@ -222,6 +232,8 @@ import { CustomerService } from './services/selling/customer.service';
     SupplierController,
     CustomerController,
 
+    LoyaltyController,
+    SettingController,
     //OrderController,
     //ConsultController,
     //ConsultTypeController,
@@ -259,6 +271,9 @@ import { CustomerService } from './services/selling/customer.service';
     BrandService,
     SupplierService,
     CustomerService,
+
+    LoyaltyService,
+    SettingService,
 
     //OrderService,
     //OrderSubscriber,
