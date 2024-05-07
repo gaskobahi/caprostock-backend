@@ -136,6 +136,9 @@ import { LoyaltyService } from './services/setting/loyalty.service';
 import { Setting } from './entities/setting/setting.entity';
 import { SettingController } from './controllers/setting/setting.controller';
 import { SettingService } from './services/setting/setting.service';
+import { Box } from './entities/setting/box.entity';
+import { BoxService } from './services/setting/box.service';
+import { BoxController } from './controllers/setting/box.controller';
 
 @Module({
   imports: [
@@ -190,6 +193,8 @@ import { SettingService } from './services/setting/setting.service';
 
       Setting,
 
+      Box,
+
       //Order,
       //OrderToProduct,
       //Consult,
@@ -234,6 +239,7 @@ import { SettingService } from './services/setting/setting.service';
 
     LoyaltyController,
     SettingController,
+    BoxController,
     //OrderController,
     //ConsultController,
     //ConsultTypeController,
@@ -274,7 +280,7 @@ import { SettingService } from './services/setting/setting.service';
 
     LoyaltyService,
     SettingService,
-
+    BoxService,
     //OrderService,
     //OrderSubscriber,
     //ConsultService,

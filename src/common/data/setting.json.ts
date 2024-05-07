@@ -32,7 +32,7 @@ export const getDefaultSettings = () => {
       name: 'branch',
       displayName: 'Surccusale',
       type: SettingTypeEnum.store,
-      position:4
+      position: 4,
     },
     {
       name: 'box',

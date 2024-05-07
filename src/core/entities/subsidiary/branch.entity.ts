@@ -15,6 +15,7 @@ import { BranchToUser } from './branch-to-user.entity';
 import { BranchToModifier } from './branch-to-modifier.entity';
 import { BranchToTax } from './branch-to-tax.entity';
 import { BranchToDining } from './branch-to-dining.entity';
+import { Box } from '../setting/box.entity';
 
 @Entity({
   orderBy: { createdAt: 'DESC', updatedAt: 'DESC' },
@@ -105,6 +106,12 @@ export class Branch extends CoreEntity {
     cascade: true,
   })
   branchToDinings: BranchToDining[];
+
+  @ApiProperty({ required: false, type: () => [Box] })
+  @OneToMany(() => Box, (box) => box.branch, {
+    cascade: true,
+  })
+  boxs: Box[];
 
   /* @ApiProperty({ required: false, type: () => [Order] })
   @OneToMany(() => Order, (order) => order.branch, {

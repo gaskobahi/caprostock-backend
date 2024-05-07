@@ -27,6 +27,7 @@ export enum AbilitySubjectEnum {
   Sale = 'Sale',
   SalePayment = 'SalePayment',
   Treatment = 'Treatment',
+  Box = 'Box',
 }
 
 export enum AbilityActionEnum {

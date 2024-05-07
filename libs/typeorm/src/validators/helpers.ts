@@ -27,6 +27,26 @@ export async function isUniqueConstraint(
   return true;
 }
 
+export async function isUniqueConstraintBranch(
+  property: string,
+  target: typeof BaseEntity,
+  filter: any,
+  options?: ConstraintOptions,
+): Promise<boolean> {
+  const exists = await makeContraintQuery(target, filter);
+  if (exists) {
+    throw new ConflictException(
+      [
+        {
+          [property]: [options?.message ?? 'Cet élément existe déjà.'],
+        },
+      ],
+      'Requête en conflit avec une ou plusieurs données',
+    );
+  }
+  return true;
+}
+
 export async function isUniqueConstraintUpdate(
   property: string,
   target: typeof BaseEntity,
@@ -40,6 +60,7 @@ export async function isUniqueConstraintUpdate(
     firstName: filter?.firstName,
     phoneNumber: filter?.phoneNumber,
     email: filter?.email,
+    branchId: filter?.branchId,
   };
 
   const exists = await makeContraintQuery(target, option);
