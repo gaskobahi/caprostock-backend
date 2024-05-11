@@ -20,6 +20,8 @@ import { Loyalty } from 'src/core/entities/setting/loyalty.entity';
 import { getDefaultLoyalty } from 'src/common/data/loyalty.json';
 import { Setting } from 'src/core/entities/setting/setting.entity';
 import { getDefaultSettings } from 'src/common/data/setting.json';
+import { Reason } from 'src/core/entities/stockmanagement/reason.entity';
+import { getDefaultReasons } from 'src/common/data/reason.json';
 
 @Injectable()
 export class DefaultDataService {
@@ -32,6 +34,7 @@ export class DefaultDataService {
     const users = await this.createUsersDefaultData();
     const dinings = await this.createDiningsDefaultData();
     const loyalties = await this.createLoyaltyDefaultData();
+    const reasons = await this.createReasonsDefaultData();
     return {
       features: features.length,
       branches: branches.length,
@@ -41,6 +44,7 @@ export class DefaultDataService {
       roles: roles.length,
       users: users.length,
       settings: settings.length,
+      reasons: reasons.length,
     };
   }
 
@@ -139,6 +143,23 @@ export class DefaultDataService {
       }
     }
     return settings;
+  }
+
+  async createReasonsDefaultData(): Promise<Reason[]> {
+    const defaultReasons = getDefaultReasons();
+    const reasons: Reason[] = [];
+    let exists: number;
+    for (const dto of defaultReasons) {
+      exists = await Reason.countBy({
+        name: dto.name,
+        displayName: dto.displayName,
+        position: dto.position,
+      });
+      if (exists <= 0) {
+        reasons.push(await Reason.save(dto as Reason));
+      }
+    }
+    return reasons;
   }
 
   private async createAccessDefaultData(): Promise<Access[]> {

@@ -40,7 +40,7 @@ export class Setting extends CoreEntity {
 
   @IsNumber()
   @IsOptional()
-  @ApiProperty({ description: `Unité de gestion des stocks` })
+  @ApiProperty({ description: `position` })
   @Column()
   position: number;
 

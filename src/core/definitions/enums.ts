@@ -3,6 +3,8 @@ export enum YesNoActionEnum {
   no = 'no',
 }
 
+
+
 export enum AbilitySubjectEnum {
   all = 'all',
   User = 'User',
@@ -28,6 +30,8 @@ export enum AbilitySubjectEnum {
   SalePayment = 'SalePayment',
   Treatment = 'Treatment',
   Box = 'Box',
+
+  Reason = 'Reason',
 }
 
 export enum AbilityActionEnum {

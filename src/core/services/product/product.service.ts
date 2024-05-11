@@ -319,6 +319,27 @@ export class ProductService extends AbstractService<Product> {
     }
     return array;
   }
+  async readPaginatedListRecordForStockAdjustment(
+    options?: FindManyOptions<any>,
+    page?: number,
+    perPage?: number,
+  ) {
+    const products = await this.readPaginatedListRecord(options, page, perPage);
+    const array: Array<object> = [];
+    for (const item of products.data as any) {
+      if (item.trackStock) {
+        if (!item.isBundle) {
+          if (
+            item.branchToProducts.length > 0 ||
+            item.variantToProducts.length > 0
+          ) {
+            array.push(item);
+          }
+        }
+      }
+    }
+    return array;
+  }
 
   async readOneRecord(options?: FindOneOptions<Product>) {
     const entity = await this.repository.findOne(options);
@@ -375,7 +396,7 @@ export class ProductService extends AbstractService<Product> {
   }
 
   async getInStockVariantProductByBranch(
-    variantToProducts: any,
+    variantToProducts: any = [],
   ): Promise<number> {
     let inStock: number = 0;
     for (const el of variantToProducts) {
@@ -407,7 +428,9 @@ export class ProductService extends AbstractService<Product> {
     return this.calculateAveragePrice(arrayMargins);
   }
 
-  async getAveragePriceByBranch(branchVariantToProducts: any): Promise<number> {
+  async getAveragePriceByBranch(
+    branchVariantToProducts: any = [],
+  ): Promise<number> {
     const arrayPrices = [];
     for (const al of branchVariantToProducts) {
       arrayPrices.push(al.price ?? 0);

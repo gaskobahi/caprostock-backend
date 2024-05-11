@@ -139,6 +139,13 @@ import { SettingService } from './services/setting/setting.service';
 import { Box } from './entities/setting/box.entity';
 import { BoxService } from './services/setting/box.service';
 import { BoxController } from './controllers/setting/box.controller';
+import { Reason } from './entities/stockmanagement/reason.entity';
+import { ReasonController } from './controllers/stockmanagement/reason.controller';
+import { ReasonService } from './services/stockmanagement/reason.service';
+import { StockAdjustment } from './entities/stockmanagement/stockadjustment.entity';
+import { ProductToStockAdjustment } from './entities/stockmanagement/product-to-stockadjustment.entity';
+import { StockAdjustmentController } from './controllers/stockmanagement/stock-adjustment.controller';
+import { StockAdjustmentService } from './services/stockmanagement/stock-adjustment.service';
 
 @Module({
   imports: [
@@ -195,6 +202,10 @@ import { BoxController } from './controllers/setting/box.controller';
 
       Box,
 
+      Reason,
+      StockAdjustment,
+      ProductToStockAdjustment,
+
       //Order,
       //OrderToProduct,
       //Consult,
@@ -240,6 +251,10 @@ import { BoxController } from './controllers/setting/box.controller';
     LoyaltyController,
     SettingController,
     BoxController,
+
+    ReasonController,
+    StockAdjustmentController,
+
     //OrderController,
     //ConsultController,
     //ConsultTypeController,
@@ -281,6 +296,10 @@ import { BoxController } from './controllers/setting/box.controller';
     LoyaltyService,
     SettingService,
     BoxService,
+
+    ReasonService,
+    StockAdjustmentService,
+
     //OrderService,
     //OrderSubscriber,
     //ConsultService,

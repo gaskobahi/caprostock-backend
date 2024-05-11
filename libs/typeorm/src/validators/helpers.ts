@@ -56,6 +56,7 @@ export async function isUniqueConstraintUpdate(
   const option: any = {
     id: Not(filter.id),
     code: filter?.code,
+    name: filter?.name,
     displayName: filter?.displayName,
     firstName: filter?.firstName,
     phoneNumber: filter?.phoneNumber,

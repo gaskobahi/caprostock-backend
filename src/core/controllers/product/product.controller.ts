@@ -109,6 +109,38 @@ export class ProductController {
     return this.service.readPaginatedListRecordForComposite(options, 1, 1000);
   }
 
+  @ApiSearchQueryFilter()
+  @Get('/list/stockadjustment')
+  async findForStockAdjustment(
+    @CurrentUser() authUser: AuthUser,
+    @Query() query?: any,
+  ): Promise<any> {
+    // Permission check
+    await authUser?.throwUnlessCan(
+      AbilityActionEnum.read,
+      AbilitySubjectEnum.Product,
+    );
+
+    const options = buildFilterFromApiSearchParams(
+      this.service.repository,
+      query as ApiSearchParamOptions,
+      {
+        textFilterFields: ['reference', 'displayName'],
+      },
+    );
+
+    // Apply auth user branch filter
+    /*options.where = merge(
+      options?.where,
+      await this.service.getFilterByAuthUserBranch(),
+    );*/
+    return this.service.readPaginatedListRecordForStockAdjustment(
+      options,
+      1,
+      1000,
+    );
+  }
+
   @ApiSearchOneQueryFilter()
   @Get(':productId')
   async findOne(
