@@ -32,18 +32,12 @@ export class CreateStockAdjustmentDto extends PickType(StockAdjustment, [
 
 export class CreateProductToStockAdjustmentDto extends PickType(
   ProductToStockAdjustment,
-  ['productId', 'quantity', 'cost'] as const,
+  ['productId', 'quantity', 'cost', 'inStock', 'afterQuantity', 'sku'] as const,
 ) {
-  @IsOptional()
-  @IsNumber()
-  sku: number;
-  @IsOptional()
-  @IsNumber()
-  inStock: number;
   @IsOptional()
   @IsBoolean()
   hasVariant: boolean;
   @IsOptional()
-  @IsBoolean()
+  @IsString()
   variantId: string;
 }

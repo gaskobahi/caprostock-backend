@@ -9,7 +9,7 @@ export const getDefaultReasons = () => {
       position: 0,
     },
     {
-      name: 'inventoryAccount',
+      name: 'inventoryCount',
       displayName: `Inventaire de compte`,
       position: 1,
     },

@@ -146,6 +146,8 @@ import { StockAdjustment } from './entities/stockmanagement/stockadjustment.enti
 import { ProductToStockAdjustment } from './entities/stockmanagement/product-to-stockadjustment.entity';
 import { StockAdjustmentController } from './controllers/stockmanagement/stock-adjustment.controller';
 import { StockAdjustmentService } from './services/stockmanagement/stock-adjustment.service';
+import { StockAdjustmentSubscriber } from './entities/stockmanagement/stockadjustment.subscriber';
+import { BranchVariantToProductService } from './services/subsidiary/branch-variant-to-product.service';
 
 @Module({
   imports: [
@@ -288,6 +290,8 @@ import { StockAdjustmentService } from './services/stockmanagement/stock-adjustm
     AttributeService,
     //WaiterService,
     BranchToProductService,
+    BranchVariantToProductService,
+    
     DefaultDataService,
     BrandService,
     SupplierService,
@@ -299,6 +303,7 @@ import { StockAdjustmentService } from './services/stockmanagement/stock-adjustm
 
     ReasonService,
     StockAdjustmentService,
+    StockAdjustmentSubscriber,
 
     //OrderService,
     //OrderSubscriber,

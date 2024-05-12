@@ -15,6 +15,9 @@ import { AuthUser } from 'src/core/entities/session/auth-user.entity';
 import { StockAdjustment } from 'src/core/entities/stockmanagement/stockadjustment.entity';
 import { CreateStockAdjustmentDto } from 'src/core/dto/stockmanagement/create-stock-adjustment.dto';
 import { UpdateStockAdjustmentDto } from 'src/core/dto/stockmanagement/update-stock-adjustment.dto';
+import { BranchToProductService } from '../subsidiary/branch-to-product.service';
+import { BranchVariantToProduct } from 'src/core/entities/subsidiary/branch-variant-to-product.entity';
+import { BranchVariantToProductService } from '../subsidiary/branch-variant-to-product.service';
 
 @Injectable()
 export class StockAdjustmentService extends AbstractService<StockAdjustment> {
@@ -24,6 +27,8 @@ export class StockAdjustmentService extends AbstractService<StockAdjustment> {
     @InjectRepository(StockAdjustment)
     private _repository: Repository<StockAdjustment>,
     private readonly configService: ConfigService,
+    private readonly branchToProductService: BranchToProductService,
+    private readonly branchVariantToProductService: BranchVariantToProductService,
 
     protected paginatedService: PaginatedService<StockAdjustment>,
     @Inject(REQUEST) protected request: any,
@@ -54,22 +59,32 @@ export class StockAdjustmentService extends AbstractService<StockAdjustment> {
 
   async createRecord(dto: CreateStockAdjustmentDto): Promise<StockAdjustment> {
     const result = await super.createRecord({ ...dto });
-    /*if (result) {
-      //associe le produit aux taxes existante
-      const listTax = await this.taxService.repository.find();
-      for (const el of listTax) {
-        if (
-          el.option == TaxOptionEnum.applyToNewAndExitingItems ||
-          el.option == TaxOptionEnum.applyToNewItems
-        ) {
-          await this.taxToStockAdjustmentService.createRecord({
-            taxId: el.id,
-            stockAdjustmentId: result.id,
-          });
+    console.log('EZEZEZEZEZEZ', result);
+    console.log('VVVVVVVVV', dto);
+
+    if (result) {
+      for (const ps of dto.productToStockAdjustments) {
+        //update branch for product variant
+        if (ps.hasVariant) {
+          await this.branchVariantToProductService.updateRecord(
+            {
+              variantId: ps.variantId,
+              branchId: dto.branchId,
+            },
+            { price: ps.cost, inStock: ps.afterQuantity },
+          );
+        } else {
+          //update branch for product
+          await this.branchToProductService.updateRecord(
+            {
+              productId: ps.productId,
+              branchId: dto.branchId,
+            },
+            { price: ps.cost, inStock: ps.afterQuantity },
+          );
         }
       }
-    }*/
-
+    }
     return result;
   }
 
@@ -84,7 +99,7 @@ export class StockAdjustmentService extends AbstractService<StockAdjustment> {
     return result;
   }
 
- /* async getFilterByAuthUserBranch(): Promise<
+  /* async getFilterByAuthUserBranch(): Promise<
     FindOptionsWhere<StockAdjustment>
   > {
     const authUser = await super.checkSessionBranch();

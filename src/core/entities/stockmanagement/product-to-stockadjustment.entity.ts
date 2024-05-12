@@ -23,13 +23,48 @@ export class ProductToStockAdjustment extends CoreEntity {
 
   @IsNotEmpty()
   @IsInt()
-  @ApiProperty({ required: true, default: 1, description: `Cout de produit` })
+  @ApiProperty({ required: true, default: 0, description: `Cout de produit` })
   @Column({
     type: 'integer',
     unsigned: true,
     default: 0,
   })
   cost: number;
+
+  @IsNotEmpty()
+  @IsInt()
+  @ApiProperty({ required: true, description: `Sku de produit` })
+  @Column({
+    type: 'integer',
+    unsigned: true,
+  })
+  sku: number;
+
+  @IsNotEmpty()
+  @IsInt()
+  @ApiProperty({ required: true, default: 1, description: `Quantité en stock` })
+  @Column({
+    name: 'in_stock',
+    type: 'integer',
+    unsigned: true,
+    default: 0,
+  })
+  inStock: number;
+
+  @IsNotEmpty()
+  @IsInt()
+  @ApiProperty({
+    required: true,
+    default: 1,
+    description: `Quantité en stock apres ajout`,
+  })
+  @Column({
+    name: 'after_quantity',
+    type: 'integer',
+    unsigned: true,
+    default: 0,
+  })
+  afterQuantity: number;
 
   @IsUUID()
   @IsNotEmpty()
