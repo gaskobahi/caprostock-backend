@@ -5,12 +5,12 @@ export const getDefaultReasons = () => {
   return <CreateReasonDto[]>[
     {
       name: 'receiveItem',
-      displayName: `Reception d'article`,
+      displayName: `Réception d'article`,
       position: 0,
     },
     {
       name: 'inventoryCount',
-      displayName: `Inventaire de compte`,
+      displayName: `Inventaire de stock`,
       position: 1,
     },
     {

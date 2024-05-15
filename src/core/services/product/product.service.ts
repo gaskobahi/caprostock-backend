@@ -17,6 +17,7 @@ import {
   FindManyOptions,
   FindOneOptions,
   FindOptionsWhere,
+  In,
   Repository,
 } from 'typeorm';
 import { CreateProductDto } from '../../dto/product/create-product.dto';
@@ -319,6 +320,68 @@ export class ProductService extends AbstractService<Product> {
     }
     return array;
   }
+
+  async readPaginatedListRecordForInventoryCount(
+    options?: FindManyOptions<any>,
+    page?: number,
+    perPage?: number,
+  ) {
+    const products = await this.readPaginatedListRecord(options, page, perPage);
+    const newArray: Array<object> = [];
+    for (const item of products.data as any) {
+      if (!item.isBundle && item.trackStock) {
+        if (item.hasVariant) {
+          if (item.variantToProducts.length > 0) {
+            for (const vp of item.variantToProducts) {
+              const branchVariantToProducts = vp.branchVariantToProducts.filter(
+                (e: any) => e.isAvailable == true,
+              );
+              if (branchVariantToProducts.length > 0) {
+                const newItem = {
+                  id: item.id,
+                  reference: item.reference,
+                  variantId: vp.id,
+                  hasVariant: item.hasVariant,
+                  barreCode: vp.barreCode,
+                  displayName: `${item.displayName}(${vp.name})`,
+                  price: vp.price,
+                  cost: vp.cost,
+                  sku: vp.sku,
+                  branchVariantToProducts: branchVariantToProducts,
+                  branchToProducts: [],
+                };
+                newArray.push(newItem);
+              }
+            }
+          }
+        } else if (item.branchToProducts.length > 0) {
+          const branchToProducts = item.branchToProducts.filter(
+            (e: any) => e.isAvailable == true,
+          );
+          if (branchToProducts.length > 0) {
+            const newItem = {
+              id: item.id,
+              reference: item.reference,
+              barreCode: item.barreCode,
+              displayName: item.displayName,
+              price: item.price,
+              cost: item.cost,
+              sku: item.sku,
+              hasVariant: item.hasVariant,
+              variantId: null,
+              branchToProducts: branchToProducts,
+              branchVariantToProducts: [],
+            };
+            newArray.push(newItem);
+          }
+        }
+      }
+    }
+    console.log('AZAZAZAZAZ565', options);
+    console.log('AZAZAZAZAZ', newArray);
+
+    return newArray;
+  }
   async readPaginatedListRecordForStockAdjustment(
     options?: FindManyOptions<any>,
     page?: number,
@@ -375,14 +438,6 @@ export class ProductService extends AbstractService<Product> {
       .createQueryBuilder('product')
       .leftJoinAndSelect('product.taxToProducts', 'taxToProduct')
       .getMany();
-
-    // Map over the products and ensure taxToProducts is always an array
-    /* products.forEach((product) => {
-      if (!product.taxToProducts) {
-        product.taxToProducts = [];
-      }
-    });*/
-
     return products;
   }
 

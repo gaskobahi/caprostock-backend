@@ -1,35 +1,40 @@
-import { IsInt, IsNotEmpty, IsString, IsUUID } from 'class-validator';
+import { IsInt, IsNotEmpty, IsUUID } from 'class-validator';
 import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import { CoreEntity } from '../base/core.entity';
 import { ApiProperty } from '@nestjs/swagger';
 import { Product } from '../product/product.entity';
-import { StockAdjustment } from './stockadjustment.entity';
+import { InventoryCount } from './inventorycount.entity';
 
 @Entity()
-export class ProductToStockAdjustment extends CoreEntity {
+export class ProductToInventoryCount extends CoreEntity {
   @IsNotEmpty()
   @IsInt()
   @ApiProperty({
     required: true,
     default: 0,
-    description: `Quantité à ajouter au stock`,
+    description: `quantité physique countée`,
   })
   @Column({
     type: 'integer',
     unsigned: true,
     default: 0,
   })
-  quantity: number;
+  counted: number;
 
   @IsNotEmpty()
   @IsInt()
-  @ApiProperty({ required: true, default: 0, description: `Cout de produit` })
+  @ApiProperty({
+    required: true,
+    default: 0,
+    description: `Difference du cout de produit apres inventaire`,
+  })
   @Column({
+    name: 'difference_cost',
     type: 'integer',
     unsigned: true,
     default: 0,
   })
-  cost: number;
+  differenceCost: number;
 
   @IsNotEmpty()
   @IsInt()
@@ -59,12 +64,12 @@ export class ProductToStockAdjustment extends CoreEntity {
     description: `Quantité en stock apres ajout`,
   })
   @Column({
-    name: 'after_quantity',
+    name: 'difference',
     type: 'integer',
     unsigned: true,
     default: 0,
   })
-  afterQuantity: number;
+  difference: number;
 
   @IsUUID()
   @IsNotEmpty()
@@ -72,7 +77,7 @@ export class ProductToStockAdjustment extends CoreEntity {
   productId: string;
 
   @ApiProperty({ required: false, type: () => Product })
-  @ManyToOne(() => Product, (product) => product.productToStockAdjustments, {
+  @ManyToOne(() => Product, (product) => product.productToInventoryCounts, {
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE',
     orphanedRowAction: 'delete',
@@ -82,19 +87,19 @@ export class ProductToStockAdjustment extends CoreEntity {
 
   @IsUUID()
   @IsNotEmpty()
-  @Column({ name: 'stock_adjustment_id', type: 'uuid', nullable: false })
-  stockAdjustmentId: string;
+  @Column({ name: 'inventory_count_id', type: 'uuid', nullable: false })
+  inventoryCountId: string;
 
-  @ApiProperty({ required: false, type: () => StockAdjustment })
+  @ApiProperty({ required: false, type: () => InventoryCount })
   @ManyToOne(
-    () => StockAdjustment,
-    (stockadjustment) => stockadjustment.productToStockAdjustments,
+    () => InventoryCount,
+    (inventorycount) => inventorycount.productToInventoryCounts,
     {
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE',
       orphanedRowAction: 'delete',
     },
   )
-  @JoinColumn({ name: 'stock_adjustment_id' })
-  stockAdjustment: StockAdjustment;
+  @JoinColumn({ name: 'inventory_count_id' })
+  inventoryCount: InventoryCount;
 }

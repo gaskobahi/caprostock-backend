@@ -3,8 +3,6 @@ export enum YesNoActionEnum {
   no = 'no',
 }
 
-
-
 export enum AbilitySubjectEnum {
   all = 'all',
   User = 'User',
@@ -147,4 +145,22 @@ export enum ConsultStatusEnum {
   init = 'init',
   inProgress = 'in_progress',
   closed = 'closed',
+}
+
+export enum DefaultReasonTypeEnum {
+  receiveItem = 'receiveItem',
+  loss = 'loss',
+  inventoryCount = 'inventoryCount',
+  damage = 'damage',
+}
+
+export enum InventoryCountTypeEnum {
+  partial = 'partial',
+  full = 'full',
+}
+
+export enum InventoryCountStatusEnum {
+  pending = 'pending',
+  inProgress = 'in_progress',
+  completed = 'completed',
 }

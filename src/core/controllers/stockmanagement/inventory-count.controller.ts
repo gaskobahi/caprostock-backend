@@ -26,29 +26,29 @@ import { ApiAuthJwtHeader } from 'src/modules/auth/decorators/api-auth-jwt-heade
 import { ApiRequestIssuerHeader } from 'src/modules/auth/decorators/api-request-issuer-header.decorator';
 import { CurrentUser } from 'src/modules/auth/decorators/current-user.decorator';
 import { AuthUser } from '../../entities/session/auth-user.entity';
-import { StockAdjustment } from 'src/core/entities/stockmanagement/stockadjustment.entity';
-import { CreateStockAdjustmentDto } from 'src/core/dto/stockmanagement/create-stock-adjustment.dto';
-import { UpdateStockAdjustmentDto } from 'src/core/dto/stockmanagement/update-stock-adjustment.dto';
-import { StockAdjustmentService } from 'src/core/services/stockmanagement/stock-adjustment.service';
+import { InventoryCount } from 'src/core/entities/stockmanagement/inventorycount.entity';
+import { CreateInventoryCountDto } from 'src/core/dto/stockmanagement/create-inventory-count.dto';
+import { UpdateInventoryCountDto } from 'src/core/dto/stockmanagement/update-inventory-count.dto';
+import { InventoryCountService } from 'src/core/services/stockmanagement/inventory-count.service';
 
 @ApiAuthJwtHeader()
 @ApiRequestIssuerHeader()
 @CustomApiErrorResponse()
-@ApiTags('stockAdjustment')
-@Controller('stockadjustment')
-export class StockAdjustmentController {
-  constructor(private service: StockAdjustmentService) {}
+@ApiTags('inventoryCount')
+@Controller('inventorycount')
+export class InventoryCountController {
+  constructor(private service: InventoryCountService) {}
 
   /**
-   * Get paginated stockAdjustment list
+   * Get paginated inventoryCount list
    */
   @ApiSearchQueryFilter()
-  @CustomApiPaginatedResponse(StockAdjustment)
+  @CustomApiPaginatedResponse(InventoryCount)
   @Get()
   async findPaginated(
     @CurrentUser() authUser: AuthUser,
     @Query() query?: any,
-  ): Promise<Paginated<StockAdjustment>> {
+  ): Promise<Paginated<InventoryCount>> {
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
       query as ApiSearchParamOptions,
@@ -61,20 +61,18 @@ export class StockAdjustmentController {
   }
 
   /**
-   * Get stockAdjustment by id
+   * Get inventoryCount by id
    */
   @ApiSearchOneQueryFilter()
-  @Get(':stockadjustmentId')
+  @Get(':inventorycountId')
   async findOne(
-    @Param('stockadjustmentId', ParseUUIDPipe) id: string,
+    @Param('inventorycountId', ParseUUIDPipe) id: string,
     @Query() query?: any,
-  ): Promise<StockAdjustment> {
+  ): Promise<InventoryCount> {
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
       query as ApiSearchOneParamOptions,
     );
-
-    console.log('kjhjkgj',id)
 
     return this.service.readOneRecord({
       ...options,
@@ -83,16 +81,15 @@ export class StockAdjustmentController {
   }
 
   /**
-   * Create stockAdjustment
+   * Create inventoryCount
    */
   @ApiSearchOneQueryFilter()
   @Post()
   async create(
-    @Body() dto: CreateStockAdjustmentDto,
+    @Body() dto: CreateInventoryCountDto,
     @Query() query?: any,
-  ): Promise<StockAdjustment> {
-    const stockAdjustment = await this.service.createRecord(dto);
-
+  ): Promise<InventoryCount> {
+    const inventoryCount = await this.service.createRecord(dto);
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
       query as ApiSearchOneParamOptions,
@@ -100,21 +97,21 @@ export class StockAdjustmentController {
 
     return this.service.readOneRecord({
       ...options,
-      where: { ...options?.where, id: stockAdjustment.id },
+      where: { ...options?.where, id: inventoryCount.id },
     });
   }
 
   /**
-   * Update stockAdjustment
+   * Update inventoryCount
    */
   @ApiSearchOneQueryFilter()
-  @Patch(':stockadjustmentId')
+  @Patch(':inventorycountId')
   async update(
-    @Param('stockAdjustmentId', ParseUUIDPipe) id: string,
-    @Body() dto: UpdateStockAdjustmentDto,
+    @Param('inventoryCountId', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateInventoryCountDto,
     @Query() query?: any,
-  ): Promise<StockAdjustment> {
-    const stockAdjustment = await this.service.updateRecord(
+  ): Promise<InventoryCount> {
+    const inventoryCount = await this.service.updateRecord(
       { id: id ?? '' },
       dto,
     );
@@ -126,16 +123,16 @@ export class StockAdjustmentController {
 
     return this.service.readOneRecord({
       ...options,
-      where: { ...options?.where, id: stockAdjustment.id ?? '' },
+      where: { ...options?.where, id: inventoryCount.id ?? '' },
     });
   }
 
   /**
-   * Remove stockAdjustment
+   * Remove inventoryCount
    */
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Delete(':stockadjustmentId')
-  async remove(@Param('stockAdjustmentId', ParseUUIDPipe) id: string) {
+  @Delete(':inventorycountId')
+  async remove(@Param('inventoryCountId', ParseUUIDPipe) id: string) {
     await this.service.deleteRecord({ id: id ?? '' });
     return;
   }

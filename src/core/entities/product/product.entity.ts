@@ -33,6 +33,7 @@ import { TaxToProduct } from './tax-to-product.entity';
 import { DiscountToProduct } from './discount-to-product.entity';
 import { ProductToTax } from '../setting/product-to-tax.entity';
 import { ProductToStockAdjustment } from '../stockmanagement/product-to-stockadjustment.entity';
+import { ProductToInventoryCount } from '../stockmanagement/product-to-inventoryCount.entity';
 
 @Entity({
   orderBy: { createdAt: 'DESC', updatedAt: 'DESC' },
@@ -263,6 +264,16 @@ export class Product extends CoreEntity {
     },
   )
   productToStockAdjustments: ProductToStockAdjustment[];
+
+  @ApiProperty({ required: false, type: () => [ProductToInventoryCount] })
+  @OneToMany(
+    () => ProductToInventoryCount,
+    (productToInventoryCount) => productToInventoryCount.product,
+    {
+      cascade: true,
+    },
+  )
+  productToInventoryCounts: ProductToInventoryCount[];
 
   /**
    * Getters & Setters *******************************************

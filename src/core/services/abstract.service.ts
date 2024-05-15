@@ -131,7 +131,7 @@ export abstract class AbstractService<T extends BaseCoreEntity> {
     return password;
   }
 
-  protected getMargin(price = 0, cost = 0){
+  protected getMargin(price = 0, cost = 0) {
     const mb: number = price - cost;
     const mTaux = (mb / price) * 100;
     if (isNaN(mTaux)) {
@@ -140,13 +140,24 @@ export abstract class AbstractService<T extends BaseCoreEntity> {
     return parseFloat(mTaux.toFixed(2));
   }
 
-  protected   calculateAveragePrice(array)  {
+  protected calculateAveragePrice(array) {
     if (array.length === 0) {
       return 0;
     }
     const total = array.reduce((sum, price) => sum + price, 0);
     const average = total / array.length;
     return parseFloat(average.toFixed(0));
-}
+  }
 
+  public convertSingleQuotesToDouble(str) {
+    let result = '';
+    for (let i = 0; i < str.length; i++) {
+      if (str[i] === "'") {
+        result += '"';
+      } else {
+        result += str[i];
+      }
+    }
+    return result;
+  }
 }

@@ -16,12 +16,13 @@ import { StockAdjustment } from 'src/core/entities/stockmanagement/stockadjustme
 import { CreateStockAdjustmentDto } from 'src/core/dto/stockmanagement/create-stock-adjustment.dto';
 import { UpdateStockAdjustmentDto } from 'src/core/dto/stockmanagement/update-stock-adjustment.dto';
 import { BranchToProductService } from '../subsidiary/branch-to-product.service';
-import { BranchVariantToProduct } from 'src/core/entities/subsidiary/branch-variant-to-product.entity';
 import { BranchVariantToProductService } from '../subsidiary/branch-variant-to-product.service';
+import { ReasonService } from './reason.service';
+import { DefaultReasonTypeEnum } from 'src/core/definitions/enums';
 
 @Injectable()
 export class StockAdjustmentService extends AbstractService<StockAdjustment> {
-  public NOT_FOUND_MESSAGE = `Produit non trouvé`;
+  public NOT_FOUND_MESSAGE = `Ajustement de stock non trouvé`;
 
   constructor(
     @InjectRepository(StockAdjustment)
@@ -29,6 +30,7 @@ export class StockAdjustmentService extends AbstractService<StockAdjustment> {
     private readonly configService: ConfigService,
     private readonly branchToProductService: BranchToProductService,
     private readonly branchVariantToProductService: BranchVariantToProductService,
+    private readonly reasonService: ReasonService,
 
     protected paginatedService: PaginatedService<StockAdjustment>,
     @Inject(REQUEST) protected request: any,
@@ -58,9 +60,34 @@ export class StockAdjustmentService extends AbstractService<StockAdjustment> {
   }
 
   async createRecord(dto: CreateStockAdjustmentDto): Promise<StockAdjustment> {
+    const reason = await this.reasonService.readOneRecord({
+      where: { id: dto.reasonId },
+    });
+    //calcul du afterquantity en fonction du type de raison
+    if (
+      reason.name == DefaultReasonTypeEnum.loss ||
+      reason.name == DefaultReasonTypeEnum.damage
+    ) {
+      for (const el of dto.productToStockAdjustments) {
+        if (el.inStock < el.quantity || el.inStock == 0) {
+          throw new BadRequestException('Impossible de reduit le stock');
+        }
+        el.afterQuantity = el.inStock - el.quantity;
+      }
+    }
+
+    if (reason.name == DefaultReasonTypeEnum.receiveItem) {
+      for (const el of dto.productToStockAdjustments) {
+        el.afterQuantity = el.inStock + el.quantity;
+      }
+    }
+    if (reason.name == DefaultReasonTypeEnum.inventoryCount) {
+      for (const el of dto.productToStockAdjustments) {
+        el.afterQuantity = el.quantity;
+      }
+    }
+
     const result = await super.createRecord({ ...dto });
-    console.log('EZEZEZEZEZEZ', result);
-    console.log('VVVVVVVVV', dto);
 
     if (result) {
       for (const ps of dto.productToStockAdjustments) {
@@ -85,7 +112,7 @@ export class StockAdjustmentService extends AbstractService<StockAdjustment> {
         }
       }
     }
-    return result;
+    return result as any;
   }
 
   async updateRecord(

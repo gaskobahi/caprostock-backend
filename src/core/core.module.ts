@@ -148,6 +148,11 @@ import { StockAdjustmentController } from './controllers/stockmanagement/stock-a
 import { StockAdjustmentService } from './services/stockmanagement/stock-adjustment.service';
 import { StockAdjustmentSubscriber } from './entities/stockmanagement/stockadjustment.subscriber';
 import { BranchVariantToProductService } from './services/subsidiary/branch-variant-to-product.service';
+import { InventoryCount } from './entities/stockmanagement/inventorycount.entity';
+import { ProductToInventoryCount } from './entities/stockmanagement/product-to-inventoryCount.entity';
+import { InventoryCountSubscriber } from './entities/stockmanagement/Inventorycount.subscriber';
+import { InventoryCountService } from './services/stockmanagement/inventory-count.service';
+import { InventoryCountController } from './controllers/stockmanagement/inventory-count.controller';
 
 @Module({
   imports: [
@@ -207,6 +212,8 @@ import { BranchVariantToProductService } from './services/subsidiary/branch-vari
       Reason,
       StockAdjustment,
       ProductToStockAdjustment,
+      InventoryCount,
+      ProductToInventoryCount,
 
       //Order,
       //OrderToProduct,
@@ -256,6 +263,7 @@ import { BranchVariantToProductService } from './services/subsidiary/branch-vari
 
     ReasonController,
     StockAdjustmentController,
+    InventoryCountController,
 
     //OrderController,
     //ConsultController,
@@ -291,7 +299,7 @@ import { BranchVariantToProductService } from './services/subsidiary/branch-vari
     //WaiterService,
     BranchToProductService,
     BranchVariantToProductService,
-    
+
     DefaultDataService,
     BrandService,
     SupplierService,
@@ -304,6 +312,9 @@ import { BranchVariantToProductService } from './services/subsidiary/branch-vari
     ReasonService,
     StockAdjustmentService,
     StockAdjustmentSubscriber,
+
+    InventoryCountService,
+    InventoryCountSubscriber,
 
     //OrderService,
     //OrderSubscriber,
