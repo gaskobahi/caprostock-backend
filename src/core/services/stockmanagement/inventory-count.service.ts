@@ -100,6 +100,10 @@ export class InventoryCountService extends AbstractService<InventoryCount> {
         );
       }
     }
+    dto.productToInventoryCounts.forEach((dt) => {
+      dt.isBelong = true;
+    });
+
     return await super.createRecord({ ...dto });
   }
 
@@ -154,14 +158,144 @@ export class InventoryCountService extends AbstractService<InventoryCount> {
     return array;
   }
 
+  /*async readOneRecord(options?: FindOneOptions<InventoryCount>) {
+    const entity = await this.repository.findOne(options);
+    if (!entity) {
+      throw new BadRequestException(this.NOT_FOUND_MESSAGE);
+    }
+    const newArray = [];
+    for (const el of entity.productToInventoryCounts) {
+      const item = el.product;
+      if (item.hasVariant) {
+        const variantToProducts = item.variantToProducts.filter(
+          (e: any) => e.sku == el.sku,
+        );
+        if (variantToProducts.length > 0) {
+          for (const vp of variantToProducts) {
+            const branchVariantToProducts = vp.branchVariantToProducts.filter(
+              (e: any) => e.branchId == entity.branchId,
+            );
+            if (branchVariantToProducts.length > 0) {
+              const newItem = {
+                id: item.id,
+                reference: item.reference,
+                variantId: vp.id,
+                hasVariant: item.hasVariant,
+                inStock: vp.inStock,
+                displayName: `${item.displayName}(${vp.name})`,
+                price: vp.price,
+                cost: vp.cost,
+                sku: vp.sku,
+                branchVariantToProducts: branchVariantToProducts,
+                branchToProducts: [],
+              };
+              newArray.push(newItem);
+            }
+          }
+        }
+      } else if (item.branchToProducts.length > 0) {
+        const branchToProducts = item?.branchToProducts?.filter(
+          (e: any) => e.branchId == entity.branchId,
+        );
+        if (branchToProducts.length > 0) {
+          const newItem = {
+            id: item.id,
+            reference: item.reference,
+            barreCode: item.barreCode,
+            displayName: item.displayName,
+            price: item.price,
+            cost: item.cost,
+            sku: item.sku,
+            hasVariant: item.hasVariant,
+            variantId: null,
+            branchToProducts: branchToProducts,
+            branchVariantToProducts: [],
+          };
+          newArray.push(newItem);
+        }
+      }
+    }
+    entity.productToInventoryCounts = newArray;
+    console.log('ZZZZZZZZZZ', newArray);
+    return entity;
+  }*/
+
   async readOneRecord(options?: FindOneOptions<InventoryCount>) {
     const entity = await this.repository.findOne(options);
     if (!entity) {
       throw new BadRequestException(this.NOT_FOUND_MESSAGE);
     }
+
+    const { branchId } = entity;
+    const newArray = entity?.productToInventoryCounts?.reduce(
+      (
+        acc,
+        {
+          productId,
+          inStock,
+          counted,
+          difference,
+          differenceCost,
+          isBelong,
+          product: item,
+          sku,
+        },
+      ) => {
+        if (item.hasVariant) {
+          const variants = item.variantToProducts.filter(
+            (vp) => vp.sku === sku,
+          );
+          variants.forEach((vp) => {
+            const branchVariants = vp.branchVariantToProducts.find(
+              (bvp) => bvp.branchId === branchId,
+            );
+            if (branchVariants) {
+              acc.push({
+                productId: productId,
+                counted: counted,
+                difference: difference,
+                differenceCost: differenceCost,
+                variantId: vp.id,
+                hasVariant: item.hasVariant,
+                inStock: inStock,
+                isBelong: isBelong,
+                displayName: `${item.displayName} (${vp.name})`,
+                price: branchVariants.price ?? vp.price,
+                cost: vp.cost ?? 0,
+                sku: vp.sku,
+              });
+            }
+          });
+        } else {
+          const branchProducts = item.branchToProducts.find(
+            (bp) => bp.branchId === branchId,
+          );
+          if (branchProducts) {
+            console.log('POL1', branchProducts);
+            acc.push({
+              productId: productId,
+              counted: counted,
+              difference: difference,
+              differenceCost: differenceCost,
+              displayName: item.displayName,
+              price: branchProducts.price ?? item.price,
+              cost: item.cost ?? 0,
+              sku: item.sku,
+              isBelong: isBelong,
+              inStock: inStock,
+              hasVariant: item.hasVariant,
+              variantId: null,
+            });
+          }
+        }
+        return acc;
+      },
+      [],
+    );
+
+    entity.productToInventoryCounts = newArray;
     return entity;
   }
-
   async deleteRecord(optionsWhere: FindOptionsWhere<InventoryCount>) {
     const entity = await this.repository.findOneBy(optionsWhere);
     if (!entity) {
@@ -184,7 +318,6 @@ export class InventoryCountService extends AbstractService<InventoryCount> {
       quantity: 0,
       inStock: data.inStock,
       cost: data.cost,
-      afterQuantity: data.inStock ?? 0,
       hasVariant: data.hasVariant,
       variantId: data?.variantId ?? '',
     };

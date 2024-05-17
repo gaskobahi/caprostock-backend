@@ -43,6 +43,11 @@ export class CreateProductToInventoryCountDto extends PickType(
   ProductToInventoryCount,
   ['productId', 'inStock', 'sku'] as const,
 ) {
+  @IsOptional()
+  @IsBoolean()
+  @ApiProperty({ required: false, description: `Appartient deja à la liste` })
+  isBelong: boolean;
+
   @IsNotEmpty()
   @ApiProperty({ required: false })
   @IsBoolean()

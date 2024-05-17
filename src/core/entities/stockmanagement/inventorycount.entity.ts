@@ -7,12 +7,10 @@ import {
   ManyToOne,
   OneToMany,
 } from 'typeorm';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import {
-  IsDateString,
   IsIn,
   IsNotEmpty,
-  IsOptional,
   IsString,
   IsUUID,
 } from 'class-validator';

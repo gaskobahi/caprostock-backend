@@ -1,4 +1,4 @@
-import { IsInt, IsNotEmpty, IsUUID } from 'class-validator';
+import { IsBoolean, IsInt, IsNotEmpty, IsOptional, IsUUID } from 'class-validator';
 import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import { CoreEntity } from '../base/core.entity';
 import { ApiProperty } from '@nestjs/swagger';
@@ -21,12 +21,18 @@ export class ProductToInventoryCount extends CoreEntity {
   })
   counted: number;
 
+  @IsOptional()
+  @IsBoolean()
+  @ApiProperty({ required: false, description: `Appartient deja à la liste` })
+  @Column({ name: 'is_belong', default: false })
+  isBelong: boolean;
+
   @IsNotEmpty()
   @IsInt()
   @ApiProperty({
     required: true,
     default: 0,
-    description: `Difference du cout de produit apres inventaire`,
+    description: `Difference du coût de produit après inventaire`,
   })
   @Column({
     name: 'difference_cost',
@@ -102,4 +108,5 @@ export class ProductToInventoryCount extends CoreEntity {
   )
   @JoinColumn({ name: 'inventory_count_id' })
   inventoryCount: InventoryCount;
+  displayName: string;
 }

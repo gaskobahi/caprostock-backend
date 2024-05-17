@@ -327,8 +327,15 @@ export class ProductService extends AbstractService<Product> {
     perPage?: number,
   ) {
     const products = await this.readPaginatedListRecord(options, page, perPage);
+    const newArray = this.generateNewProcuctVersion(products.data);
+
+    return newArray;
+  }
+
+  async generateNewProcuctVersion(products: Array<object>) {
     const newArray: Array<object> = [];
-    for (const item of products.data as any) {
+
+    for (const item of products as any) {
       if (!item.isBundle && item.trackStock) {
         if (item.hasVariant) {
           if (item.variantToProducts.length > 0) {
@@ -377,9 +384,6 @@ export class ProductService extends AbstractService<Product> {
         }
       }
     }
-    console.log('AZAZAZAZAZ565', options);
-    console.log('AZAZAZAZAZ', newArray);
-
     return newArray;
   }
   async readPaginatedListRecordForStockAdjustment(

@@ -66,4 +66,5 @@ export class VariantToProduct extends CoreEntity {
     },
   )
   branchVariantToProducts: BranchVariantToProduct[];
+  inStock: any;
 }
