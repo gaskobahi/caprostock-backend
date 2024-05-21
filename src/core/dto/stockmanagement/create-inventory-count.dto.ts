@@ -73,3 +73,4 @@ export class CreateProductToInventoryCountDto extends PickType(
   @ApiProperty({ required: false })
   variantId: string;
 }
+

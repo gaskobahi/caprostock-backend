@@ -153,6 +153,7 @@ import { ProductToInventoryCount } from './entities/stockmanagement/product-to-i
 import { InventoryCountSubscriber } from './entities/stockmanagement/Inventorycount.subscriber';
 import { InventoryCountService } from './services/stockmanagement/inventory-count.service';
 import { InventoryCountController } from './controllers/stockmanagement/inventory-count.controller';
+import { HistoryToInventoryCount } from './entities/stockmanagement/history-to-inventorycount.entity';
 
 @Module({
   imports: [
@@ -214,6 +215,7 @@ import { InventoryCountController } from './controllers/stockmanagement/inventor
       ProductToStockAdjustment,
       InventoryCount,
       ProductToInventoryCount,
+      HistoryToInventoryCount,
 
       //Order,
       //OrderToProduct,

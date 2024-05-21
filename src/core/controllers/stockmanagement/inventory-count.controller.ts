@@ -105,9 +105,9 @@ export class InventoryCountController {
    * Update inventoryCount
    */
   @ApiSearchOneQueryFilter()
-  @Patch(':inventorycountId')
+  @Patch('/save/:inventorycountId')
   async update(
-    @Param('inventoryCountId', ParseUUIDPipe) id: string,
+    @Param('inventorycountId', ParseUUIDPipe) id: string,
     @Body() dto: UpdateInventoryCountDto,
     @Query() query?: any,
   ): Promise<InventoryCount> {

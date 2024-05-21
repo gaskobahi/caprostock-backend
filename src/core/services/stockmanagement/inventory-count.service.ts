@@ -18,7 +18,10 @@ import { ReasonService } from './reason.service';
 import { InventoryCount } from 'src/core/entities/stockmanagement/inventorycount.entity';
 import { CreateInventoryCountDto } from 'src/core/dto/stockmanagement/create-inventory-count.dto';
 import { UpdateInventoryCountDto } from 'src/core/dto/stockmanagement/update-inventory-count.dto';
-import { InventoryCountTypeEnum } from 'src/core/definitions/enums';
+import {
+  InventoryCountStatusEnum,
+  InventoryCountTypeEnum,
+} from 'src/core/definitions/enums';
 import { ProductService } from '../product/product.service';
 import { CreateProductDto } from 'src/core/dto/product/create-product.dto';
 
@@ -111,6 +114,7 @@ export class InventoryCountService extends AbstractService<InventoryCount> {
     optionsWhere: FindOptionsWhere<InventoryCount>,
     dto: UpdateInventoryCountDto,
   ) {
+    dto.status = InventoryCountStatusEnum.inProgress;
     const result = await super.updateRecord(optionsWhere, {
       ...dto,
     });
