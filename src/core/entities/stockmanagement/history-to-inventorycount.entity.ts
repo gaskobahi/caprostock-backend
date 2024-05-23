@@ -25,7 +25,7 @@ export class HistoryToInventoryCount extends CoreEntity {
     unsigned: true,
     default: 0,
   })
-  counted: number;
+  quantity: number;
 
   @IsOptional()
   @IsBoolean()
@@ -48,7 +48,7 @@ export class HistoryToInventoryCount extends CoreEntity {
   productId: string;
 
   @ApiProperty({ required: false, type: () => Product })
-  @ManyToOne(() => Product, (product) => product.productToInventoryCounts, {
+  @ManyToOne(() => Product, (product) => product.historyToInventoryCounts, {
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE',
     orphanedRowAction: 'delete',
@@ -64,7 +64,7 @@ export class HistoryToInventoryCount extends CoreEntity {
   @ApiProperty({ required: false, type: () => InventoryCount })
   @ManyToOne(
     () => InventoryCount,
-    (inventorycount) => inventorycount.productToInventoryCounts,
+    (inventorycount) => inventorycount.historyToInventoryCounts,
     {
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE',
@@ -73,5 +73,5 @@ export class HistoryToInventoryCount extends CoreEntity {
   )
   @JoinColumn({ name: 'inventory_count_id' })
   inventoryCount: InventoryCount;
-  displayName: string;
+  //displayName: string;
 }

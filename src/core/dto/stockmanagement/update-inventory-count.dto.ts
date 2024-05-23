@@ -1,19 +1,18 @@
 import {
   IsArray,
-  IsBoolean,
   IsNotEmpty,
   IsOptional,
   IsUUID,
   ValidateNested,
 } from 'class-validator';
-import { ApiProperty, OmitType, PartialType, PickType } from '@nestjs/swagger';
+import { ApiProperty, OmitType, PartialType } from '@nestjs/swagger';
 
 import { Type } from 'class-transformer';
 import {
   CreateInventoryCountDto,
   CreateProductToInventoryCountDto,
+  CreateHistoryToInventoryCountDto,
 } from './create-inventory-count.dto';
-import { HistoryToInventoryCount } from 'src/core/entities/stockmanagement/history-to-inventorycount.entity';
 import { InventoryCountStatusEnum } from 'src/core/definitions/enums';
 
 export class UpdateInventoryCountDto extends PartialType(
@@ -22,7 +21,7 @@ export class UpdateInventoryCountDto extends PartialType(
   @IsOptional()
   @IsUUID()
   @ApiProperty({ required: false })
-  status: InventoryCountStatusEnum
+  status: InventoryCountStatusEnum;
 
   @IsNotEmpty()
   @IsArray()
@@ -54,12 +53,11 @@ export class UpdateProductToInventoryCountDto extends PartialType(
   id: string;
 }
 
-export class UpdateHistoryToInventoryCountDto extends PickType(
-  HistoryToInventoryCount,
-  ['productId', 'counted', 'sku'] as const,
+export class UpdateHistoryToInventoryCountDto extends PartialType(
+  OmitType(CreateHistoryToInventoryCountDto, [] as const),
 ) {
   @IsOptional()
-  @IsBoolean()
-  @ApiProperty({ required: false, description: `Appartient deja à la liste` })
-  isBelong: boolean;
+  @IsUUID()
+  @ApiProperty({ required: false })
+  id: string;
 }

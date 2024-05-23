@@ -115,5 +115,5 @@ export class ProductToInventoryCount extends CoreEntity {
   )
   @JoinColumn({ name: 'inventory_count_id' })
   inventoryCount: InventoryCount;
-  displayName: string;
+  //displayName: string;
 }

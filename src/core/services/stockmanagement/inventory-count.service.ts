@@ -106,7 +106,6 @@ export class InventoryCountService extends AbstractService<InventoryCount> {
     dto.productToInventoryCounts.forEach((dt) => {
       dt.isBelong = true;
     });
-
     return await super.createRecord({ ...dto });
   }
 
@@ -231,7 +230,7 @@ export class InventoryCountService extends AbstractService<InventoryCount> {
     }
 
     const { branchId } = entity;
-    const newArray = entity?.productToInventoryCounts?.reduce(
+    const productToInventoryCounts = entity?.productToInventoryCounts?.reduce(
       (
         acc,
         {
@@ -275,7 +274,6 @@ export class InventoryCountService extends AbstractService<InventoryCount> {
             (bp) => bp.branchId === branchId,
           );
           if (branchProducts) {
-            console.log('POL1', branchProducts);
             acc.push({
               productId: productId,
               counted: counted,
@@ -297,7 +295,52 @@ export class InventoryCountService extends AbstractService<InventoryCount> {
       [],
     );
 
-    entity.productToInventoryCounts = newArray;
+    const historyToInventoryCounts = entity?.historyToInventoryCounts?.reduce(
+      (acc, { productId, quantity, isBelong, product: item, sku }) => {
+        if (item.hasVariant) {
+          const variants = item.variantToProducts.filter(
+            (vp) => vp.sku === sku,
+          );
+          variants.forEach((vp) => {
+            const branchVariants = vp.branchVariantToProducts.find(
+              (bvp) => bvp.branchId === branchId,
+            );
+            if (branchVariants) {
+              acc.push({
+                productId: productId,
+                variantId: vp.id,
+                hasVariant: item.hasVariant,
+                quantity: quantity,
+                isBelong: isBelong,
+                displayName: `${item.displayName} (${vp.name})`,
+                sku: vp.sku,
+              });
+            }
+          });
+        } else {
+          const branchProducts = item.branchToProducts.find(
+            (bp) => bp.branchId === branchId,
+          );
+          if (branchProducts) {
+            acc.push({
+              productId: productId,
+              quantity: quantity,
+              displayName: item.displayName,
+              sku: item.sku,
+              isBelong: isBelong,
+              hasVariant: item.hasVariant,
+              variantId: null,
+            });
+          }
+        }
+        return acc;
+      },
+      [],
+    );
+
+    entity.productToInventoryCounts = productToInventoryCounts;
+    entity.historyToInventoryCounts = historyToInventoryCounts;
+    console.log('DDDDDDDDDDDD',entity)
     return entity;
   }
   async deleteRecord(optionsWhere: FindOptionsWhere<InventoryCount>) {

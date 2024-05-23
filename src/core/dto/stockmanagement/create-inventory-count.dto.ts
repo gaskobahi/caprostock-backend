@@ -13,6 +13,7 @@ import { Type } from 'class-transformer';
 import { InventoryCount } from 'src/core/entities/stockmanagement/inventorycount.entity';
 import { ProductToInventoryCount } from 'src/core/entities/stockmanagement/product-to-inventoryCount.entity';
 import { InventoryCountTypeEnum } from 'src/core/definitions/enums';
+import { HistoryToInventoryCount } from 'src/core/entities/stockmanagement/history-to-inventorycount.entity';
 
 export class CreateInventoryCountDto extends PickType(InventoryCount, [
   'branchId',
@@ -25,6 +26,7 @@ export class CreateInventoryCountDto extends PickType(InventoryCount, [
   @IsOptional()
   @IsString()
   description: string;
+
   @IsNotEmpty()
   @IsArray()
   @ValidateIf(
@@ -37,6 +39,16 @@ export class CreateInventoryCountDto extends PickType(InventoryCount, [
     description: `Les differents produit de cet inventaire de stock`,
   })
   productToInventoryCounts: CreateProductToInventoryCountDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested()
+  @Type(() => CreateHistoryToInventoryCountDto)
+  @ApiProperty({
+    type: () => [CreateHistoryToInventoryCountDto],
+    description: `Les differents produit de cet inventaire de stock`,
+  })
+  historyToInventoryCounts: CreateHistoryToInventoryCountDto[];
 }
 
 export class CreateProductToInventoryCountDto extends PickType(
@@ -74,3 +86,17 @@ export class CreateProductToInventoryCountDto extends PickType(
   variantId: string;
 }
 
+export class CreateHistoryToInventoryCountDto extends PickType(
+  HistoryToInventoryCount,
+  ['productId', 'sku'] as const,
+) {
+  @IsOptional()
+  @ApiProperty({ required: false })
+  @IsNumber()
+  quantity: number;
+
+  @IsOptional()
+  @IsBoolean()
+  @ApiProperty({ required: false, description: `Appartient deja à la liste` })
+  isBelong: boolean;
+}

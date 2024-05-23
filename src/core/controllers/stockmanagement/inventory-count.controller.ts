@@ -115,7 +115,6 @@ export class InventoryCountController {
       { id: id ?? '' },
       dto,
     );
-
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
       query as ApiSearchOneParamOptions,

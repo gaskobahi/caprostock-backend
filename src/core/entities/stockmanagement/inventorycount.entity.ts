@@ -8,12 +8,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsIn,
-  IsNotEmpty,
-  IsString,
-  IsUUID,
-} from 'class-validator';
+import { IsIn, IsNotEmpty, IsString, IsUUID } from 'class-validator';
 import { CoreEntity } from '../base/core.entity';
 import { instanceToPlain } from 'class-transformer';
 import { Branch } from '../subsidiary/branch.entity';
@@ -22,6 +17,7 @@ import {
   InventoryCountTypeEnum,
 } from 'src/core/definitions/enums';
 import { ProductToInventoryCount } from './product-to-inventoryCount.entity';
+import { HistoryToInventoryCount } from './history-to-inventorycount.entity';
 //import { ProductToInventoryCount } from './product-to-inventoryCount.entity';
 
 @Entity({
@@ -103,6 +99,15 @@ export class InventoryCount extends CoreEntity {
   )
   productToInventoryCounts: ProductToInventoryCount[];
 
+  @ApiProperty({ required: false, type: () => [HistoryToInventoryCount] })
+  @OneToMany(
+    () => HistoryToInventoryCount,
+    (historyToInventoryCount) => historyToInventoryCount.inventoryCount,
+    {
+      cascade: true,
+    },
+  )
+  historyToInventoryCounts: HistoryToInventoryCount[];
   /**
    * Getters & Setters *******************************************
    */

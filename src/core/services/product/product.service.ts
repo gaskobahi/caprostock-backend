@@ -174,6 +174,8 @@ export class ProductService extends AbstractService<Product> {
         },
       );
     }
+    console.log('JKJGHKJHKHJHJ', dto);
+
     const result = await super.createRecord({ ...dto, isActive: true });
     if (result) {
       //associe le produit aux taxes existante

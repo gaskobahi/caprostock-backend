@@ -34,6 +34,7 @@ import { DiscountToProduct } from './discount-to-product.entity';
 import { ProductToTax } from '../setting/product-to-tax.entity';
 import { ProductToStockAdjustment } from '../stockmanagement/product-to-stockadjustment.entity';
 import { ProductToInventoryCount } from '../stockmanagement/product-to-inventoryCount.entity';
+import { HistoryToInventoryCount } from '../stockmanagement/history-to-inventorycount.entity';
 
 @Entity({
   orderBy: { createdAt: 'DESC', updatedAt: 'DESC' },
@@ -274,6 +275,16 @@ export class Product extends CoreEntity {
     },
   )
   productToInventoryCounts: ProductToInventoryCount[];
+
+  @ApiProperty({ required: false, type: () => [HistoryToInventoryCount] })
+  @OneToMany(
+    () => HistoryToInventoryCount,
+    (historyToInventoryCount) => historyToInventoryCount.product,
+    {
+      cascade: true,
+    },
+  )
+  historyToInventoryCounts: HistoryToInventoryCount[];
 
   /**
    * Getters & Setters *******************************************
