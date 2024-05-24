@@ -143,7 +143,6 @@ export class ProductController {
     );
   }
 
-
   @ApiSearchQueryFilter()
   @Get('/list/stockadjustment')
   async findForStockAdjustment(
@@ -243,6 +242,7 @@ export class ProductController {
       await this.service.getFilterByAuthUserBranch(),
     );
 
+    console.log('test10', options);
     return this.service.readOneRecord({
       ...options,
       where: { ...options?.where, id: product.id },

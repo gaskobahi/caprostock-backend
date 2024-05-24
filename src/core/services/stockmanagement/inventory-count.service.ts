@@ -24,6 +24,7 @@ import {
 } from 'src/core/definitions/enums';
 import { ProductService } from '../product/product.service';
 import { CreateProductDto } from 'src/core/dto/product/create-product.dto';
+import { UpdateInventoryCountSaveDto } from 'src/core/dto/stockmanagement/update-inventory-count-save.dto';
 
 @Injectable()
 export class InventoryCountService extends AbstractService<InventoryCount> {
@@ -113,28 +114,110 @@ export class InventoryCountService extends AbstractService<InventoryCount> {
     optionsWhere: FindOptionsWhere<InventoryCount>,
     dto: UpdateInventoryCountDto,
   ) {
-    dto.status = InventoryCountStatusEnum.inProgress;
+    if (dto.type == InventoryCountTypeEnum.partial) {
+      if (
+        !dto.productToInventoryCounts ||
+        dto.productToInventoryCounts.length == 0
+      ) {
+        throw new BadRequestException(
+          'productToInventoryCounts ne peux pas être vide pour le type partial',
+        );
+      }
+    } else {
+      const options = {
+        relations: {
+          branchToProducts: true,
+          bundleToProducts: true,
+          variantToProducts: { branchVariantToProducts: true },
+          options: true,
+        },
+      };
+      const productToInventoryCounts =
+        await this.productService.readPaginatedListRecordForInventoryCount(
+          options,
+          1,
+          10000,
+        );
+      const myproductToInventoryCounts = this.generateFormatInventoryCounts(
+        productToInventoryCounts,
+        dto.branchId,
+      );
+      dto.productToInventoryCounts = myproductToInventoryCounts;
+      if (
+        !dto?.productToInventoryCounts ||
+        dto?.productToInventoryCounts.length == 0
+      ) {
+        throw new BadRequestException(
+          `Aucun produit respectant les criteres de l'inventaire de stock trouvé`,
+        );
+      }
+    }
+    dto.productToInventoryCounts.forEach((dt) => {
+      dt.isBelong = true;
+    });
+    const result = await super.updateRecord(optionsWhere, {
+      ...dto,
+    });
+    return result;
+  }
+
+  async updateRecordCountSave(
+    optionsWhere: FindOptionsWhere<InventoryCount>,
+    dto: UpdateInventoryCountSaveDto,
+  ) {
+    const previousIC = await this.repository.findOneBy(optionsWhere);
+
+    if (previousIC.status == InventoryCountStatusEnum.completed) {
+      throw new BadRequestException(
+        'Impossible de modifier le statut déja complèté',
+      );
+    }
+    if (dto.action == InventoryCountStatusEnum.inProgress) {
+      dto.status = InventoryCountStatusEnum.inProgress;
+    }
+    if (dto.action == InventoryCountStatusEnum.completed) {
+      dto.status = InventoryCountStatusEnum.completed;
+    }
     const result = await super.updateRecord(optionsWhere, {
       ...dto,
     });
 
-    return result;
-  }
+    if (result) {
+      if (dto.action == InventoryCountStatusEnum.completed) {
+        for (const pi of dto.productToInventoryCounts) {
+          //find product by Id
+          const prd = await this.productService.readOneRecord({
+            relations: { variantToProducts: true },
+            where: { id: pi.productId },
+          });
+          //update branch for product variant
+          if (prd.hasVariant) {
+            const vp = prd.variantToProducts.find((el) => el.sku == pi.sku);
+            await this.branchVariantToProductService.updateRecord(
+              {
+                variantId: vp.id,
+                branchId: dto.branchId,
+              },
+              { inStock: pi.counted },
+            );
+          } else {
+            console.log('AZERRTRTDFDF', dto);
 
-  /* async getFilterByAuthUserBranch(): Promise<
-    FindOptionsWhere<InventoryCount>
-  > {
-    const authUser = await super.checkSessionBranch();
-    if (!(await authUser.can('manage', 'all'))) {
-      return {
-        branchToInventoryCounts: {
-          branchId: authUser.targetBranchId,
-        },
-      };
+            //update branch for product
+            await this.branchToProductService.updateRecord(
+              {
+                productId: pi.productId,
+                branchId: dto.branchId,
+              },
+              { inStock: pi.counted },
+            );
+          }
+        }
+      }
     }
 
-    return {};
-  }*/
+    return result;
+  }
 
   async readPaginatedListRecordForComposite(
     options?: FindManyOptions<any>,
@@ -161,68 +244,6 @@ export class InventoryCountService extends AbstractService<InventoryCount> {
     return array;
   }
 
-  /*async readOneRecord(options?: FindOneOptions<InventoryCount>) {
-    const entity = await this.repository.findOne(options);
-    if (!entity) {
-      throw new BadRequestException(this.NOT_FOUND_MESSAGE);
-    }
-    const newArray = [];
-    for (const el of entity.productToInventoryCounts) {
-      const item = el.product;
-      if (item.hasVariant) {
-        const variantToProducts = item.variantToProducts.filter(
-          (e: any) => e.sku == el.sku,
-        );
-        if (variantToProducts.length > 0) {
-          for (const vp of variantToProducts) {
-            const branchVariantToProducts = vp.branchVariantToProducts.filter(
-              (e: any) => e.branchId == entity.branchId,
-            );
-            if (branchVariantToProducts.length > 0) {
-              const newItem = {
-                id: item.id,
-                reference: item.reference,
-                variantId: vp.id,
-                hasVariant: item.hasVariant,
-                inStock: vp.inStock,
-                displayName: `${item.displayName}(${vp.name})`,
-                price: vp.price,
-                cost: vp.cost,
-                sku: vp.sku,
-                branchVariantToProducts: branchVariantToProducts,
-                branchToProducts: [],
-              };
-              newArray.push(newItem);
-            }
-          }
-        }
-      } else if (item.branchToProducts.length > 0) {
-        const branchToProducts = item?.branchToProducts?.filter(
-          (e: any) => e.branchId == entity.branchId,
-        );
-        if (branchToProducts.length > 0) {
-          const newItem = {
-            id: item.id,
-            reference: item.reference,
-            barreCode: item.barreCode,
-            displayName: item.displayName,
-            price: item.price,
-            cost: item.cost,
-            sku: item.sku,
-            hasVariant: item.hasVariant,
-            variantId: null,
-            branchToProducts: branchToProducts,
-            branchVariantToProducts: [],
-          };
-          newArray.push(newItem);
-        }
-      }
-    }
-    entity.productToInventoryCounts = newArray;
-    console.log('ZZZZZZZZZZ', newArray);
-    return entity;
-  }*/
-
   async readOneRecord(options?: FindOneOptions<InventoryCount>) {
     const entity = await this.repository.findOne(options);
     if (!entity) {
@@ -230,6 +251,20 @@ export class InventoryCountService extends AbstractService<InventoryCount> {
     }
 
     const { branchId } = entity;
+    const totalDifference = entity?.productToInventoryCounts?.reduce(
+      (acc, { difference }) => {
+        acc += difference;
+        return acc;
+      },
+      0,
+    );
+    const totalDifferenceCost = entity?.productToInventoryCounts?.reduce(
+      (acc, { differenceCost }) => {
+        acc += differenceCost;
+        return acc;
+      },
+      0,
+    );
     const productToInventoryCounts = entity?.productToInventoryCounts?.reduce(
       (
         acc,
@@ -294,7 +329,6 @@ export class InventoryCountService extends AbstractService<InventoryCount> {
       },
       [],
     );
-
     const historyToInventoryCounts = entity?.historyToInventoryCounts?.reduce(
       (acc, { productId, quantity, isBelong, product: item, sku }) => {
         if (item.hasVariant) {
@@ -339,8 +373,11 @@ export class InventoryCountService extends AbstractService<InventoryCount> {
     );
 
     entity.productToInventoryCounts = productToInventoryCounts;
+    entity.totalDifference = totalDifference;
+    entity.totalDifferenceCost = totalDifferenceCost;
+
     entity.historyToInventoryCounts = historyToInventoryCounts;
-    console.log('DDDDDDDDDDDD',entity)
+    console.log('DDDDDDDDDDDD32', entity);
     return entity;
   }
   async deleteRecord(optionsWhere: FindOptionsWhere<InventoryCount>) {

@@ -30,6 +30,7 @@ import { InventoryCount } from 'src/core/entities/stockmanagement/inventorycount
 import { CreateInventoryCountDto } from 'src/core/dto/stockmanagement/create-inventory-count.dto';
 import { UpdateInventoryCountDto } from 'src/core/dto/stockmanagement/update-inventory-count.dto';
 import { InventoryCountService } from 'src/core/services/stockmanagement/inventory-count.service';
+import { UpdateInventoryCountSaveDto } from 'src/core/dto/stockmanagement/update-inventory-count-save.dto';
 
 @ApiAuthJwtHeader()
 @ApiRequestIssuerHeader()
@@ -106,6 +107,28 @@ export class InventoryCountController {
    */
   @ApiSearchOneQueryFilter()
   @Patch('/save/:inventorycountId')
+  async updateSave(
+    @Param('inventorycountId', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateInventoryCountSaveDto,
+    @Query() query?: any,
+  ): Promise<InventoryCount> {
+    const inventoryCount = await this.service.updateRecordCountSave(
+      { id: id ?? '' },
+      dto,
+    );
+    const options = buildFilterFromApiSearchParams(
+      this.service.repository,
+      query as ApiSearchOneParamOptions,
+    );
+
+    return this.service.readOneRecord({
+      ...options,
+      where: { ...options?.where, id: inventoryCount.id ?? '' },
+    });
+  }
+
+  @ApiSearchOneQueryFilter()
+  @Patch(':inventorycountId')
   async update(
     @Param('inventorycountId', ParseUUIDPipe) id: string,
     @Body() dto: UpdateInventoryCountDto,

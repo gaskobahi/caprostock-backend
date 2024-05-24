@@ -19,6 +19,7 @@ import { BranchToProductService } from '../subsidiary/branch-to-product.service'
 import { BranchVariantToProductService } from '../subsidiary/branch-variant-to-product.service';
 import { ReasonService } from './reason.service';
 import { DefaultReasonTypeEnum } from 'src/core/definitions/enums';
+import { ProductService } from '../product/product.service';
 
 @Injectable()
 export class StockAdjustmentService extends AbstractService<StockAdjustment> {
@@ -31,6 +32,7 @@ export class StockAdjustmentService extends AbstractService<StockAdjustment> {
     private readonly branchToProductService: BranchToProductService,
     private readonly branchVariantToProductService: BranchVariantToProductService,
     private readonly reasonService: ReasonService,
+    private readonly productService: ProductService,
 
     protected paginatedService: PaginatedService<StockAdjustment>,
     @Inject(REQUEST) protected request: any,
@@ -91,11 +93,17 @@ export class StockAdjustmentService extends AbstractService<StockAdjustment> {
 
     if (result) {
       for (const ps of dto.productToStockAdjustments) {
+        //find product by Id
+        const prd = await this.productService.readOneRecord({
+          relations: { variantToProducts: true },
+          where: { id: ps.productId },
+        });
         //update branch for product variant
-        if (ps.hasVariant) {
+        if (prd.hasVariant) {
+          const vp = prd.variantToProducts.find((el) => el.sku == ps.sku);
           await this.branchVariantToProductService.updateRecord(
             {
-              variantId: ps.variantId,
+              variantId: vp.id,
               branchId: dto.branchId,
             },
             { price: ps.cost, inStock: ps.afterQuantity },
