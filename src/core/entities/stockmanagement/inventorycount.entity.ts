@@ -110,7 +110,6 @@ export class InventoryCount extends CoreEntity {
   historyToInventoryCounts: HistoryToInventoryCount[];
   totalDifference: number;
   totalDifferenceCost: number;
-  ulrich: string;
   /**
    * Getters & Setters *******************************************
    */

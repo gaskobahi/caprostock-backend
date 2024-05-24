@@ -2,6 +2,7 @@ import {
   IsBoolean,
   IsInt,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsUUID,
 } from 'class-validator';
@@ -14,15 +15,13 @@ import { InventoryCount } from './inventorycount.entity';
 @Entity()
 export class HistoryToInventoryCount extends CoreEntity {
   @IsNotEmpty()
-  @IsInt()
+  @IsNumber()
   @ApiProperty({
     required: true,
     default: 0,
     description: `quantité physique countée`,
   })
   @Column({
-    type: 'integer',
-    unsigned: true,
     default: 0,
   })
   quantity: number;
@@ -41,6 +40,20 @@ export class HistoryToInventoryCount extends CoreEntity {
     unsigned: true,
   })
   sku: number;
+
+  @IsOptional()
+  @IsInt()
+  @ApiProperty({
+    required: true,
+    default: 0,
+    description: `position`,
+  })
+  @Column({
+    type: 'integer',
+    unsigned: true,
+    default: 0,
+  })
+  position: number;
 
   @IsUUID()
   @IsNotEmpty()

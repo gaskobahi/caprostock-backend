@@ -96,6 +96,11 @@ export class CreateHistoryToInventoryCountDto extends PickType(
   quantity: number;
 
   @IsOptional()
+  @ApiProperty({ required: false })
+  @IsNumber()
+  position: number;
+
+  @IsOptional()
   @IsBoolean()
   @ApiProperty({ required: false, description: `Appartient deja à la liste` })
   isBelong: boolean;

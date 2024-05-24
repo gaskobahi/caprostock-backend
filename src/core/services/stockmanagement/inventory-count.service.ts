@@ -178,6 +178,13 @@ export class InventoryCountService extends AbstractService<InventoryCount> {
     if (dto.action == InventoryCountStatusEnum.completed) {
       dto.status = InventoryCountStatusEnum.completed;
     }
+    for (const el of dto.productToInventoryCounts) {
+     /* a continueer const prd = await this.productService.readOneRecord({
+        relations: { branchVariantToProducts: true },
+        where:*/
+      el.difference = (el?.counted || 0) - (el.inStock || 0);
+      //el.differenceCost = (el?.difference || 0) * (el.price || 0)
+    }
     const result = await super.updateRecord(optionsWhere, {
       ...dto,
     });
@@ -190,27 +197,31 @@ export class InventoryCountService extends AbstractService<InventoryCount> {
             relations: { variantToProducts: true },
             where: { id: pi.productId },
           });
-          //update branch for product variant
-          if (prd.hasVariant) {
-            const vp = prd.variantToProducts.find((el) => el.sku == pi.sku);
-            await this.branchVariantToProductService.updateRecord(
-              {
-                variantId: vp.id,
-                branchId: dto.branchId,
-              },
-              { inStock: pi.counted },
-            );
-          } else {
-            console.log('AZERRTRTDFDF', dto);
+          if (pi.counted > 0) {
+            //pi.difference = (pi?.counted || 0) - (pi.inStock || 0);
+            //pi.difference = (pi?.counted || 0) - (pi.inStock || 0);
+            //update branch for product variant
+            if (prd.hasVariant) {
+              const vp = prd.variantToProducts.find((el) => el.sku == pi.sku);
+              // pi.differenceCost = (pi?.difference || 0) * (vp.price || 0);
 
-            //update branch for product
-            await this.branchToProductService.updateRecord(
-              {
-                productId: pi.productId,
-                branchId: dto.branchId,
-              },
-              { inStock: pi.counted },
-            );
+              await this.branchVariantToProductService.updateRecord(
+                {
+                  variantId: vp.id,
+                  branchId: dto.branchId,
+                },
+                { inStock: pi.counted },
+              );
+            } else {
+              //update branch for product
+              await this.branchToProductService.updateRecord(
+                {
+                  productId: pi.productId,
+                  branchId: dto.branchId,
+                },
+                { inStock: pi.counted },
+              );
+            }
           }
         }
       }
@@ -330,7 +341,10 @@ export class InventoryCountService extends AbstractService<InventoryCount> {
       [],
     );
     const historyToInventoryCounts = entity?.historyToInventoryCounts?.reduce(
-      (acc, { productId, quantity, isBelong, product: item, sku }) => {
+      (
+        acc,
+        { productId, quantity, isBelong, product: item, sku, position },
+      ) => {
         if (item.hasVariant) {
           const variants = item.variantToProducts.filter(
             (vp) => vp.sku === sku,
@@ -346,6 +360,7 @@ export class InventoryCountService extends AbstractService<InventoryCount> {
                 hasVariant: item.hasVariant,
                 quantity: quantity,
                 isBelong: isBelong,
+                position: position,
                 displayName: `${item.displayName} (${vp.name})`,
                 sku: vp.sku,
               });
@@ -362,6 +377,7 @@ export class InventoryCountService extends AbstractService<InventoryCount> {
               displayName: item.displayName,
               sku: item.sku,
               isBelong: isBelong,
+              position: position,
               hasVariant: item.hasVariant,
               variantId: null,
             });
