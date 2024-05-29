@@ -31,7 +31,7 @@ export class BranchVariantToProduct extends CoreEntity {
   @Column({
     name: 'in_stock',
     type: 'integer',
-    unsigned: true,
+    //unsigned: true,
     default: 0,
   })
   inStock: number;

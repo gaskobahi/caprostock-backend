@@ -154,6 +154,11 @@ import { InventoryCountSubscriber } from './entities/stockmanagement/Inventoryco
 import { InventoryCountService } from './services/stockmanagement/inventory-count.service';
 import { InventoryCountController } from './controllers/stockmanagement/inventory-count.controller';
 import { HistoryToInventoryCount } from './entities/stockmanagement/history-to-inventorycount.entity';
+import { TransfertOrder } from './entities/stockmanagement/transfertorder.entity';
+import { ProductToTransfertOrder } from './entities/stockmanagement/product-to-transfertorder.entity';
+import { TransfertOrderSubscriber } from './entities/stockmanagement/transfertorder.subscriber';
+import { TransfertOrderService } from './services/stockmanagement/transfert-order.service';
+import { TransfertOrderController } from './controllers/stockmanagement/transfert-order.controller';
 
 @Module({
   imports: [
@@ -216,6 +221,8 @@ import { HistoryToInventoryCount } from './entities/stockmanagement/history-to-i
       InventoryCount,
       ProductToInventoryCount,
       HistoryToInventoryCount,
+      TransfertOrder,
+      ProductToTransfertOrder,
 
       //Order,
       //OrderToProduct,
@@ -266,6 +273,7 @@ import { HistoryToInventoryCount } from './entities/stockmanagement/history-to-i
     ReasonController,
     StockAdjustmentController,
     InventoryCountController,
+    TransfertOrderController,
 
     //OrderController,
     //ConsultController,
@@ -318,20 +326,8 @@ import { HistoryToInventoryCount } from './entities/stockmanagement/history-to-i
     InventoryCountService,
     InventoryCountSubscriber,
 
-    //OrderService,
-    //OrderSubscriber,
-    //ConsultService,
-    //ConsultSubscriber,
-    //ConsultTypeService,
-    //DoctorService,
-    //DoctorSubscriber,
-    //PatientService,
-    /*InsuranceCompanyService,
-    SaleService,
-    SaleSubscriber,
-    SalePaymentService,
-    //SalePaymentSubscriber,
-    /TreatmentService,*/
+    TransfertOrderService,
+    TransfertOrderSubscriber,
 
     ConfigService,
   ],

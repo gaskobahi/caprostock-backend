@@ -179,11 +179,18 @@ export class InventoryCountService extends AbstractService<InventoryCount> {
       dto.status = InventoryCountStatusEnum.completed;
     }
     for (const el of dto.productToInventoryCounts) {
-     /* a continueer const prd = await this.productService.readOneRecord({
-        relations: { branchVariantToProducts: true },
-        where:*/
-      el.difference = (el?.counted || 0) - (el.inStock || 0);
-      //el.differenceCost = (el?.difference || 0) * (el.price || 0)
+      const pprd = await this.productService.getFindOneByProductIdWithBranch(
+        el.productId,
+      );
+      pprd.sku = el.sku;
+      console.log('lolo', el.sku);
+
+      //recuperer les details de produit dans leur leur surccusales
+      const detailProduct = await this.getDetailProductFromBranch(pprd, dto);
+      if (el?.counted != 0) {
+        el.difference = (el?.counted || 0) - (el.inStock || 0);
+      }
+      el.differenceCost = (el?.difference || 0) * (detailProduct.price || 0);
     }
     const result = await super.updateRecord(optionsWhere, {
       ...dto,
@@ -192,18 +199,12 @@ export class InventoryCountService extends AbstractService<InventoryCount> {
     if (result) {
       if (dto.action == InventoryCountStatusEnum.completed) {
         for (const pi of dto.productToInventoryCounts) {
-          //find product by Id
-          const prd = await this.productService.readOneRecord({
-            relations: { variantToProducts: true },
-            where: { id: pi.productId },
-          });
+          const prd = await this.productService.getFindOneByProductIdWithBranch(
+            pi.productId,
+          );
           if (pi.counted > 0) {
-            //pi.difference = (pi?.counted || 0) - (pi.inStock || 0);
-            //pi.difference = (pi?.counted || 0) - (pi.inStock || 0);
-            //update branch for product variant
             if (prd.hasVariant) {
               const vp = prd.variantToProducts.find((el) => el.sku == pi.sku);
-              // pi.differenceCost = (pi?.difference || 0) * (vp.price || 0);
 
               await this.branchVariantToProductService.updateRecord(
                 {
@@ -255,6 +256,146 @@ export class InventoryCountService extends AbstractService<InventoryCount> {
     return array;
   }
 
+  async readOneRecord(options?: FindOneOptions<InventoryCount>) {
+    const entity = await this.repository.findOne(options);
+    if (!entity) {
+      throw new BadRequestException(this.NOT_FOUND_MESSAGE);
+    }
+
+    const { branchId } = entity;
+    const totalDifference = entity?.productToInventoryCounts?.reduce(
+      (acc, { difference }) => {
+        acc += difference;
+        return acc;
+      },
+      0,
+    );
+    const totalDifferenceCost = entity?.productToInventoryCounts?.reduce(
+      (acc, { differenceCost }) => {
+        acc += differenceCost;
+        return acc;
+      },
+      0,
+    );
+    const productToInventoryCounts = entity?.productToInventoryCounts?.reduce(
+      (
+        acc,
+        {
+          productId,
+          inStock,
+          counted,
+          difference,
+          differenceCost,
+          isBelong,
+          product: item,
+          sku,
+        },
+      ) => {
+        if (item.hasVariant) {
+          const variants = item.variantToProducts.filter((v) => v.sku === sku);
+          variants.forEach((vp) => {
+            const branchVariants = vp.branchVariantToProducts.find(
+              (bvp) => bvp.branchId === branchId,
+            );
+            if (branchVariants) {
+              acc.push({
+                productId: productId,
+                counted: counted,
+                difference: difference,
+                differenceCost: differenceCost,
+                variantId: vp.id,
+                hasVariant: item.hasVariant,
+                inStock: inStock,
+                isBelong: isBelong,
+                displayName: `${item.displayName} (${vp.name})`,
+                price: branchVariants?.price ?? vp.price,
+                cost: vp.cost ?? 0,
+                sku: vp.sku,
+              });
+            }
+          });
+        } else {
+          const branchProducts = item.branchToProducts.find(
+            (bp) => bp.branchId === branchId,
+          );
+          if (branchProducts) {
+            acc.push({
+              productId: productId,
+              counted: counted,
+              difference: difference,
+              differenceCost: differenceCost,
+              displayName: item.displayName,
+              price: branchProducts.price ?? item.price,
+              cost: item.cost ?? 0,
+              sku: item.sku,
+              isBelong: isBelong,
+              inStock: inStock,
+              hasVariant: item.hasVariant,
+              variantId: null,
+            });
+          }
+        }
+        return acc;
+      },
+      [],
+    );
+    const historyToInventoryCounts = entity?.historyToInventoryCounts?.reduce(
+      (
+        acc,
+        { productId, quantity, isBelong, product: item, sku, position },
+      ) => {
+        if (item.hasVariant) {
+          const variants = item.variantToProducts.filter(
+            (vp) => vp.sku === sku,
+          );
+          variants.forEach((vp) => {
+            const branchVariants = vp.branchVariantToProducts.find(
+              (bvp) => bvp.branchId === branchId,
+            );
+            if (branchVariants) {
+              acc.push({
+                productId: productId,
+                variantId: vp.id,
+                hasVariant: item.hasVariant,
+                quantity: quantity,
+                isBelong: isBelong,
+                position: position,
+                displayName: `${item.displayName} (${vp.name})`,
+                sku: vp.sku,
+              });
+            }
+          });
+        } else {
+          const branchProducts = item.branchToProducts.find(
+            (bp) => bp.branchId === branchId,
+          );
+          if (branchProducts) {
+            acc.push({
+              productId: productId,
+              quantity: quantity,
+              displayName: item.displayName,
+              sku: item.sku,
+              isBelong: isBelong,
+              position: position,
+              hasVariant: item.hasVariant,
+              variantId: null,
+            });
+          }
+        }
+        return acc;
+      },
+      [],
+    );
+
+    entity.productToInventoryCounts = productToInventoryCounts;
+    entity.totalDifference = totalDifference;
+    entity.totalDifferenceCost = totalDifferenceCost;
+
+    entity.historyToInventoryCounts = historyToInventoryCounts;
+    return entity;
+  }
+
+  /*
   async readOneRecord(options?: FindOneOptions<InventoryCount>) {
     const entity = await this.repository.findOne(options);
     if (!entity) {
@@ -395,7 +536,7 @@ export class InventoryCountService extends AbstractService<InventoryCount> {
     entity.historyToInventoryCounts = historyToInventoryCounts;
     console.log('DDDDDDDDDDDD32', entity);
     return entity;
-  }
+  }*/
   async deleteRecord(optionsWhere: FindOptionsWhere<InventoryCount>) {
     const entity = await this.repository.findOneBy(optionsWhere);
     if (!entity) {
@@ -449,38 +590,24 @@ export class InventoryCountService extends AbstractService<InventoryCount> {
       return this.mergeProductToInventoryCounts(updatedProduct);
     });
   }
-  /*generateFormatInventoryCounts = (
-    productToInventoryCounts: Array<object>,
-    branchId: string,
+
+  getDetailProductFromBranch = (
+    productWithBranches: any,
+    productToinventoryCount: any,
   ) => {
-    const newArray = [];
-    for (const newdata of productToInventoryCounts) {
-      console.log('dfdfdfdfdfdf', newdata);
-      const newdatad = {
-        ...data,
-      }; // Créer une copie de newdata
-      console.log('Lot1', newdata);
-      if (!newdata.hasVariant) {
-        if (newdata?.branchToProducts) {
-          const filtered: any = newdata?.branchToProducts?.find(
-            (l) => l.branchId == branchId,
-          );
-          newdata.inStock = filtered.inStock ?? 0;
-          newdata.cost = filtered.price ?? 0;
-        }
-        const mergedValue = this.mergeProductToInventoryCounts(newdata);
-        newArray.push(mergedValue);
-      } else {
-        if (newdata?.branchVariantToProducts) {
-          const filtered: any = newdata?.branchVariantToProducts?.find(
-            (l) => l.branchId == branchId,
-          );
-          newdata?.inStock = filtered.inStock ?? 0;
-          newdata?.cost = filtered.price ?? 0;
-        }
-        const mergedValue = this.mergeProductToInventoryCounts(newdata);
-        newArray.push(mergedValue);
-      }
+    let productDetails: any;
+    if (productWithBranches.hasVariant) {
+      const vp = productWithBranches.variantToProducts.find(
+        (pd: { sku: any }) => pd.sku == productWithBranches.sku,
+      );
+      productDetails = vp.branchVariantToProducts.find(
+        (bv) => bv.branchId == productToinventoryCount.branchId,
+      );
+    } else {
+      productDetails = productWithBranches.branchToProducts.find(
+        (el) => el.branchId == productToinventoryCount.branchId,
+      );
     }
-  };*/
+    return productDetails;
+  };
 }

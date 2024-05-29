@@ -38,7 +38,6 @@ import {
   limitsParams,
   storageproducts,
 } from 'src/helpers/imageStorage';
-import { In } from 'typeorm';
 
 @ApiAuthJwtHeader()
 @ApiRequestIssuerHeader()
@@ -111,7 +110,7 @@ export class ProductController {
   }
 
   @ApiSearchQueryFilter()
-  @Get('/list/forinventorycount')
+  @Get('/list/inventorycount')
   async findForInventoryCount(
     @CurrentUser() authUser: AuthUser,
     @Query() query?: any,
@@ -142,7 +141,39 @@ export class ProductController {
       10000,
     );
   }
+  @ApiSearchQueryFilter()
+  @Get('/list/transfertorder')
+  async findForTranfertOrder(
+    @CurrentUser() authUser: AuthUser,
+    @Query() query?: any,
+  ): Promise<any> {
+    // Permission check
+    await authUser?.throwUnlessCan(
+      AbilityActionEnum.read,
+      AbilitySubjectEnum.Product,
+    );
 
+    const options = buildFilterFromApiSearchParams(
+      this.service.repository,
+      query as ApiSearchParamOptions,
+      {
+        textFilterFields: ['reference', 'displayName'],
+      },
+    );
+
+    // Apply auth user branch filter
+    /*options.where = merge(
+      options?.where,
+      await this.service.getFilterByAuthUserBranch(),
+    );*/
+
+    return this.service.readPaginatedListRecordForTransfertOrder(
+      options,
+      1,
+      10000,
+    );
+  }
+  
   @ApiSearchQueryFilter()
   @Get('/list/stockadjustment')
   async findForStockAdjustment(

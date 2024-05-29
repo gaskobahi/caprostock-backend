@@ -202,7 +202,6 @@ export class ProductService extends AbstractService<Product> {
     file?: any,
   ) {
     const filename = file?.filename;
-    console.log('KYLIAN0', typeof ddto);
     const dto = plainToInstance(UpdateProductDto, ddto);
     const prevProduct = await this._repository.findOneBy({
       id: optionsWhere.id,
@@ -334,6 +333,17 @@ export class ProductService extends AbstractService<Product> {
     return newArray;
   }
 
+
+  async readPaginatedListRecordForTransfertOrder(
+    options?: FindManyOptions<any>,
+    page?: number,
+    perPage?: number,
+  ) {
+    const products = await this.readPaginatedListRecord(options, page, perPage);
+    const newArray = this.generateNewProcuctVersion(products.data);
+
+    return newArray;
+  }
   async generateNewProcuctVersion(products: Array<object>) {
     const newArray: Array<object> = [];
 
@@ -388,6 +398,7 @@ export class ProductService extends AbstractService<Product> {
     }
     return newArray;
   }
+
   async readPaginatedListRecordForStockAdjustment(
     options?: FindManyOptions<any>,
     page?: number,
@@ -477,6 +488,16 @@ export class ProductService extends AbstractService<Product> {
       inStock += al.inStock ?? 0;
     }
     return inStock;
+  }
+
+  async getFindOneByProductIdWithBranch(productId: string) {
+    return await this.readOneRecord({
+      relations: {
+        variantToProducts: { branchVariantToProducts: true },
+        branchToProducts: true,
+      },
+      where: { id: productId },
+    });
   }
 
   async getAverageMarginItemVariantProduct(

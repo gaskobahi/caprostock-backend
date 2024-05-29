@@ -35,6 +35,7 @@ import { ProductToTax } from '../setting/product-to-tax.entity';
 import { ProductToStockAdjustment } from '../stockmanagement/product-to-stockadjustment.entity';
 import { ProductToInventoryCount } from '../stockmanagement/product-to-inventoryCount.entity';
 import { HistoryToInventoryCount } from '../stockmanagement/history-to-inventorycount.entity';
+import { ProductToTransfertOrder } from '../stockmanagement/product-to-transfertorder.entity';
 
 @Entity({
   orderBy: { createdAt: 'DESC', updatedAt: 'DESC' },
@@ -266,10 +267,20 @@ export class Product extends CoreEntity {
   )
   productToStockAdjustments: ProductToStockAdjustment[];
 
-  @ApiProperty({ required: false, type: () => [ProductToInventoryCount] })
+  @ApiProperty({ required: false, type: () => [ProductToStockAdjustment] })
   @OneToMany(
-    () => ProductToInventoryCount,
-    (productToInventoryCount) => productToInventoryCount.product,
+    () => ProductToStockAdjustment,
+    (productToStockAdjustment) => productToStockAdjustment.product,
+    {
+      cascade: true,
+    },
+  )
+  productToTransfertOrders: ProductToTransfertOrder[];
+
+  @ApiProperty({ required: false, type: () => [ProductToTransfertOrder] })
+  @OneToMany(
+    () => ProductToTransfertOrder,
+    (productToTransfertOrder) => productToTransfertOrder.product,
     {
       cascade: true,
     },

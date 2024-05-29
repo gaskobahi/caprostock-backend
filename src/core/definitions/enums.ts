@@ -154,6 +154,11 @@ export enum DefaultReasonTypeEnum {
   damage = 'damage',
 }
 
+export enum DefaultTransferOrderTypeEnum {
+  intransit = 'intransit',
+  transfered = 'transfered',
+}
+
 export enum InventoryCountTypeEnum {
   partial = 'partial',
   full = 'full',
