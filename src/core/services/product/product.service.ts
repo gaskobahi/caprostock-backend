@@ -82,7 +82,7 @@ export class ProductService extends AbstractService<Product> {
           if (dt.hasVariant) {
             // If the item has variants, process them
             dt.price = null;
-            dt.cost = null;
+            //dt.cost = null;
             if (dt?.variantToProducts) {
               // Calculate inStock for the item
               dt.inStock = await this.getInStockVariantProductByBranch(
@@ -328,11 +328,21 @@ export class ProductService extends AbstractService<Product> {
     perPage?: number,
   ) {
     const products = await this.readPaginatedListRecord(options, page, perPage);
-    const newArray = this.generateNewProcuctVersion(products.data);
+    const newArray = this.generateNewProductVersion(products.data);
 
     return newArray;
   }
 
+  async readPaginatedListRecordForOrder(
+    options?: FindManyOptions<any>,
+    page?: number,
+    perPage?: number,
+  ) {
+    const products = await this.readPaginatedListRecord(options, page, perPage);
+    const newArray = this.generateNewProductVersion(products.data);
+
+    return newArray;
+  }
 
   async readPaginatedListRecordForTransfertOrder(
     options?: FindManyOptions<any>,
@@ -340,11 +350,11 @@ export class ProductService extends AbstractService<Product> {
     perPage?: number,
   ) {
     const products = await this.readPaginatedListRecord(options, page, perPage);
-    const newArray = this.generateNewProcuctVersion(products.data);
+    const newArray = this.generateNewProductVersion(products.data);
 
     return newArray;
   }
-  async generateNewProcuctVersion(products: Array<object>) {
+  async generateNewProductVersion(products: Array<object>) {
     const newArray: Array<object> = [];
 
     for (const item of products as any) {
@@ -355,6 +365,7 @@ export class ProductService extends AbstractService<Product> {
               const branchVariantToProducts = vp.branchVariantToProducts.filter(
                 (e: any) => e.isAvailable == true,
               );
+
               if (branchVariantToProducts.length > 0) {
                 const newItem = {
                   id: item.id,

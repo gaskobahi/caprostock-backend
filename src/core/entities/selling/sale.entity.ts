@@ -22,7 +22,7 @@ import { Branch } from '../subsidiary/branch.entity';
 import { Customer } from './customer.entity';
 import { InsuranceCompany } from './insurance-company.entity';
 import { SalePayment } from './sale-payment.entity';
-import { Order } from '../supply/order.entity';
+import { Order } from '../stockmanagement/order.entity';
 import { AuthUser } from '../session/auth-user.entity';
 import { SalePrintingHistory } from './sale-printing-history.entity';
 import { Waiter } from './waiter.entity';
@@ -187,9 +187,9 @@ export class Sale extends CoreEntity {
   })
   payments: SalePayment[];
 
-  @ApiProperty({ required: false, type: () => [Order] })
+  /*@ApiProperty({ required: false, type: () => [Order] })
   @OneToMany(() => Order, (order) => order.sale)
-  orders: Order[];
+  orders: Order[];*/
 
   /**
    * Getters & Setters

@@ -6,50 +6,37 @@ import {
   IsOptional,
   IsString,
   IsUUID,
-  ValidateIf,
 } from 'class-validator';
 import {
+  BeforeInsert,
   Column,
   Entity,
   Index,
   JoinColumn,
   ManyToOne,
   OneToMany,
-  OneToOne,
 } from 'typeorm';
 import { CoreEntity } from '../base/core.entity';
 import { OrderToProduct } from './order-to-product.entity';
-import { Branch } from '../subsidiary/branch.entity';
-import { OrderSourceEnum, OrderStatusEnum } from '../../definitions/enums';
-import { Supplier } from './supplier.entity';
+import { OrderStatusEnum } from '../../definitions/enums';
 import { AuthUser } from '../session/auth-user.entity';
 import { Expose, instanceToPlain } from 'class-transformer';
-import { Sale } from '../selling/sale.entity';
-import { SaleToProduct } from '../selling/sale-to-product.entity';
+import { Branch } from '../subsidiary/branch.entity';
+import { Supplier } from './supplier.entity';
 
 @Entity({
   orderBy: { createdAt: 'DESC', updatedAt: 'DESC' },
 })
 export class Order extends CoreEntity {
   @IsNotEmpty()
-  @IsIn(Object.values(OrderSourceEnum))
-  @ApiProperty({
-    enum: OrderSourceEnum,
-    enumName: 'OrderSourceEnum',
-    description: `Source`,
-  })
-  @Column({ name: 'order_source' })
-  source: OrderSourceEnum;
-
-  @IsNotEmpty()
   @IsIn(Object.values(OrderStatusEnum))
   @ApiProperty({
     enum: OrderStatusEnum,
     enumName: 'OrderStatusEnum',
-    default: OrderStatusEnum.init,
+    default: OrderStatusEnum.draft,
     description: `Status`,
   })
-  @Column({ name: 'order_status', default: OrderStatusEnum.init })
+  @Column({ name: 'order_status', default: OrderStatusEnum.draft })
   status: OrderStatusEnum;
 
   @IsOptional()
@@ -58,12 +45,6 @@ export class Order extends CoreEntity {
   @Index()
   @Column()
   reference: string;
-
-  @IsNotEmpty()
-  @IsString()
-  @ApiProperty({ description: `Titre` })
-  @Column({})
-  title: string;
 
   @IsOptional()
   @IsDateString()
@@ -75,6 +56,17 @@ export class Order extends CoreEntity {
     default: () => '(CURRENT_DATE)',
   })
   date: Date;
+
+  @IsOptional()
+  @IsDateString()
+  @ApiPropertyOptional({ description: `Date prévu de la reception` })
+  @Column({
+    name: 'planned_for',
+    type: 'date',
+    nullable: true,
+    //default: () => '(CURRENT_DATE)',
+  })
+  plannedFor: Date;
 
   @IsOptional()
   @IsString()
@@ -93,75 +85,45 @@ export class Order extends CoreEntity {
 
   @IsUUID()
   @IsNotEmpty()
+  @Column({ name: 'supplier_id', type: 'uuid', nullable: false })
+  supplierId: string;
+
+  @ApiProperty({ required: false, type: () => Supplier })
+  @ManyToOne(() => Supplier, (supplier) => supplier.orders, {
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE',
+    orphanedRowAction: 'delete',
+  })
+  @JoinColumn({ name: 'supplier_id' })
+  supplier: Supplier;
+
+  @IsUUID()
+  @IsNotEmpty()
+  @Column({ name: 'destination_branch_id', type: 'uuid', nullable: false })
+  destinationBranchId: string;
+
+  @ApiProperty({ required: false, type: () => Branch })
+  @ManyToOne(() => Branch, (destinationbranch) => destinationbranch.orders, {
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE',
+    orphanedRowAction: 'delete',
+  })
+  @JoinColumn({ name: 'destination_branch_id' })
+  destinationBranch: Branch;
+
+  @IsUUID()
+  @IsNotEmpty()
   @Column({ name: 'branch_id', type: 'uuid', nullable: false })
   branchId: string;
 
- /* @ApiProperty({ required: false, type: () => Branch })
+  @ApiProperty({ required: false, type: () => Branch })
   @ManyToOne(() => Branch, (branch) => branch.orders, {
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE',
     orphanedRowAction: 'delete',
   })
   @JoinColumn({ name: 'branch_id' })
-  branch: Branch;*/
-
-  @ValidateIf((v: Order) => v.source === OrderSourceEnum.branch)
-  @IsUUID()
-  @IsNotEmpty()
-  @Column({ name: 'source_branch_id', type: 'uuid', nullable: true })
-  sourceBranchId: string;
-
-  @ApiProperty({ required: false, type: () => Branch })
-  @ManyToOne(() => Branch, {
-    onUpdate: 'CASCADE',
-    onDelete: 'SET NULL',
-    nullable: true,
-  })
-  @JoinColumn({ name: 'source_branch_id' })
-  sourceBranch: Branch;
-
-  @ValidateIf((v: Order) => v.source === OrderSourceEnum.supplier)
-  @IsUUID()
-  @IsNotEmpty()
-  @Column({ name: 'source_supplier_id', type: 'uuid', nullable: true })
-  sourceSupplierId: string;
-
-  @ApiProperty({ required: false, type: () => Supplier })
-  @ManyToOne(() => Supplier, {
-    onUpdate: 'CASCADE',
-    onDelete: 'SET NULL',
-    nullable: true,
-  })
-  @JoinColumn({ name: 'source_supplier_id' })
-  sourceSupplier: Supplier;
-
-  @IsUUID()
-  @IsOptional()
-  @Column({ name: 'sale_to_product_id', type: 'uuid', nullable: true })
-  saleToProductId: string;
-
-  @ApiProperty({ required: false, type: () => SaleToProduct })
-  @OneToOne(() => SaleToProduct, (saleToProduct) => saleToProduct.order, {
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-    nullable: true,
-  })
-  @JoinColumn({ name: 'sale_to_product_id' })
-  saleToProduct: SaleToProduct;
-
-  @IsUUID()
-  @IsOptional()
-  @Column({ name: 'sale_id', type: 'uuid', nullable: true })
-  saleId: string;
-
-  @ApiProperty({ required: false, type: () => Sale })
-  @ManyToOne(() => Sale, (sale) => sale.orders, {
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-    nullable: true,
-  })
-  @JoinColumn({ name: 'sale_id' })
-  sale: Sale;
+  branch: Branch;
 
   @ApiProperty({ required: false, type: () => [OrderToProduct] })
   @OneToMany(() => OrderToProduct, (orderToProduct) => orderToProduct.order, {
@@ -198,11 +160,7 @@ export class Order extends CoreEntity {
    */
   @Expose()
   get isClosed(): boolean {
-    return Boolean(
-      ~[OrderStatusEnum.validated, OrderStatusEnum.cancelled].indexOf(
-        this.status,
-      ),
-    );
+    return Boolean(~[OrderStatusEnum.closed].indexOf(this.status));
   }
   // End Getters & Setters
 
@@ -213,4 +171,15 @@ export class Order extends CoreEntity {
     return instanceToPlain(this);
   }
   // END Methods **************************************
+  @BeforeInsert()
+  setPlannedFor() {
+    if (!this.plannedFor) {
+      this.plannedFor = this.addDays(1); // Add 7 days to the current date as an example
+    }
+  }
+  private addDays(days: number): Date {
+    const date = new Date();
+    date.setDate(date.getDate() + days);
+    return date;
+  }
 }

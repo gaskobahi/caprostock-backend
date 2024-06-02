@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Supplier } from '../../entities/supply/supplier.entity';
+import { Supplier } from '../../entities/stockmanagement/supplier.entity';
 import { Repository } from 'typeorm';
 import { PaginatedService } from '@app/typeorm';
 import { REQUEST } from '@nestjs/core';

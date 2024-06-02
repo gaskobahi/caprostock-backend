@@ -10,13 +10,7 @@ import { Type } from 'class-transformer';
 import { CreateOrderDto, CreateOrderToProductDto } from './create-order.dto';
 
 export class UpdateOrderDto extends PartialType(
-  OmitType(CreateOrderDto, [
-    'reference',
-    'date',
-    'orderToProducts',
-    'saleId',
-    'saleToProductId',
-  ] as const),
+  OmitType(CreateOrderDto, ['reference', 'date', 'orderToProducts'] as const),
 ) {
   @IsArray()
   @IsNotEmpty()

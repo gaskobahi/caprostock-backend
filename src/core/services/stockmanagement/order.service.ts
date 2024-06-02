@@ -11,18 +11,18 @@ import {
 } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Order } from '../../entities/supply/order.entity';
+import { Order } from '../../entities/stockmanagement/order.entity';
 import { AuthUser } from '../../entities/session/auth-user.entity';
 import { REQUEST_AUTH_USER_KEY } from 'src/modules/auth/definitions/constants';
 import { DeepPartial, FindOptionsWhere, Repository } from 'typeorm';
-import { CreateOrderDto } from '../../dto/supply/create-order.dto';
+import { CreateOrderDto } from '../../dto/stockmanagement/create-order.dto';
 import { OrderSourceEnum, OrderStatusEnum } from '../../definitions/enums';
-import { ValidateOrderDto } from '../../dto/supply/validate-order.dto';
+import { ValidateOrderDto } from '../../dto/stockmanagement/validate-order.dto';
 import { LockedException } from '@app/nestjs';
 import { BranchToProduct } from '../../entities/subsidiary/branch-to-product.entity';
 import { BranchToProductService } from '../subsidiary/branch-to-product.service';
 import { AbstractService } from '../abstract.service';
-import { Supplier } from '../../entities/supply/supplier.entity';
+import { Supplier } from '../../entities/stockmanagement/supplier.entity';
 import { Branch } from '../../entities/subsidiary/branch.entity';
 
 @Injectable()
@@ -57,7 +57,18 @@ export class OrderService extends AbstractService<Order> {
   async createRecord(dto: DeepPartial<CreateOrderDto>): Promise<Order> {
     const authUser = await super.checkSessionBranch();
 
-    if (dto.source === OrderSourceEnum.branch) {
+    switch (dto.action) {
+      case OrderStatusEnum.draft:
+        dto.status = OrderStatusEnum.draft;
+        break;
+      case OrderStatusEnum.pending:
+        dto.status = OrderStatusEnum.pending;
+        break;
+      default:
+        throw new NotImplementedException(`Opération non autorisée`);
+    }
+
+    /*if (dto.source === OrderSourceEnum.branch) {
       delete dto.sourceSupplierId;
     } else if (dto.source === OrderSourceEnum.supplier) {
       delete dto.sourceBranchId;
@@ -81,7 +92,7 @@ export class OrderService extends AbstractService<Order> {
         { id: dto.sourceBranchId },
         { message: `La branche fournisseur sélectionnée n'existe pas` },
       );
-    }
+    }*/
 
     // Check unique reference
     if (dto.reference) {
@@ -98,11 +109,10 @@ export class OrderService extends AbstractService<Order> {
     return await super.createRecord({
       ...dto,
       branchId: authUser.targetBranchId,
-      status: OrderStatusEnum.init,
     });
   }
 
-  async validateRecord(
+  /*async validateRecord(
     optionsWhere: FindOptionsWhere<Order>,
     status: OrderStatusEnum,
     dto: ValidateOrderDto,
@@ -111,7 +121,6 @@ export class OrderService extends AbstractService<Order> {
       where: optionsWhere,
       relations: {
         //branch: true,
-        sale: true,
         orderToProducts: {
           product: true,
         },
@@ -181,5 +190,5 @@ export class OrderService extends AbstractService<Order> {
     order.validatedAt = new Date();
 
     return await this.repository.save(order);
-  }
+  }*/
 }

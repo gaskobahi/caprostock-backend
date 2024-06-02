@@ -110,6 +110,35 @@ export class ProductController {
   }
 
   @ApiSearchQueryFilter()
+  @Get('/list/order')
+  async findForOrder(
+    @CurrentUser() authUser: AuthUser,
+    @Query() query?: any,
+  ): Promise<any> {
+    // Permission check
+    await authUser?.throwUnlessCan(
+      AbilityActionEnum.read,
+      AbilitySubjectEnum.Product,
+    );
+
+    const options = buildFilterFromApiSearchParams(
+      this.service.repository,
+      query as ApiSearchParamOptions,
+      {
+        textFilterFields: ['reference', 'displayName'],
+      },
+    );
+
+    // Apply auth user branch filter
+    /*options.where = merge(
+      options?.where,
+      await this.service.getFilterByAuthUserBranch(),
+    );*/
+
+    return this.service.readPaginatedListRecordForOrder(options, 1, 10000);
+  }
+
+  @ApiSearchQueryFilter()
   @Get('/list/inventorycount')
   async findForInventoryCount(
     @CurrentUser() authUser: AuthUser,
@@ -173,7 +202,7 @@ export class ProductController {
       10000,
     );
   }
-  
+
   @ApiSearchQueryFilter()
   @Get('/list/stockadjustment')
   async findForStockAdjustment(

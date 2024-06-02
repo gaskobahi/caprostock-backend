@@ -124,10 +124,12 @@ export enum OrderSourceEnum {
   supplier = 'supplier',
   branch = 'branch',
 }
+
 export enum OrderStatusEnum {
-  init = 'init',
-  validated = 'validated',
-  cancelled = 'cancelled',
+  draft = 'draft',
+  pending = 'pending',
+  partialreceived = 'partialreceived',
+  closed = 'closed',
 }
 
 /**

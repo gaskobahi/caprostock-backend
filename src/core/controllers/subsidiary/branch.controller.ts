@@ -36,7 +36,7 @@ import { CreateBranchDto } from '../../dto/subsidiary/create-branch.dto';
 import { UpdateBranchDto } from '../../dto/subsidiary/update-branch.dto';
 import { BranchToProductService } from '../../services/subsidiary/branch-to-product.service';
 import { BranchToProduct } from '../../entities/subsidiary/branch-to-product.entity';
-import { Order } from '../../entities/supply/order.entity';
+import { Order } from '../../entities/stockmanagement/order.entity';
 //import { OrderService } from '../../services/supply/order.service';
 //import { SaleService } from '../../services/selling/sale.service';
 //import { Sale } from '../../entities/selling/sale.entity';

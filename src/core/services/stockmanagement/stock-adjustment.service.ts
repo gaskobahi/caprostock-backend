@@ -20,6 +20,9 @@ import { BranchVariantToProductService } from '../subsidiary/branch-variant-to-p
 import { ReasonService } from './reason.service';
 import { DefaultReasonTypeEnum } from 'src/core/definitions/enums';
 import { ProductService } from '../product/product.service';
+import { ProductToStockAdjustment } from 'src/core/entities/stockmanagement/product-to-stockadjustment.entity';
+import { Product } from 'src/core/entities/product/product.entity';
+import { Reason } from 'src/core/entities/stockmanagement/reason.entity';
 
 @Injectable()
 export class StockAdjustmentService extends AbstractService<StockAdjustment> {
@@ -61,7 +64,7 @@ export class StockAdjustmentService extends AbstractService<StockAdjustment> {
     return response;
   }
 
-  async createRecord(dto: CreateStockAdjustmentDto): Promise<StockAdjustment> {
+  /*async createRecord(dto: CreateStockAdjustmentDto): Promise<StockAdjustment> {
     const reason = await this.reasonService.readOneRecord({
       where: { id: dto.reasonId },
     });
@@ -120,6 +123,19 @@ export class StockAdjustmentService extends AbstractService<StockAdjustment> {
         }
       }
     }
+    return result as any;
+  }*/
+
+  async createRecord(dto: CreateStockAdjustmentDto): Promise<StockAdjustment> {
+    const reason = await this.getReasonById(dto.reasonId);
+    this.calculateAfterQuantities(dto, reason);
+
+    const result = await super.createRecord({ ...dto });
+
+    if (result) {
+      await this.updateStockAdjustments(dto);
+    }
+
     return result as any;
   }
 
@@ -194,5 +210,81 @@ export class StockAdjustmentService extends AbstractService<StockAdjustment> {
     const result = await this.repository.remove(entity);
 
     return result;
+  }
+
+  private async getReasonById(reasonId: string): Promise<Reason> {
+    return this.reasonService.readOneRecord({ where: { id: reasonId } });
+  }
+
+  private calculateAfterQuantities(
+    dto: CreateStockAdjustmentDto,
+    reason: Reason,
+  ): void {
+    for (const el of dto.productToStockAdjustments) {
+      switch (reason.name) {
+        case DefaultReasonTypeEnum.loss:
+        case DefaultReasonTypeEnum.damage:
+          if (el.inStock < el.quantity || el.inStock == 0) {
+            throw new BadRequestException('Impossible de reduit le stock');
+          }
+          el.afterQuantity = el.inStock - el.quantity;
+          break;
+        case DefaultReasonTypeEnum.receiveItem:
+          el.afterQuantity = el.inStock + el.quantity;
+          break;
+        case DefaultReasonTypeEnum.inventoryCount:
+          el.afterQuantity = el.quantity;
+          break;
+        default:
+          throw new BadRequestException('Invalid reason type');
+      }
+    }
+  }
+
+  private async updateStockAdjustments(
+    dto: CreateStockAdjustmentDto,
+  ): Promise<void> {
+    for (const ps of dto.productToStockAdjustments) {
+      const prd = await this.productService.readOneRecord({
+        relations: { variantToProducts: true },
+        where: { id: ps.productId },
+      });
+
+      if (prd.hasVariant) {
+        await this.updateVariantStock(ps, prd, dto.branchId);
+      } else {
+        await this.updateProductStock(ps, dto.branchId);
+      }
+    }
+  }
+
+  private async updateVariantStock(
+    ps: any, // ProductToStockAdjustment,
+    prd: Product,
+    branchId: string,
+  ): Promise<void> {
+    const vp = prd.variantToProducts.find((el) => el.sku == ps.sku);
+    if (vp) {
+      await this.branchVariantToProductService.updateRecord(
+        {
+          variantId: vp.id,
+          branchId: branchId,
+        },
+        { price: ps.cost, inStock: ps.afterQuantity },
+      );
+    }
+  }
+
+  private async updateProductStock(
+    ps: any, //ProductToStockAdjustment,
+    branchId: string,
+  ): Promise<void> {
+    await this.branchToProductService.updateRecord(
+      {
+        productId: ps.productId,
+        branchId: branchId,
+      },
+      { price: ps.cost, inStock: ps.afterQuantity },
+    );
   }
 }

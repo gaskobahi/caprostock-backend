@@ -27,11 +27,10 @@ import { ApiRequestIssuerHeader } from 'src/modules/auth/decorators/api-request-
 import { CurrentUser } from 'src/modules/auth/decorators/current-user.decorator';
 import { AuthUser } from '../../entities/session/auth-user.entity';
 import { AbilityActionEnum, AbilitySubjectEnum } from '../../definitions/enums';
-import { SupplierService } from '../../services/supply/supplier.service';
-import { Supplier } from '../../entities/supply/supplier.entity';
-import { CreateSupplierDto } from '../../dto/supply/create-supplier.dto';
-import { UpdateSupplierDto } from '../../dto/supply/update-supplier.dto';
-
+import { SupplierService } from '../../services/stockmanagement/supplier.service';
+import { Supplier } from '../../entities/stockmanagement/supplier.entity';
+import { CreateSupplierDto } from 'src/core/dto/stockmanagement/create-supplier.dto';
+import { UpdateSupplierDto } from 'src/core/dto/stockmanagement/update-supplier.dto';
 @ApiAuthJwtHeader()
 @ApiRequestIssuerHeader()
 @CustomApiErrorResponse()
@@ -60,7 +59,7 @@ export class SupplierController {
       this.service.repository,
       query as ApiSearchParamOptions,
       {
-        textFilterFields: ['displayName'],
+        textFilterFields: ['firstName', 'lastName', 'phoneNumber', 'email'],
       },
     );
 

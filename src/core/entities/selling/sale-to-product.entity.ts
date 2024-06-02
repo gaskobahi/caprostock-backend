@@ -21,8 +21,8 @@ import { Sale } from './sale.entity';
 import { Product } from '../product/product.entity';
 import { ProductPrescription } from './product-prescription.entity';
 import { SaleProductToAttribute } from './sale-product-to-attribute.entity';
-import { Order } from '../supply/order.entity';
-import { Supplier } from '../supply/supplier.entity';
+import { Order } from '../stockmanagement/order.entity';
+import { Supplier } from '../stockmanagement/supplier.entity';
 
 /**
  * Relationship table {sale, product} with custom properties
@@ -112,9 +112,9 @@ export class SaleToProduct extends CoreEntity {
   )
   prescription: ProductPrescription;
 
-  @ApiProperty({ required: false, type: () => Order })
+  /*@ApiProperty({ required: false, type: () => Order })
   @OneToOne(() => Order, (order) => order.saleToProduct)
-  order: Order;
+  order: Order;*/
 
   @ApiProperty({ required: false, type: () => [SaleProductToAttribute] })
   @OneToMany(

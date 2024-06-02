@@ -3,11 +3,10 @@ import {
   EntitySubscriberInterface,
   EventSubscriber,
   InsertEvent,
-  UpdateEvent,
 } from 'typeorm';
 import { generate } from 'generate-password';
 import dayjs from 'dayjs';
-import { Order } from '../stockmanagement/order.entity';
+import { Order } from './order.entity';
 
 @EventSubscriber()
 export class OrderSubscriber implements EntitySubscriberInterface<Order> {
@@ -28,21 +27,12 @@ export class OrderSubscriber implements EntitySubscriberInterface<Order> {
     }
   }
 
-  async beforeUpdate(event: UpdateEvent<Order>) {
-    if (
-      typeof event.entity.reference !== 'string' ||
-      event.entity.reference.trim() === ''
-    ) {
-      event.entity.reference = await this.generateReference(event.connection);
-    }
-  }
-
   private async generateReference(connection: DataSource): Promise<string> {
     let reference: string;
     let existsCount: number;
     do {
       reference =
-        'OD' +
+        'ORD' +
         dayjs.utc().toArray().join('').slice(0, 6) +
         generate({
           numbers: true,

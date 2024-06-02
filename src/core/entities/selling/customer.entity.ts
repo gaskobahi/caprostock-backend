@@ -16,7 +16,6 @@ export class Customer extends PersonCoreEntity {
   @IsNumber()
   @IsOptional()
   @ApiPropertyOptional({ description: `Point du client ` })
-
   @Column({ type: 'double precision', default: 0 })
   pointBalance: number;
 

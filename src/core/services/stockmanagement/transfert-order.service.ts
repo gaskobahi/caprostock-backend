@@ -207,6 +207,11 @@ export class TransfertOrderService extends AbstractService<TransfertOrder> {
     if (!entity) {
       throw new BadRequestException(this.NOT_FOUND_MESSAGE);
     }
+    if (entity.status == DefaultTransferOrderTypeEnum.transfered) {
+      throw new BadRequestException(
+        `L'ordre de transfert ayant le statut ${DefaultTransferOrderTypeEnum.transfered} est impossible`,
+      );
+    }
     const authUser = this.request[REQUEST_AUTH_USER_KEY] as AuthUser;
 
     entity.updatedById = authUser?.id;

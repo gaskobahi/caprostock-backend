@@ -33,61 +33,14 @@ import { ModuleRef } from '@nestjs/core';
 import { Brand } from './entities/product/brand.entity';
 import { BrandService } from './services/product/brand.service';
 import { BrandController } from './controllers/product/brand.controller';
-import { Supplier } from './entities/supply/supplier.entity';
-import { SupplierController } from './controllers/supply/supplier.controller';
-import { SupplierService } from './services/supply/supplier.service';
-/*import { Order } from './entities/supply/order.entity';
-import { OrderToProduct } from './entities/supply/order-to-product.entity';
-import { OrderService } from './services/supply/order.service';
-import { OrderSubscriber } from './entities/supply/order.subscriber';
-import { OrderController } from './controllers/supply/order.controller';
-import { ConsultType } from './entities/consultation/consult-type.entity';*/
-//import { Doctor } from './entities/consultation/doctor.entity';
-//import { Patient } from './entities/consultation/patient.entity';
-//import { ConsultService } from './services/consultation/consult.service';
-//import { ConsultTypeService } from './services/consultation/consult-type.service';
-//import { DoctorService } from './services/consultation/doctor.service';
-//import { PatientService } from './services/consultation/patient.service';
-//import { ConsultSubscriber } from './entities/consultation/consult.subscriber';
-//import { ConsultController } from './controllers/consultation/consult.controller';
-//import { ConsultTypeController } from './controllers/consultation/consult-type.controller';
-//import { DoctorController } from './controllers/consultation/doctor.controller';
-//import { PatientController } from './controllers/consultation/patient.controller';
+import { Supplier } from './entities/stockmanagement/supplier.entity';
+import { SupplierController } from './controllers/stockmanagement/supplier.controller';
+import { SupplierService } from './services/stockmanagement/supplier.service';
 import { BundleToProduct } from './entities/product/bundle-to-product.entity';
-//import { Customer } from './entities/selling/customer.entity';
-//import { InsuranceCompany } from './entities/selling/insurance-company.entity';
-//import { SaleToProduct } from './entities/selling/sale-to-product.entity';
-//import { Sale } from './entities/selling/sale.entity';
-//import { CustomerService } from './services/selling/customer.service';
-//import { CustomerController } from './controllers/selling/customer.controller';
-//import { InsuranceCompanyService } from './services/selling/insurance-company.service';
-//import { SaleService } from './services/selling/sale.service';
-//import { InsuranceCompanyController } from './controllers/selling/insurance-company.controller';
-//import { SaleController } from './controllers/selling/sale.controller';
-//import { SaleSubscriber } from './entities/selling/sale.subscriber';
-//import { DoctorSubscriber } from './entities/consultation/doctor.subscriber';
-/*import { ProductPrescription } from './entities/selling/product-prescription.entity';
-import { PrescriptionGlassCharacteristic } from './entities/selling/prescription-glass-characteristic.entity';
-import { SaleProductToAttribute } from './entities/selling/sale-product-to-attribute.entity';
-import { SalePayment } from './entities/selling/sale-payment.entity';
-import { SalePaymentService } from './services/selling/sale-payment.service';
-import { ConsultPrintingHistory } from './entities/consultation/consult-printing-history.entity';
-import { SalePrintingHistory } from './entities/selling/sale-printing-history.entity';
-import { Treatment } from './entities/selling/treatment.entity';
-import { TreatmentService } from './services/selling/treatment.service';
-import { TreatmentController } from './controllers/selling/treatment.controller';
-import { SalePaymentSubscriber } from './entities/selling/sale-payment.subscriber';
-import { SalePaymentPrintingHistory } from './entities/selling/sale-payment-printing-history.entity';*/
 import { Category } from './entities/product/category.entity';
 import { CategoryService } from './services/product/category.service';
 import { CategoryController } from './controllers/product/category.controller';
-//import { AttributeToProduct } from './entities/product/attribute-to-product.entity';
 import { Table } from './entities/selling/table.entity';
-//import { TableController } from './controllers/selling/table.controller';
-//import { TableService } from './services/selling/table.service';
-//import { Waiter } from './entities/selling/waiter.entity';
-//import { WaiterController } from './controllers/selling/waiter.controlle';
-//import { WaiterService } from './services/selling/waiter.service';
 import { Pin } from './entities/user/pin.entity';
 import { PinController } from './controllers/user/pin.controller';
 import { PinService } from './services/user/pin.service';
@@ -159,6 +112,11 @@ import { ProductToTransfertOrder } from './entities/stockmanagement/product-to-t
 import { TransfertOrderSubscriber } from './entities/stockmanagement/transfertorder.subscriber';
 import { TransfertOrderService } from './services/stockmanagement/transfert-order.service';
 import { TransfertOrderController } from './controllers/stockmanagement/transfert-order.controller';
+import { OrderToProduct } from './entities/stockmanagement/order-to-product.entity';
+import { Order } from './entities/stockmanagement/order.entity';
+import { OrderController } from './controllers/stockmanagement/order.controller';
+import { OrderService } from './services/stockmanagement/order.service';
+import { OrderSubscriber } from './entities/stockmanagement/order.subscriber';
 
 @Module({
   imports: [
@@ -224,8 +182,8 @@ import { TransfertOrderController } from './controllers/stockmanagement/transfer
       TransfertOrder,
       ProductToTransfertOrder,
 
-      //Order,
-      //OrderToProduct,
+      Order,
+      OrderToProduct,
       //Consult,
       //ConsultType,
       //Doctor,
@@ -274,8 +232,7 @@ import { TransfertOrderController } from './controllers/stockmanagement/transfer
     StockAdjustmentController,
     InventoryCountController,
     TransfertOrderController,
-
-    //OrderController,
+    OrderController,
     //ConsultController,
     //ConsultTypeController,
     //PatientController,
@@ -328,6 +285,9 @@ import { TransfertOrderController } from './controllers/stockmanagement/transfer
 
     TransfertOrderService,
     TransfertOrderSubscriber,
+
+    OrderService,
+    OrderSubscriber,
 
     ConfigService,
   ],

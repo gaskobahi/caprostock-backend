@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsNotEmpty, IsNumber, IsOptional, IsUUID } from 'class-validator';
+import {
+  IsInt,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsUUID,
+} from 'class-validator';
 import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import { CoreEntity } from '../base/core.entity';
 import { Order } from './order.entity';
@@ -22,11 +28,21 @@ export class OrderToProduct extends CoreEntity {
   })
   quantity: number;
 
+  @IsOptional()
+  @IsInt()
+  @ApiProperty({ required: true, default: 1, description: `Quantité recu` })
+  @Column({
+    type: 'integer',
+    unsigned: true,
+    default: 1,
+  })
+  incoming: number;
+
   @IsNumber()
   @IsOptional()
-  @ApiProperty({ description: `Montant` })
+  @ApiProperty({ description: `Coût d'achat` })
   @Column({ type: 'double precision', default: 0 })
-  price: number;
+  cost: number;
 
   @IsUUID()
   @IsNotEmpty()
