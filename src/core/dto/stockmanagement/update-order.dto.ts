@@ -2,6 +2,7 @@ import { ApiProperty, OmitType, PartialType } from '@nestjs/swagger';
 import {
   IsArray,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsUUID,
   ValidateNested,
@@ -30,4 +31,8 @@ export class UpdateOrderToProductDto extends PartialType(
   @IsUUID()
   @ApiProperty({ required: false })
   id: string;
+  @IsNotEmpty()
+  @IsNumber()
+  @ApiProperty({ required: true })
+  incoming: number;
 }

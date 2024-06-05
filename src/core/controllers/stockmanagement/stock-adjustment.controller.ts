@@ -74,8 +74,6 @@ export class StockAdjustmentController {
       query as ApiSearchOneParamOptions,
     );
 
-    console.log('kjhjkgj',id)
-
     return this.service.readOneRecord({
       ...options,
       where: { ...options?.where, id: id ?? '' },

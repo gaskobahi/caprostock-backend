@@ -23,6 +23,8 @@ import { AuthUser } from '../session/auth-user.entity';
 import { Expose, instanceToPlain } from 'class-transformer';
 import { Branch } from '../subsidiary/branch.entity';
 import { Supplier } from './supplier.entity';
+import { Reception } from './reception.entity';
+import { OrderToAdditionalCost } from './order-to-addtionnal-cost.entity';
 
 @Entity({
   orderBy: { createdAt: 'DESC', updatedAt: 'DESC' },
@@ -130,6 +132,22 @@ export class Order extends CoreEntity {
     cascade: true,
   })
   orderToProducts: OrderToProduct[];
+
+  @ApiProperty({ required: false, type: () => [Reception] })
+  @OneToMany(() => Reception, (reception) => reception.order, {
+    cascade: true,
+  })
+  receptions: Reception[];
+
+  @ApiProperty({ required: false, type: () => [OrderToAdditionalCost] })
+  @OneToMany(
+    () => OrderToAdditionalCost,
+    (orderToAdditionalCost) => orderToAdditionalCost.order,
+    {
+      cascade: true,
+    },
+  )
+  orderToAdditionalCosts: OrderToAdditionalCost[];
 
   @ApiProperty({
     description: 'La date de validation.',

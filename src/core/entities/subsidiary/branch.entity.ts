@@ -17,6 +17,7 @@ import { BranchToTax } from './branch-to-tax.entity';
 import { BranchToDining } from './branch-to-dining.entity';
 import { Box } from '../setting/box.entity';
 import { Order } from '../stockmanagement/order.entity';
+import {Reception } from '../stockmanagement/reception.entity';
 
 @Entity({
   orderBy: { createdAt: 'DESC', updatedAt: 'DESC' },
@@ -119,6 +120,12 @@ export class Branch extends CoreEntity {
     cascade: true,
   })
   orders: Order[];
+
+  @ApiProperty({ required: false, type: () => [Reception] })
+  @OneToMany(() => Reception, (reception) => reception.branch, {
+    cascade: true,
+  })
+  receptions: Reception[];
 
   /* @ApiProperty({ required: false, type: () => [Order] })
   @OneToMany(() => Order, (order) => order.branch, {

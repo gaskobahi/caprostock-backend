@@ -20,7 +20,6 @@ import { BranchVariantToProductService } from '../subsidiary/branch-variant-to-p
 import { ReasonService } from './reason.service';
 import { DefaultReasonTypeEnum } from 'src/core/definitions/enums';
 import { ProductService } from '../product/product.service';
-import { ProductToStockAdjustment } from 'src/core/entities/stockmanagement/product-to-stockadjustment.entity';
 import { Product } from 'src/core/entities/product/product.entity';
 import { Reason } from 'src/core/entities/stockmanagement/reason.entity';
 
@@ -245,10 +244,11 @@ export class StockAdjustmentService extends AbstractService<StockAdjustment> {
     dto: CreateStockAdjustmentDto,
   ): Promise<void> {
     for (const ps of dto.productToStockAdjustments) {
-      const prd = await this.productService.readOneRecord({
+      /*const prd = await this.productService.readOneRecord({
         relations: { variantToProducts: true },
         where: { id: ps.productId },
-      });
+      });*/
+      const prd = await this.productService.getDetails(ps.productId);
 
       if (prd.hasVariant) {
         await this.updateVariantStock(ps, prd, dto.branchId);

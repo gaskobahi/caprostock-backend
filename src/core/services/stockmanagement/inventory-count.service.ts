@@ -14,7 +14,6 @@ import { REQUEST_AUTH_USER_KEY } from 'src/modules/auth/definitions/constants';
 import { AuthUser } from 'src/core/entities/session/auth-user.entity';
 import { BranchToProductService } from '../subsidiary/branch-to-product.service';
 import { BranchVariantToProductService } from '../subsidiary/branch-variant-to-product.service';
-import { ReasonService } from './reason.service';
 import { InventoryCount } from 'src/core/entities/stockmanagement/inventorycount.entity';
 import { CreateInventoryCountDto } from 'src/core/dto/stockmanagement/create-inventory-count.dto';
 import { UpdateInventoryCountDto } from 'src/core/dto/stockmanagement/update-inventory-count.dto';
@@ -23,7 +22,6 @@ import {
   InventoryCountTypeEnum,
 } from 'src/core/definitions/enums';
 import { ProductService } from '../product/product.service';
-import { CreateProductDto } from 'src/core/dto/product/create-product.dto';
 import { UpdateInventoryCountSaveDto } from 'src/core/dto/stockmanagement/update-inventory-count-save.dto';
 
 @Injectable()
@@ -179,9 +177,7 @@ export class InventoryCountService extends AbstractService<InventoryCount> {
       dto.status = InventoryCountStatusEnum.completed;
     }
     for (const el of dto.productToInventoryCounts) {
-      const pprd = await this.productService.getFindOneByProductIdWithBranch(
-        el.productId,
-      );
+      const pprd = await this.productService.getDetails(el.productId);
       pprd.sku = el.sku;
       console.log('lolo', el.sku);
 
@@ -199,9 +195,7 @@ export class InventoryCountService extends AbstractService<InventoryCount> {
     if (result) {
       if (dto.action == InventoryCountStatusEnum.completed) {
         for (const pi of dto.productToInventoryCounts) {
-          const prd = await this.productService.getFindOneByProductIdWithBranch(
-            pi.productId,
-          );
+          const prd = await this.productService.getDetails(pi.productId);
           if (pi.counted > 0) {
             if (prd.hasVariant) {
               const vp = prd.variantToProducts.find((el) => el.sku == pi.sku);

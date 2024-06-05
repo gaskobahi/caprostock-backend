@@ -6,19 +6,21 @@ import {
 } from 'typeorm';
 import { generate } from 'generate-password';
 import dayjs from 'dayjs';
-import { Order } from './order.entity';
+import { Reception } from './reception.entity';
 
 @EventSubscriber()
-export class OrderSubscriber implements EntitySubscriberInterface<Order> {
+export class ReceptionSubscriber
+  implements EntitySubscriberInterface<Reception>
+{
   constructor(dataSource: DataSource) {
     dataSource.subscribers.push(this);
   }
 
   listenTo() {
-    return Order;
+    return Reception;
   }
 
-  async beforeInsert(event: InsertEvent<Order>) {
+  async beforeInsert(event: InsertEvent<Reception>) {
     if (
       typeof event.entity.reference !== 'string' ||
       event.entity.reference.trim() === ''
@@ -32,7 +34,7 @@ export class OrderSubscriber implements EntitySubscriberInterface<Order> {
     let existsCount: number;
     do {
       reference =
-        'PO' +
+        'RCP' +
         dayjs.utc().toArray().join('').slice(0, 6) +
         generate({
           numbers: true,
@@ -42,7 +44,7 @@ export class OrderSubscriber implements EntitySubscriberInterface<Order> {
           uppercase: false,
           excludeSimilarCharacters: true,
         });
-      existsCount = await connection.getRepository(Order).countBy({
+      existsCount = await connection.getRepository(Reception).countBy({
         reference: reference,
       });
     } while (existsCount > 0);

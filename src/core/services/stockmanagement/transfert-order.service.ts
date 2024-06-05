@@ -31,7 +31,6 @@ export class TransfertOrderService extends AbstractService<TransfertOrder> {
     private readonly configService: ConfigService,
     private readonly branchToProductService: BranchToProductService,
     private readonly branchVariantToProductService: BranchVariantToProductService,
-    private readonly reasonService: ReasonService,
     private readonly productService: ProductService,
 
     protected paginatedService: PaginatedService<TransfertOrder>,
@@ -224,13 +223,15 @@ export class TransfertOrderService extends AbstractService<TransfertOrder> {
   async updateStock(dto: CreateTransfertOrderDto) {
     for (const ps of dto.productToTransfertOrders) {
       //find product by Id
-      const prd = await this.productService.readOneRecord({
+      /*const prd = await this.productService.readOneRecord({
         relations: {
           variantToProducts: { branchVariantToProducts: true },
           branchToProducts: true,
         },
         where: { id: ps.productId },
-      });
+      });*/
+      const prd = await this.productService.getDetails(ps.productId);
+
       if (prd.hasVariant) {
         const variants = prd?.variantToProducts;
         if (variants) {
@@ -287,13 +288,14 @@ export class TransfertOrderService extends AbstractService<TransfertOrder> {
 
   private async handleProductTransfers(dto: any): Promise<void> {
     for (const ps of dto.productToTransfertOrders) {
-      const prd = await this.productService.readOneRecord({
+      /*const prd = await this.productService.readOneRecord({
         relations: {
           variantToProducts: { branchVariantToProducts: true },
           branchToProducts: true,
         },
         where: { id: ps.productId },
-      });
+      });*/
+      const prd = await this.productService.getDetails(ps.productId);
 
       if (prd.hasVariant) {
         await this.updateVariantStock(prd.variantToProducts, ps, dto);

@@ -66,7 +66,6 @@ export abstract class AbstractService<T extends BaseCoreEntity> {
     entity.updatedById = authUser?.id;
     // Adding this to trigger update events
     entity.updatedAt = new Date();
-
     return await this.repository.save(entity);
   }
 

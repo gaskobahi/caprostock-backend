@@ -17,6 +17,7 @@ export enum AbilitySubjectEnum {
   Brand = 'Brand',
   Supplier = 'Supplier',
   Order = 'Order',
+  Reception = 'Reception',
   Consult = 'Consult',
   ConsultType = 'ConsultType',
   Doctor = 'Doctor',

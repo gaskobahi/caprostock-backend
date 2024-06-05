@@ -1,15 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsInt,
-  IsNotEmpty,
-  IsNumber,
-  IsOptional,
-  IsUUID,
-} from 'class-validator';
+import { IsInt, IsNotEmpty, IsUUID } from 'class-validator';
 import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import { CoreEntity } from '../base/core.entity';
-import { Order } from './order.entity';
 import { Product } from '../product/product.entity';
+import { Reception } from './reception.entity';
 
 /**
  * Relationship table {order, product} with custom properties
@@ -17,7 +11,7 @@ import { Product } from '../product/product.entity';
 @Entity({
   orderBy: { createdAt: 'DESC', updatedAt: 'DESC' },
 })
-export class OrderToProduct extends CoreEntity {
+export class ReceptionToProduct extends CoreEntity {
   @IsNotEmpty()
   @IsInt()
   @ApiProperty({ required: true, default: 1, description: `Quantité` })
@@ -37,25 +31,19 @@ export class OrderToProduct extends CoreEntity {
   })
   sku: number;
 
-  @IsNumber()
-  @IsOptional()
-  @ApiProperty({ description: `Coût d'achat` })
-  @Column({ type: 'double precision', default: 0 })
-  cost: number;
-
   @IsUUID()
   @IsNotEmpty()
-  @Column({ name: 'order_id', type: 'uuid', nullable: false })
-  orderId: string;
+  @Column({ name: 'reception_id', type: 'uuid', nullable: false })
+  receptionId: string;
 
-  @ApiProperty({ required: false, type: () => Order })
-  @ManyToOne(() => Order, (order) => order.orderToProducts, {
+  @ApiProperty({ required: false, type: () => Reception })
+  @ManyToOne(() => Reception, (reception) => reception.receptionToProducts, {
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE',
     orphanedRowAction: 'delete',
   })
-  @JoinColumn({ name: 'order_id' })
-  order: Order;
+  @JoinColumn({ name: 'reception_id' })
+  reception: Reception;
 
   @IsUUID()
   @IsNotEmpty()

@@ -16,7 +16,6 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseEnumPipe,
   ParseUUIDPipe,
   Patch,
   Post,
@@ -27,38 +26,32 @@ import { merge } from 'lodash';
 import { ApiAuthJwtHeader } from 'src/modules/auth/decorators/api-auth-jwt-header.decorator';
 import { ApiRequestIssuerHeader } from 'src/modules/auth/decorators/api-request-issuer-header.decorator';
 import { CurrentUser } from 'src/modules/auth/decorators/current-user.decorator';
-import {
-  AbilityActionEnum,
-  AbilitySubjectEnum,
-  OrderStatusEnum,
-} from '../../definitions/enums';
+import { AbilityActionEnum, AbilitySubjectEnum } from '../../definitions/enums';
 import { AuthUser } from '../../entities/session/auth-user.entity';
-//import { OrderService } from '../../services/supply/order.service';
-import { CreateOrderDto } from '../../dto/stockmanagement/create-order.dto';
-import { UpdateOrderDto } from '../../dto/stockmanagement/update-order.dto';
-import { ValidateOrderDto } from '../../dto/stockmanagement/validate-order.dto';
-import { Order } from 'src/core/entities/stockmanagement/order.entity';
-import { OrderService } from 'src/core/services/stockmanagement/order.service';
+import { Reception } from 'src/core/entities/stockmanagement/reception.entity';
+import { ReceptionService } from 'src/core/services/stockmanagement/reception.service';
+import { CreateReceptionDto } from 'src/core/dto/stockmanagement/create-reception.dto';
+import { UpdateReceptionDto } from 'src/core/dto/stockmanagement/update-reception.dto';
 
 @ApiAuthJwtHeader()
 @ApiRequestIssuerHeader()
 @CustomApiErrorResponse()
-@ApiTags('order')
-@Controller('order')
-export class OrderController {
-  constructor(private service: OrderService) {}
+@ApiTags('reception')
+@Controller('reception')
+export class ReceptionController {
+  constructor(private service: ReceptionService) {}
 
   @ApiSearchQueryFilter()
-  @CustomApiPaginatedResponse(Order)
+  @CustomApiPaginatedResponse(Reception)
   @Get()
   async findPaginated(
     @CurrentUser() authUser: AuthUser,
     @Query() query?: any,
-  ): Promise<Paginated<Order>> {
+  ): Promise<Paginated<Reception>> {
     // Permission check
     await authUser?.throwUnlessCan(
       AbilityActionEnum.read,
-      AbilitySubjectEnum.Order,
+      AbilitySubjectEnum.Reception,
     );
 
     const options = buildFilterFromApiSearchParams(
@@ -79,12 +72,12 @@ export class OrderController {
   }
 
   @ApiSearchOneQueryFilter()
-  @Get(':orderId')
+  @Get(':receptionId')
   async findOne(
     @CurrentUser() authUser: AuthUser,
-    @Param('orderId', ParseUUIDPipe) id: string,
+    @Param('receptionId', ParseUUIDPipe) id: string,
     @Query() query?: any,
-  ): Promise<Order> {
+  ): Promise<Reception> {
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
       query as ApiSearchOneParamOptions,
@@ -96,27 +89,27 @@ export class OrderController {
       await this.service.getFilterByAuthUserBranch(),
     );*/
 
-    const order = await this.service.readOneRecord({
+    const reception = await this.service.readOneRecord({
       ...options,
       where: { ...options?.where, id: id ?? '' },
     });
 
     // Permission check
-    await authUser?.throwUnlessCan(AbilityActionEnum.read, order);
+    await authUser?.throwUnlessCan(AbilityActionEnum.read, reception);
 
-    return order;
+    return reception;
   }
 
   /**
-   * Create order
+   * Create reception
    */
   @ApiSearchOneQueryFilter()
   @Post()
   async create(
-    @Body() dto: CreateOrderDto,
+    @Body() dto: CreateReceptionDto,
     @Query() query?: any,
-  ): Promise<Order> {
-    const order = await this.service.createRecord(dto);
+  ): Promise<Reception> {
+    const reception = await this.service.createRecord(dto);
 
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
@@ -131,24 +124,24 @@ export class OrderController {
 
     return this.service.readOneRecord({
       ...options,
-      where: { ...options?.where, id: order.id },
+      where: { ...options?.where, id: reception.id },
     });
   }
 
   /**
-   * Update order
+   * Update reception
    */
   @ApiSearchOneQueryFilter()
-  @Patch(':orderId')
+  @Patch(':receptionId')
   async update(
-    @Param('orderId', ParseUUIDPipe) id: string,
-    @Body() dto: UpdateOrderDto,
+    @Param('receptionId', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateReceptionDto,
     @Query() query?: any,
-  ): Promise<Order> {
+  ): Promise<Reception> {
     // Apply auth user branch filter
     const filter = await this.service.getFilterByAuthUserBranch();
 
-    const order = await this.service.updateRecord(
+    const reception = await this.service.updateRecord(
       { ...filter, id: id ?? '' },
       dto,
     );
@@ -160,54 +153,20 @@ export class OrderController {
 
     return this.service.readOneRecord({
       ...options,
-      where: { ...options?.where, ...filter, id: order.id ?? '' },
+      where: { ...options?.where, ...filter, id: reception.id ?? '' },
     });
   }
 
   /**
-   * Remove order
+   * Remove reception
    */
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Delete(':orderId')
-  async remove(@Param('orderId', ParseUUIDPipe) id: string) {
+  @Delete(':receptionId')
+  async remove(@Param('receptionId', ParseUUIDPipe) id: string) {
     // Apply auth user branch filter
     const filter = await this.service.getFilterByAuthUserBranch();
 
     await this.service.deleteRecord({ ...filter, id: id ?? '' });
     return;
-  }
-
-  /**
-   * Validate order
-   */
-  @ApiSearchOneQueryFilter()
-  @HttpCode(HttpStatus.OK)
-  @Post(':orderId/validate/:status')
-  async validate(
-    @Param('orderId', ParseUUIDPipe) id: string,
-    @Param('status', new ParseEnumPipe(OrderStatusEnum))
-    status: OrderStatusEnum,
-    @Body() dto: ValidateOrderDto,
-    @Query() query?: any,
-  ): Promise<Order> {
-    // Apply auth user branch filter
-    const filter = await this.service.getFilterByAuthUserBranch();
-
-    /*const order = await this.service.validateRecord(
-      { ...filter, id: id ?? '' },
-      status,
-      dto,
-    );*/
-
-    const options = buildFilterFromApiSearchParams(
-      this.service.repository,
-      query as ApiSearchOneParamOptions,
-    );
-
-    /*return this.service.readOneRecord({
-      ...options,
-      where: { ...options?.where, ...filter, id: order.id ?? '' },
-    });*/
-    return [] as any;
   }
 }

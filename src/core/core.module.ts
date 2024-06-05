@@ -117,6 +117,12 @@ import { Order } from './entities/stockmanagement/order.entity';
 import { OrderController } from './controllers/stockmanagement/order.controller';
 import { OrderService } from './services/stockmanagement/order.service';
 import { OrderSubscriber } from './entities/stockmanagement/order.subscriber';
+import { ReceptionToProduct } from './entities/stockmanagement/reception-to-product.entity';
+import { Reception } from './entities/stockmanagement/reception.entity';
+import { ReceptionSubscriber } from './entities/stockmanagement/reception.subscriber';
+import { ReceptionService } from './services/stockmanagement/reception.service';
+import { ReceptionController } from './controllers/stockmanagement/reception.controller';
+import { OrderToAdditionalCost } from './entities/stockmanagement/order-to-addtionnal-cost.entity';
 
 @Module({
   imports: [
@@ -184,6 +190,10 @@ import { OrderSubscriber } from './entities/stockmanagement/order.subscriber';
 
       Order,
       OrderToProduct,
+      OrderToAdditionalCost,
+
+      Reception,
+      ReceptionToProduct,
       //Consult,
       //ConsultType,
       //Doctor,
@@ -233,14 +243,8 @@ import { OrderSubscriber } from './entities/stockmanagement/order.subscriber';
     InventoryCountController,
     TransfertOrderController,
     OrderController,
-    //ConsultController,
-    //ConsultTypeController,
-    //PatientController,
-    //DoctorController,
-    //WaiterController,
-    //InsuranceCompanyController,
-    //SaleController,
-    //TreatmentController,
+    ReceptionController,
+
     FileController,
   ],
   providers: [
@@ -288,6 +292,9 @@ import { OrderSubscriber } from './entities/stockmanagement/order.subscriber';
 
     OrderService,
     OrderSubscriber,
+
+    ReceptionService,
+    ReceptionSubscriber,
 
     ConfigService,
   ],

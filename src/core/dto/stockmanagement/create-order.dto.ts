@@ -25,7 +25,7 @@ export class CreateOrderDto extends PickType(Order, [
   @ApiPropertyOptional({ description: `Date prévu de la reception` })
   plannedFor: Date;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   @ApiProperty({ required: true })
   action: OrderStatusEnum;
@@ -51,9 +51,9 @@ export class CreateOrderToProductDto extends PickType(OrderToProduct, [
   'quantity',
   'cost',
   'productId',
+  'sku',
 ] as const) {
   @IsOptional()
   @IsNumber({}, { message: 'incoming must be a number' })
-  //@IsPositive({ message: 'incoming must be a positive number' })
-  incoming: number;
+  toreceive: number;
 }

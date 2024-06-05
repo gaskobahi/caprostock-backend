@@ -530,4 +530,14 @@ export class ProductService extends AbstractService<Product> {
     }
     return this.calculateAveragePrice(arrayPrices);
   }
+
+  async getDetails(productId: string) {
+    return await this.readOneRecord({
+      relations: {
+        variantToProducts: { branchVariantToProducts: true },
+        branchToProducts: true,
+      },
+      where: { id: productId },
+    });
+  }
 }
