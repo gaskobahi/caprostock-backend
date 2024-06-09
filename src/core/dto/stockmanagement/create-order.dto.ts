@@ -12,6 +12,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { OrderStatusEnum } from 'src/core/definitions/enums';
+import { OrderToAdditionalCost } from 'src/core/entities/stockmanagement/order-to-addtionnal-cost.entity';
 
 export class CreateOrderDto extends PickType(Order, [
   'reference',
@@ -45,6 +46,16 @@ export class CreateOrderDto extends PickType(Order, [
     description: `Produits de la commande`,
   })
   orderToProducts: CreateOrderToProductDto[];
+
+  @IsArray()
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CreateOrderToAdditionalCostDto)
+  @ApiProperty({
+    type: () => [CreateOrderToAdditionalCostDto],
+    description: `Cout additionel de la commande`,
+  })
+  orderToAdditionalCosts: CreateOrderToAdditionalCostDto[];
 }
 
 export class CreateOrderToProductDto extends PickType(OrderToProduct, [
@@ -57,3 +68,8 @@ export class CreateOrderToProductDto extends PickType(OrderToProduct, [
   @IsNumber({}, { message: 'incoming must be a number' })
   toreceive: number;
 }
+
+export class CreateOrderToAdditionalCostDto extends PickType(
+  OrderToAdditionalCost,
+  ['amount', 'displayName'] as const,
+) {}

@@ -123,6 +123,7 @@ import { ReceptionSubscriber } from './entities/stockmanagement/reception.subscr
 import { ReceptionService } from './services/stockmanagement/reception.service';
 import { ReceptionController } from './controllers/stockmanagement/reception.controller';
 import { OrderToAdditionalCost } from './entities/stockmanagement/order-to-addtionnal-cost.entity';
+import { ReceptionToAdditionalCost } from './entities/stockmanagement/reception-to-addtionnal-cost.entity';
 
 @Module({
   imports: [
@@ -194,6 +195,7 @@ import { OrderToAdditionalCost } from './entities/stockmanagement/order-to-addti
 
       Reception,
       ReceptionToProduct,
+      ReceptionToAdditionalCost,
       //Consult,
       //ConsultType,
       //Doctor,

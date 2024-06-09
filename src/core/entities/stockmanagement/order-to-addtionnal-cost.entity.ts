@@ -1,8 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsInt, IsNotEmpty, IsString, IsUUID } from 'class-validator';
-import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
 import { CoreEntity } from '../base/core.entity';
 import { Order } from './order.entity';
+import { ReceptionToAdditionalCost } from './reception-to-addtionnal-cost.entity';
 
 /**
  * Relationship table {order, product} with custom properties
@@ -24,7 +25,7 @@ export class OrderToAdditionalCost extends CoreEntity {
     type: 'integer',
     default: 1,
   })
-  quantity: number;
+  amount: number;
 
   @IsUUID()
   @IsNotEmpty()
@@ -39,4 +40,15 @@ export class OrderToAdditionalCost extends CoreEntity {
   })
   @JoinColumn({ name: 'order_id' })
   order: Order;
+
+  @ApiProperty({ required: false, type: () => [ReceptionToAdditionalCost] })
+  @OneToMany(
+    () => ReceptionToAdditionalCost,
+    (receptionToAdditionalCost) =>
+      receptionToAdditionalCost.orderToAdditionalCost,
+    {
+      cascade: true,
+    },
+  )
+  receptionToAdditionalCosts: ReceptionToAdditionalCost[];
 }
