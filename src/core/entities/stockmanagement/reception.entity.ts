@@ -19,6 +19,7 @@ import { instanceToPlain } from 'class-transformer';
 import { Branch } from '../subsidiary/branch.entity';
 import { Order } from './order.entity';
 import { ReceptionToProduct } from './reception-to-product.entity';
+import { ReceptionToAdditionalCost } from './reception-to-addtionnal-cost.entity';
 
 @Entity({
   orderBy: { createdAt: 'DESC', updatedAt: 'DESC' },
@@ -79,6 +80,16 @@ export class Reception extends CoreEntity {
     },
   )
   receptionToProducts: ReceptionToProduct[];
+
+  @ApiProperty({ required: false, type: () => [ReceptionToAdditionalCost] })
+  @OneToMany(
+    () => ReceptionToAdditionalCost,
+    (receptionToAdditionalCost) => receptionToAdditionalCost.reception,
+    {
+      cascade: true,
+    },
+  )
+  receptionToAdditionalCosts: ReceptionToAdditionalCost[];
 
   /**
    * Getters & Setters

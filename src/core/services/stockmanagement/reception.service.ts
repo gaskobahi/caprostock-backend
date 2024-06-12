@@ -47,7 +47,6 @@ export class ReceptionService extends AbstractService<Reception> {
 
   async createRecord(dto: DeepPartial<CreateReceptionDto>): Promise<Reception> {
     const authUser = await super.checkSessionBranch();
-
     // Check unique reference
     if (dto.reference) {
       await isUniqueConstraint(
@@ -84,15 +83,14 @@ export class ReceptionService extends AbstractService<Reception> {
         );
       }
       //dto
-      console.log('titi2656565', dto);
       //const receptions
       for (const receptionToProduct of dto.receptionToProducts) {
         const receptionProductData = {
           ...receptionToProduct,
           destinationBranchId: orderDetails.destinationBranchId,
         };
-        console.log('ZEZEZEZEZEZEZEZEZE', receptionProductData);
         await this.updateStocks(receptionProductData);
+        return [] as any;
       }
     }
 

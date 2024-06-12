@@ -16,8 +16,8 @@ import { AbstractService } from '../abstract.service';
 import { REQUEST_AUTH_USER_KEY } from 'src/modules/auth/definitions/constants';
 import { AuthUser } from 'src/core/entities/session/auth-user.entity';
 import { ProductService } from '../product/product.service';
-import { Product } from 'src/core/entities/product/product.entity';
 import { BranchVariantToProductService } from '../subsidiary/branch-variant-to-product.service';
+import { UpdateOrderDto } from 'src/core/dto/stockmanagement/update-order.dto';
 
 @Injectable()
 export class OrderService extends AbstractService<Order> {
@@ -86,15 +86,12 @@ export class OrderService extends AbstractService<Order> {
 
   async updateRecord(
     optionsWhere: FindOptionsWhere<Order>,
-    dto: DeepPartial<Order>,
+    dto: DeepPartial<UpdateOrderDto>,
   ) {
     let entity = await this.repository.findOneBy(optionsWhere);
     if (!entity) {
       throw new BadRequestException(this.NOT_FOUND_MESSAGE);
     }
-
-    //check if exist line where quantity <incoming
-    //this.isLineIncomingMoreThanQuantity(dto.orderToProducts);
 
     const authUser = this.request[REQUEST_AUTH_USER_KEY] as AuthUser;
     entity = this.repository.merge(entity, dto);
@@ -102,7 +99,9 @@ export class OrderService extends AbstractService<Order> {
     entity.updatedById = authUser?.id;
     // Adding this to trigger update events
     entity.updatedAt = new Date();
-    return await this.repository.save(entity);
+    return await super.updateRecord(optionsWhere, {
+      ...entity,
+    });
   }
 
   async readOneRecord(options?: FindOneOptions<Order>) {
@@ -112,7 +111,31 @@ export class OrderService extends AbstractService<Order> {
     }
 
     const entity = { ...res, totalAmount: 0, orderId: res.id } as any;
-    const { destinationBranchId, receptions, orderId, branchId } = entity;
+    const {
+      destinationBranchId,
+      receptions,
+      orderId,
+      branchId,
+      orderToAdditionalCosts,
+    } = entity;
+
+    if (orderToAdditionalCosts) {
+      for (const al of orderToAdditionalCosts) {
+        if (al.receptionToAdditionalCosts.length > 0) {
+          al.hasReceptionToAdditionalCost = true;
+        } else {
+          al.hasReceptionToAdditionalCost = false;
+        }
+      }
+
+      if (entity.status == OrderStatusEnum.closed) {
+        for (const al of entity?.orderToAdditionalCosts) {
+          if (!al.receptionToAdditionalCosts.length) {
+            al.isCancelled = true;
+          }
+        }
+      }
+    }
 
     const newOrderToProducts = entity?.orderToProducts?.reduce(
       (
@@ -377,7 +400,7 @@ export class OrderService extends AbstractService<Order> {
     );
   }
 
- /* async updateStocks(dto: any): Promise<void> {
+  /* async updateStocks(dto: any): Promise<void> {
     console.log('tot1', dto);
     for (const ps of dto.orderToProducts) {
       const prd = await this.productService.getDetails(ps.productId);
@@ -442,6 +465,7 @@ export class OrderService extends AbstractService<Order> {
           },
         },
         receptions: { receptionToProducts: true },
+        orderToAdditionalCosts: { receptionToAdditionalCosts: true },
       },
     });
   }

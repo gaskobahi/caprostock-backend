@@ -17,7 +17,7 @@ import { BranchToTax } from './branch-to-tax.entity';
 import { BranchToDining } from './branch-to-dining.entity';
 import { Box } from '../setting/box.entity';
 import { Order } from '../stockmanagement/order.entity';
-import {Reception } from '../stockmanagement/reception.entity';
+import { Reception } from '../stockmanagement/reception.entity';
 
 @Entity({
   orderBy: { createdAt: 'DESC', updatedAt: 'DESC' },
