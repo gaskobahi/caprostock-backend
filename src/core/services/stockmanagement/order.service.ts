@@ -5,6 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Order } from '../../entities/stockmanagement/order.entity';
 import {
   DeepPartial,
+  FindManyOptions,
   FindOneOptions,
   FindOptionsWhere,
   Repository,
@@ -27,10 +28,6 @@ export class OrderService extends AbstractService<Order> {
     @InjectRepository(Order)
     private _repository: Repository<Order>,
     protected paginatedService: PaginatedService<Order>,
-    private branchToProductService: BranchToProductService,
-    private readonly branchVariantToProductService: BranchVariantToProductService,
-
-    private readonly productService: ProductService,
 
     @Inject(REQUEST) protected request: any,
   ) {
@@ -50,6 +47,33 @@ export class OrderService extends AbstractService<Order> {
     }
 
     return {};
+  }
+
+  async readPaginatedListRecord(
+    options?: FindManyOptions<Order>,
+    page: number = 1,
+    perPage: number = 25,
+  ) {
+    // Paginate using provided options, page, and perPage
+    const response = await this.paginatedService.paginate(
+      this.repository,
+      page,
+      perPage,
+      options,
+    );
+    // Retrieve detailed records for each item in the paginated response
+    const detailedRecords = await Promise.all(
+      response.data.map(async (record) => {
+        return this.readOneRecord({
+          ...options,
+          where: { ...options?.where, id: record.id },
+        });
+      }),
+    );
+    // Update response data with detailed records
+    response.data = detailedRecords;
+
+    return response;
   }
 
   async createRecord(dto: DeepPartial<CreateOrderDto>): Promise<Order> {
@@ -109,6 +133,7 @@ export class OrderService extends AbstractService<Order> {
     if (!res) {
       throw new BadRequestException(this.NOT_FOUND_MESSAGE);
     }
+    console.log('toto', res);
 
     const entity = { ...res, totalAmount: 0, orderId: res.id } as any;
     const {
@@ -222,13 +247,13 @@ export class OrderService extends AbstractService<Order> {
       },
       [],
     );
+
     entity.orderToProducts = newOrderToProducts;
     entity.totalOrdered = this.totalOrdered(entity);
     entity.totalReceived = this.totalReceived(entity);
     entity.totalAmount = this.totalAmount(entity);
     entity.hasIncoming = this.hasIncoming(entity);
     entity.isAllreceived = this.isAllReceive(entity?.orderToProducts);
-
     return entity;
   }
 
@@ -369,15 +394,20 @@ export class OrderService extends AbstractService<Order> {
     );
   }
 
-  totalAmount(entity: { orderToProducts: any[] }) {
+  totalAmount(entity: any): number {
     if (!entity?.orderToProducts) {
       return 0;
     }
-    return entity?.orderToProducts?.reduce(
-      (acc: number, current: { quantity: any; cost: any }) =>
-        acc + (current.quantity || 0) * (current.cost || 0),
+    const totalOrdAMOUNT = entity.orderToProducts.reduce(
+      (acc, { quantity = 0, cost = 0 }) => acc + quantity * cost,
       0,
     );
+    const totalAddAMOUNT =
+      entity.orderToAdditionalCosts?.reduce(
+        (acc, { amount = 0 }) => acc + amount,
+        0,
+      ) || 0;
+    return totalOrdAMOUNT + totalAddAMOUNT;
   }
 
   totalReceived(entity: { orderToProducts: any[] }) {
