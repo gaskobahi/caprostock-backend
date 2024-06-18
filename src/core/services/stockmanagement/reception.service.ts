@@ -11,6 +11,7 @@ import { OrderStatusEnum } from 'src/core/definitions/enums';
 import { BranchVariantToProductService } from '../subsidiary/branch-variant-to-product.service';
 import { BranchToProductService } from '../subsidiary/branch-to-product.service';
 import { ProductService } from '../product/product.service';
+import { VariantToProductService } from '../subsidiary/variant-to-product.service';
 
 @Injectable()
 export class ReceptionService extends AbstractService<Reception> {
@@ -24,6 +25,7 @@ export class ReceptionService extends AbstractService<Reception> {
     private branchToProductService: BranchToProductService,
     private readonly branchVariantToProductService: BranchVariantToProductService,
     private readonly productService: ProductService,
+    private readonly variantToProductService: VariantToProductService,
 
     @Inject(REQUEST) protected request: any,
   ) {
@@ -82,18 +84,16 @@ export class ReceptionService extends AbstractService<Reception> {
           { status: OrderStatusEnum.partialreceived },
         );
       }
-      //dto
-      //const receptions
+
       for (const receptionToProduct of dto.receptionToProducts) {
         const receptionProductData = {
           ...receptionToProduct,
           destinationBranchId: orderDetails.destinationBranchId,
+          orderId: dto.orderId,
         };
         await this.updateStocks(receptionProductData);
-        return [] as any;
       }
     }
-
     return response;
   }
 
@@ -114,10 +114,20 @@ export class ReceptionService extends AbstractService<Reception> {
 
   async updateStocks(dto: any): Promise<void> {
     const prd = await this.productService.getDetails(dto.productId);
+    const orderData = await this.getDetailByOrderId(dto.orderId);
 
+    //update item product cost
+
+    if (orderData && orderData.orderToProducts) {
+      await this.updateProductCost(orderData.orderToProducts);
+    }
+
+    //update product stock
     if (prd.hasVariant) {
+      // await this.updateVariantToProductCost(orderData.orderToProducts);
       await this.updateVariantStock(prd.variantToProducts, dto);
     } else {
+      // await this.updateProductCost(orderData.orderToProducts);
       await this.updateProductStock(prd.branchToProducts, dto);
     }
   }
@@ -134,7 +144,7 @@ export class ReceptionService extends AbstractService<Reception> {
 
     if (srcProductBranch) {
       await this.branchVariantToProductService.updateRecord(
-        { sku: vp.sku, branchId: dto.destinationBranchId },
+        { sku: srcProductBranch.sku, branchId: dto.destinationBranchId },
         { inStock: srcProductBranch.inStock + dto.quantity },
       );
     }
@@ -157,5 +167,40 @@ export class ReceptionService extends AbstractService<Reception> {
       },
       { inStock: currentBranchStock.inStock + dto.quantity },
     );
+  }
+
+  /*private async updateProductCost(arrayToProducts: any): Promise<void> {
+    for (const oproduct of arrayToProducts ?? []) {
+      await this.productService.updateRecord(
+        {
+          id: oproduct.productId,
+        },
+        { cost: oproduct.cost },
+      );
+    }
+  }*/
+
+  private async updateProductCost(arrayToProducts: any): Promise<void> {
+    for (const oproduct of arrayToProducts ?? []) {
+      if (oproduct.quantity > 0) {
+        if (oproduct.variantId) {
+          await this.variantToProductService.updateRecord(
+            {
+              id: oproduct.variantId,
+              productId: oproduct.productId,
+              sku: oproduct.sku,
+            },
+            { cost: oproduct.cost },
+          );
+        } else {
+          await this.productService.updateRecord(
+            {
+              id: oproduct.productId,
+            },
+            { cost: oproduct.cost },
+          );
+        }
+      }
+    }
   }
 }

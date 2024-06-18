@@ -124,6 +124,7 @@ import { ReceptionService } from './services/stockmanagement/reception.service';
 import { ReceptionController } from './controllers/stockmanagement/reception.controller';
 import { OrderToAdditionalCost } from './entities/stockmanagement/order-to-addtionnal-cost.entity';
 import { ReceptionToAdditionalCost } from './entities/stockmanagement/reception-to-addtionnal-cost.entity';
+import { VariantToProductService } from './services/subsidiary/variant-to-product.service';
 
 @Module({
   imports: [
@@ -272,6 +273,7 @@ import { ReceptionToAdditionalCost } from './entities/stockmanagement/reception-
     //WaiterService,
     BranchToProductService,
     BranchVariantToProductService,
+    VariantToProductService,
 
     DefaultDataService,
     BrandService,

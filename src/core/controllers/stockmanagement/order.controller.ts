@@ -180,6 +180,7 @@ export class OrderController {
   /**
    * Validate order
    */
+  /*
   @ApiSearchOneQueryFilter()
   @HttpCode(HttpStatus.OK)
   @Post(':orderId/validate/:status')
@@ -193,11 +194,11 @@ export class OrderController {
     // Apply auth user branch filter
     const filter = await this.service.getFilterByAuthUserBranch();
 
-    /*const order = await this.service.validateRecord(
+    const order = await this.service.validateRecord(
       { ...filter, id: id ?? '' },
       status,
       dto,
-    );*/
+    );
 
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
@@ -207,7 +208,41 @@ export class OrderController {
     /*return this.service.readOneRecord({
       ...options,
       where: { ...options?.where, ...filter, id: order.id ?? '' },
-    });*/
+    });
     return [] as any;
+  }
+  */
+
+  /**
+   * Cancel order
+   */
+  @ApiSearchOneQueryFilter()
+  @HttpCode(HttpStatus.OK)
+  @Post(':orderId/cancel/:status')
+  async cancelRecord(
+    @Param('orderId', ParseUUIDPipe) id: string,
+    @Param('status', new ParseEnumPipe(OrderStatusEnum))
+    status: OrderStatusEnum,
+    @Body() dto: ValidateOrderDto,
+    @Query() query?: any,
+  ): Promise<Order> {
+    // Apply auth user branch filter
+    const filter = await this.service.getFilterByAuthUserBranch();
+
+    const order = await this.service.cancelRecord(
+      { ...filter, id: id ?? '' },
+      status,
+      dto,
+    );
+
+    const options = buildFilterFromApiSearchParams(
+      this.service.repository,
+      query as ApiSearchOneParamOptions,
+    );
+
+    return this.service.readOneRecord({
+      ...options,
+      where: { ...options?.where, ...filter, id: order.id ?? '' },
+    });
   }
 }

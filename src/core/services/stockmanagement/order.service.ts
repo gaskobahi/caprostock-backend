@@ -1,5 +1,5 @@
 import { PaginatedService, isUniqueConstraint } from '@app/typeorm';
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotImplementedException } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Order } from '../../entities/stockmanagement/order.entity';
@@ -12,13 +12,12 @@ import {
 } from 'typeorm';
 import { CreateOrderDto } from '../../dto/stockmanagement/create-order.dto';
 import { OrderStatusEnum } from '../../definitions/enums';
-import { BranchToProductService } from '../subsidiary/branch-to-product.service';
 import { AbstractService } from '../abstract.service';
 import { REQUEST_AUTH_USER_KEY } from 'src/modules/auth/definitions/constants';
 import { AuthUser } from 'src/core/entities/session/auth-user.entity';
-import { ProductService } from '../product/product.service';
-import { BranchVariantToProductService } from '../subsidiary/branch-variant-to-product.service';
 import { UpdateOrderDto } from 'src/core/dto/stockmanagement/update-order.dto';
+import { ValidateOrderDto } from 'src/core/dto/stockmanagement/validate-order.dto';
+import { LockedException } from '@app/nestjs';
 
 @Injectable()
 export class OrderService extends AbstractService<Order> {
@@ -133,8 +132,6 @@ export class OrderService extends AbstractService<Order> {
     if (!res) {
       throw new BadRequestException(this.NOT_FOUND_MESSAGE);
     }
-    console.log('toto', res);
-
     const entity = { ...res, totalAmount: 0, orderId: res.id } as any;
     const {
       destinationBranchId,
@@ -255,6 +252,169 @@ export class OrderService extends AbstractService<Order> {
     entity.hasIncoming = this.hasIncoming(entity);
     entity.isAllreceived = this.isAllReceive(entity?.orderToProducts);
     return entity;
+  }
+
+  /*async validateRecord(
+    optionsWhere: FindOptionsWhere<Order>,
+    status: OrderStatusEnum,
+    dto: ValidateOrderDto,
+  ) {
+    const order = await this._repository.findOne({
+      where: optionsWhere,
+      relations: {
+        destinationBranch: true,
+        orderToProducts: {
+          product: true,
+        },
+      },
+    });
+    if (!order) {
+      throw new BadRequestException(this.NOT_FOUND_MESSAGE);
+    }
+
+    const authUser = this.request[REQUEST_AUTH_USER_KEY] as AuthUser;
+
+    // Vérifier que la commande est disponible pour validation
+    if (order.isClosed) {
+      throw new LockedException(
+        `Cette opération n'est plus possible, la commande est déjà clôturée`,
+      );
+    }
+    switch (status) {
+      case OrderStatusEnum.validated:
+        order.status = OrderStatusEnum.validated;
+        let branchToProduct: BranchToProduct;
+        // Pour chaque ligne de la commande
+        // Approvisionner le stock du produit
+        for (const orderToProduct of order.orderToProducts ?? []) {
+          branchToProduct =
+            await this.branchToProductService.repository.findOne({
+              where: {
+                branchId: order.branchId,
+                productId: orderToProduct.productId,
+              },
+              relations: {
+                product: true,
+              },
+            });
+
+          // Si le produit n'existe pas dans la succursale, le créer
+          if (!branchToProduct) {
+            branchToProduct = this.branchToProductService.repository.create({
+              branchId: order.branchId,
+              productId: orderToProduct.productId,
+              availableStock: 0,
+              createdById: authUser?.id,
+            });
+          }
+
+          // Mettre le  stock à jour
+          if (branchToProduct.product.isBundle !== true) {
+            branchToProduct.availableStock += orderToProduct.quantity;
+            branchToProduct.updatedById = authUser?.id;
+          }
+
+          await this.branchToProductService.repository.save(branchToProduct);
+
+          branchToProduct = null;
+        }
+        break;
+      case OrderStatusEnum.cancelled:
+        order.status = OrderStatusEnum.cancelled;
+        break;
+      default:
+        throw new NotImplementedException(`Opération non autorisée`);
+    }
+
+    order.remark = dto.remark;
+    order.updatedById = authUser?.id;
+    order.validatedById = authUser?.id;
+    order.validatedAt = new Date();
+
+    return await this.repository.save(order);
+  }*/
+
+  async cancelRecord(
+    optionsWhere: FindOptionsWhere<Order>,
+    status: OrderStatusEnum,
+    dto: ValidateOrderDto,
+  ) {
+    const order = await this._repository.findOne({
+      where: optionsWhere,
+      relations: {
+        destinationBranch: true,
+        orderToProducts: {
+          product: true,
+        },
+      },
+    });
+    if (!order) {
+      throw new BadRequestException(this.NOT_FOUND_MESSAGE);
+    }
+
+    const authUser = this.request[REQUEST_AUTH_USER_KEY] as AuthUser;
+
+    // Vérifier que la commande est disponible pour validation
+    if (order.isClosed) {
+      throw new LockedException(
+        `Cette opération n'est plus possible, la commande est déjà clôturée`,
+      );
+    }
+
+   /* switch (status) {
+      case OrderStatusEnum.validated:
+        order.status = OrderStatusEnum.validated;
+        let branchToProduct: BranchToProduct;
+        // Pour chaque ligne de la commande
+        // Approvisionner le stock du produit
+        for (const orderToProduct of order.orderToProducts ?? []) {
+          branchToProduct =
+            await this.branchToProductService.repository.findOne({
+              where: {
+                branchId: order.branchId,
+                productId: orderToProduct.productId,
+              },
+              relations: {
+                product: true,
+              },
+            });
+
+          // Si le produit n'existe pas dans la succursale, le créer
+          if (!branchToProduct) {
+            branchToProduct = this.branchToProductService.repository.create({
+              branchId: order.branchId,
+              productId: orderToProduct.productId,
+              availableStock: 0,
+              createdById: authUser?.id,
+            });
+          }
+
+          // Mettre le  stock à jour
+          if (branchToProduct.product.isBundle !== true) {
+            branchToProduct.availableStock += orderToProduct.quantity;
+            branchToProduct.updatedById = authUser?.id;
+          }
+
+          await this.branchToProductService.repository.save(branchToProduct);
+
+          branchToProduct = null;
+        }
+        break;
+      case OrderStatusEnum.cancelled:
+        order.status = OrderStatusEnum.cancelled;
+        break;
+      default:
+        throw new NotImplementedException(`Opération non autorisée`);
+    }*/
+
+    order.remark = dto.remark;
+    order.status = status;
+
+    order.updatedById = authUser?.id;
+    order.validatedById = authUser?.id;
+    order.validatedAt = new Date();
+
+    return await this.repository.save(order);
   }
 
   /*async validateRecord(

@@ -59,7 +59,6 @@ export abstract class AbstractService<T extends BaseCoreEntity> {
     if (!entity) {
       throw new BadRequestException(this.NOT_FOUND_MESSAGE);
     }
-
     const authUser = this.request[REQUEST_AUTH_USER_KEY] as AuthUser;
     entity = this.repository.merge(entity, dto);
 
