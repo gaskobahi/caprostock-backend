@@ -112,23 +112,31 @@ export class ReceptionService extends AbstractService<Reception> {
     });
   };
 
-  async updateStocks(dto: any): Promise<void> {
-    const prd = await this.productService.getDetails(dto.productId);
-    const orderData = await this.getDetailByOrderId(dto.orderId);
+  async updateStocks(receptionProductData: any): Promise<void> {
+    const prd = await this.productService.getDetails(
+      receptionProductData.productId,
+    );
+    const orderData = await this.getDetailByOrderId(
+      receptionProductData.orderId,
+    );
 
     //update item product cost
 
     if (orderData && orderData.orderToProducts) {
-      await this.updateProductCost(orderData.orderToProducts);
+      await this.updateProductCost(
+        orderData.orderToProducts,
+        receptionProductData,
+      );
     }
 
     //update product stock
     if (prd.hasVariant) {
-      // await this.updateVariantToProductCost(orderData.orderToProducts);
-      await this.updateVariantStock(prd.variantToProducts, dto);
+      await this.updateVariantStock(
+        prd.variantToProducts,
+        receptionProductData,
+      );
     } else {
-      // await this.updateProductCost(orderData.orderToProducts);
-      await this.updateProductStock(prd.branchToProducts, dto);
+      await this.updateProductStock(prd.branchToProducts, receptionProductData);
     }
   }
 
@@ -169,20 +177,16 @@ export class ReceptionService extends AbstractService<Reception> {
     );
   }
 
-  /*private async updateProductCost(arrayToProducts: any): Promise<void> {
+  private async updateProductCost(
+    arrayToProducts: any,
+    receptionProductData: any,
+  ): Promise<void> {
     for (const oproduct of arrayToProducts ?? []) {
-      await this.productService.updateRecord(
-        {
-          id: oproduct.productId,
-        },
-        { cost: oproduct.cost },
-      );
-    }
-  }*/
-
-  private async updateProductCost(arrayToProducts: any): Promise<void> {
-    for (const oproduct of arrayToProducts ?? []) {
-      if (oproduct.quantity > 0) {
+      //consider received quantity more that 0
+      if (
+        oproduct.sku == receptionProductData.sku &&
+        receptionProductData.quantity > 0
+      ) {
         if (oproduct.variantId) {
           await this.variantToProductService.updateRecord(
             {

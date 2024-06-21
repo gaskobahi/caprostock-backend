@@ -172,3 +172,8 @@ export enum InventoryCountStatusEnum {
   inProgress = 'in_progress',
   completed = 'completed',
 }
+
+export enum ProductionStatusEnum {
+  production = 'production',
+  disassembly = 'disassembly',
+}

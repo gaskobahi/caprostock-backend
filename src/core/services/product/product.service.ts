@@ -344,6 +344,17 @@ export class ProductService extends AbstractService<Product> {
     return newArray;
   }
 
+  async readPaginatedListRecordForProduction(
+    options?: FindManyOptions<any>,
+    page?: number,
+    perPage?: number,
+  ) {
+    const products = await this.readPaginatedListRecord(options, page, perPage);
+    const newArray = this.generateNewProductionProductVersion(products.data);
+    console.log('gfghgh',newArray)
+    return newArray;
+  }
+
   async readPaginatedListRecordForTransfertOrder(
     options?: FindManyOptions<any>,
     page?: number,
@@ -410,6 +421,62 @@ export class ProductService extends AbstractService<Product> {
     return newArray;
   }
 
+  async generateNewProductionProductVersion(products: Array<object>) {
+    const newArray: Array<object> = [];
+
+    for (const item of products as any) {
+      if (item.isBundle) {
+        newArray.push(item);
+        /*if (item.hasVariant) {
+          if (item.variantToProducts.length > 0) {
+            for (const vp of item.variantToProducts) {
+              const branchVariantToProducts = vp.branchVariantToProducts.filter(
+                (e: any) => e.isAvailable == true,
+              );
+
+              if (branchVariantToProducts.length > 0) {
+                const newItem = {
+                  id: item.id,
+                  reference: item.reference,
+                  variantId: vp.id,
+                  hasVariant: item.hasVariant,
+                  barreCode: vp.barreCode,
+                  displayName: `${item.displayName}(${vp.name})`,
+                  price: vp.price,
+                  cost: vp.cost,
+                  sku: vp.sku,
+                  branchVariantToProducts: branchVariantToProducts,
+                  branchToProducts: [],
+                };
+                newArray.push(newItem);
+              }
+            }
+          }
+        } else if (item.branchToProducts.length > 0) {
+          const branchToProducts = item.branchToProducts.filter(
+            (e: any) => e.isAvailable == true,
+          );
+          if (branchToProducts.length > 0) {
+            const newItem = {
+              id: item.id,
+              reference: item.reference,
+              barreCode: item.barreCode,
+              displayName: item.displayName,
+              price: item.price,
+              cost: item.cost,
+              sku: item.sku,
+              hasVariant: item.hasVariant,
+              variantId: null,
+              branchToProducts: branchToProducts,
+              branchVariantToProducts: [],
+            };
+            newArray.push(newItem);
+          }
+        }*/
+      }
+    }
+    return newArray;
+  }
   async readPaginatedListRecordForStockAdjustment(
     options?: FindManyOptions<any>,
     page?: number,

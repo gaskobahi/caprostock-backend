@@ -125,6 +125,11 @@ import { ReceptionController } from './controllers/stockmanagement/reception.con
 import { OrderToAdditionalCost } from './entities/stockmanagement/order-to-addtionnal-cost.entity';
 import { ReceptionToAdditionalCost } from './entities/stockmanagement/reception-to-addtionnal-cost.entity';
 import { VariantToProductService } from './services/subsidiary/variant-to-product.service';
+import { ProductionSubscriber } from './entities/stockmanagement/production.subscriber';
+import { ProductToProduction } from './entities/stockmanagement/product-to-production.entity';
+import { Production } from './entities/stockmanagement/production.entity';
+import { ProductionController } from './controllers/stockmanagement/production.controller';
+import { ProductionService } from './services/stockmanagement/production.service';
 
 @Module({
   imports: [
@@ -197,23 +202,9 @@ import { VariantToProductService } from './services/subsidiary/variant-to-produc
       Reception,
       ReceptionToProduct,
       ReceptionToAdditionalCost,
-      //Consult,
-      //ConsultType,
-      //Doctor,
-      /*Patient,
-      InsuranceCompany,
-      SaleToProduct,
-      Sale,
-      Waiter,
-      ProductPrescription,
-      PrescriptionGlassCharacteristic,
-      SaleProductToAttribute,
-      SalePayment,
-      ConsultPrintingHistory,
-      SalePrintingHistory,
-      Treatment,
-      SalePaymentPrintingHistory,
-      AttributeToProduct,*/
+
+      ProductToProduction,
+      Production,
     ]),
   ],
   controllers: [
@@ -247,6 +238,7 @@ import { VariantToProductService } from './services/subsidiary/variant-to-produc
     TransfertOrderController,
     OrderController,
     ReceptionController,
+    ProductionController,
 
     FileController,
   ],
@@ -268,9 +260,7 @@ import { VariantToProductService } from './services/subsidiary/variant-to-produc
 
     FeatureService,
     DiningService,
-    //TableService,
     AttributeService,
-    //WaiterService,
     BranchToProductService,
     BranchVariantToProductService,
     VariantToProductService,
@@ -299,6 +289,9 @@ import { VariantToProductService } from './services/subsidiary/variant-to-produc
 
     ReceptionService,
     ReceptionSubscriber,
+
+    ProductionService,
+    ProductionSubscriber,
 
     ConfigService,
   ],
