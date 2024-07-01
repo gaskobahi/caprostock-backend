@@ -9,19 +9,14 @@ import {
   Repository,
 } from 'typeorm';
 import { AbstractService } from '../abstract.service';
-import { ConfigService } from '../system/config.service';
 import { REQUEST_AUTH_USER_KEY } from 'src/modules/auth/definitions/constants';
 import { AuthUser } from 'src/core/entities/session/auth-user.entity';
 import { Production } from 'src/core/entities/stockmanagement/production.entity';
 import { CreateProductionDto } from 'src/core/dto/stockmanagement/create-production.dto';
 import { UpdateProductionDto } from 'src/core/dto/stockmanagement/update-production.dto';
 import { BranchToProductService } from '../subsidiary/branch-to-product.service';
-import { BranchVariantToProductService } from '../subsidiary/branch-variant-to-product.service';
-import { ReasonService } from './reason.service';
-import { DefaultReasonTypeEnum } from 'src/core/definitions/enums';
 import { ProductService } from '../product/product.service';
-import { Product } from 'src/core/entities/product/product.entity';
-import { Reason } from 'src/core/entities/stockmanagement/reason.entity';
+import { ProductionStatusEnum } from 'src/core/definitions/enums';
 
 @Injectable()
 export class ProductionService extends AbstractService<Production> {
@@ -30,10 +25,7 @@ export class ProductionService extends AbstractService<Production> {
   constructor(
     @InjectRepository(Production)
     private _repository: Repository<Production>,
-    private readonly configService: ConfigService,
     private readonly branchToProductService: BranchToProductService,
-    private readonly branchVariantToProductService: BranchVariantToProductService,
-    private readonly reasonService: ReasonService,
     private readonly productService: ProductService,
 
     protected paginatedService: PaginatedService<Production>,
@@ -59,80 +51,35 @@ export class ProductionService extends AbstractService<Production> {
       options,
     );
 
+    // Retrieve detailed records for each item in the paginated response
+    const detailedRecords = await Promise.all(
+      response.data.map(async (record) => {
+        return this.readOneRecord({
+          ...options,
+          where: { ...options?.where, id: record.id },
+        });
+      }),
+    );
+    // Update response data with detailed records
+    response.data = detailedRecords;
+    console.log('tettetet', response);
     // Update response data with processed items and return
     return response;
   }
 
-  /*async createRecord(dto: CreateProductionDto): Promise<Production> {
-    const reason = await this.reasonService.readOneRecord({
-      where: { id: dto.reasonId },
-    });
-    //calcul du afterquantity en fonction du type de raison
-    if (
-      reason.name == DefaultReasonTypeEnum.loss ||
-      reason.name == DefaultReasonTypeEnum.damage
-    ) {
-      for (const el of dto.productToProductions) {
-        if (el.inStock < el.quantity || el.inStock == 0) {
-          throw new BadRequestException('Impossible de reduit le stock');
-        }
-        el.afterQuantity = el.inStock - el.quantity;
-      }
-    }
-
-    if (reason.name == DefaultReasonTypeEnum.receiveItem) {
-      for (const el of dto.productToProductions) {
-        el.afterQuantity = el.inStock + el.quantity;
-      }
-    }
-    if (reason.name == DefaultReasonTypeEnum.inventoryCount) {
-      for (const el of dto.productToProductions) {
-        el.afterQuantity = el.quantity;
-      }
-    }
-
-    const result = await super.createRecord({ ...dto });
-
-    if (result) {
-      for (const ps of dto.productToProductions) {
-        //find product by Id
-        const prd = await this.productService.readOneRecord({
-          relations: { variantToProducts: true },
-          where: { id: ps.productId },
-        });
-        //update branch for product variant
-        if (prd.hasVariant) {
-          const vp = prd.variantToProducts.find((el) => el.sku == ps.sku);
-          await this.branchVariantToProductService.updateRecord(
-            {
-              variantId: vp.id,
-              branchId: dto.branchId,
-            },
-            { price: ps.cost, inStock: ps.afterQuantity },
-          );
-        } else {
-          //update branch for product
-          await this.branchToProductService.updateRecord(
-            {
-              productId: ps.productId,
-              branchId: dto.branchId,
-            },
-            { price: ps.cost, inStock: ps.afterQuantity },
-          );
-        }
-      }
-    }
-    return result as any;
-  }*/
-
   async createRecord(dto: CreateProductionDto): Promise<Production> {
-    //const reason = await this.getReasonById(dto.reasonId);
-    //this.calculateAfterQuantities(dto, reason);
-
     const result = await super.createRecord({ ...dto });
 
     if (result) {
-      await this.updateProductions(dto);
+      for (const productionToProduct of dto.productionToProducts) {
+        const productionProductData = {
+          ...productionToProduct,
+          destinationBranchId: result.destinationBranchId,
+          productionId: result.id,
+          type: result.type,
+        };
+        await this.updateStocks(productionProductData);
+      }
     }
 
     return result as any;
@@ -164,7 +111,7 @@ export class ProductionService extends AbstractService<Production> {
     return {};
   }*/
 
-  async readPaginatedListRecordForComposite(
+  /*async readPaginatedListRecordForComposite(
     options?: FindManyOptions<any>,
     page?: number,
     perPage?: number,
@@ -187,13 +134,47 @@ export class ProductionService extends AbstractService<Production> {
       }
     }
     return array;
-  }
+  }*/
 
   async readOneRecord(options?: FindOneOptions<Production>) {
-    const entity = await this.repository.findOne(options);
-    if (!entity) {
+    const res = await this.repository.findOne(options);
+    if (!res) {
       throw new BadRequestException(this.NOT_FOUND_MESSAGE);
     }
+    const entity = { ...res, totalQuantities: 0, productionId: res.id } as any;
+    const { destinationBranchId } = entity;
+
+    const newProductionToProducts = entity?.productionToProducts?.reduce(
+      (
+        acc: {
+          productId: any;
+          quantity: any;
+          cost: any;
+          displayName: string;
+          sku: any;
+        }[],
+        { productId, quantity, cost, product: item, sku }: any,
+      ) => {
+        const srcbranchProducts = item.branchToProducts.find(
+          (bp: { branchId: any }) => bp.branchId === destinationBranchId,
+        );
+
+        if (srcbranchProducts) {
+          acc.push({
+            productId: productId,
+            quantity: quantity,
+            cost: cost,
+            displayName: `${item.displayName}`,
+            sku: sku,
+          });
+        }
+
+        return acc;
+      },
+      [],
+    );
+    entity.productionToProducts = newProductionToProducts;
+    entity.totalQuantities = this.totalQuantities(entity);
     return entity;
   }
 
@@ -211,78 +192,70 @@ export class ProductionService extends AbstractService<Production> {
     return result;
   }
 
-  private async getReasonById(reasonId: string): Promise<Reason> {
-    return this.reasonService.readOneRecord({ where: { id: reasonId } });
-  }
-
-  /*private calculateAfterQuantities(
-    dto: CreateProductionDto,
-    reason: Reason,
-  ): void {
-    for (const el of dto.productToProductions) {
-      switch (reason.name) {
-        case DefaultReasonTypeEnum.loss:
-        case DefaultReasonTypeEnum.damage:
-          if (el.inStock < el.quantity || el.inStock == 0) {
-            throw new BadRequestException('Impossible de reduit le stock');
-          }
-          el.afterQuantity = el.inStock - el.quantity;
-          break;
-        case DefaultReasonTypeEnum.receiveItem:
-          el.afterQuantity = el.inStock + el.quantity;
-          break;
-        case DefaultReasonTypeEnum.inventoryCount:
-          el.afterQuantity = el.quantity;
-          break;
-        default:
-          throw new BadRequestException('Invalid reason type');
-      }
+  async updateStocks(productionProductData: any): Promise<void> {
+    const prd = await this.productService.getDetails(
+      productionProductData.productId,
+    );
+    console.log('aazazazz', prd);
+    if (productionProductData.type == ProductionStatusEnum.production) {
+      await this.updateProductStock(
+        prd.branchToProducts,
+        productionProductData,
+      );
+      0;
     }
-  }*/
-
-  private async updateProductions(dto: CreateProductionDto): Promise<void> {
-    for (const ps of dto.productToProductions) {
-      /*const prd = await this.productService.readOneRecord({
-        relations: { variantToProducts: true },
-        where: { id: ps.productId },
-      });*/
-      const prd = await this.productService.getDetails(ps.productId);
-
-      if (prd.hasVariant) {
-        await this.updateVariantStock(ps, prd, dto.branchId);
-      } else {
-        await this.updateProductStock(ps, dto.branchId);
-      }
-    }
-  }
-
-  private async updateVariantStock(
-    ps: any, // ProductToProduction,
-    prd: Product,
-    branchId: string,
-  ): Promise<void> {
-    const vp = prd.variantToProducts.find((el) => el.sku == ps.sku);
-    if (vp) {
-      await this.branchVariantToProductService.updateRecord(
-        {
-          variantId: vp.id,
-          branchId: branchId,
-        },
-        { price: ps.cost, inStock: ps.afterQuantity },
+    if (productionProductData.type == ProductionStatusEnum.disassembly) {
+      await this.updateProductStockForDisassembly(
+        prd.branchToProducts,
+        productionProductData,
       );
     }
   }
 
   private async updateProductStock(
-    ps: any, //ProductToProduction,
-    branchId: string,
+    branchToProducts: any,
+    dto: any,
   ): Promise<void> {
+    const currentBranchStock = branchToProducts.find(
+      (el: { productId: any; branchId: any }) =>
+        el.productId === dto.productId &&
+        el.branchId === dto.destinationBranchId,
+    );
+
     await this.branchToProductService.updateRecord(
       {
-        productId: ps.productId,
-        branchId: branchId,
+        productId: dto.productId,
+        branchId: dto.destinationBranchId,
       },
-      { price: ps.cost, inStock: ps.afterQuantity },
+      { inStock: currentBranchStock.inStock + dto.quantity },
+    );
+  }
+  private async updateProductStockForDisassembly(
+    branchToProducts: any,
+    dto: any,
+  ): Promise<void> {
+    const currentBranchStock = branchToProducts.find(
+      (el: { productId: any; branchId: any }) =>
+        el.productId === dto.productId &&
+        el.branchId === dto.destinationBranchId,
+    );
+
+    await this.branchToProductService.updateRecord(
+      {
+        productId: dto.productId,
+        branchId: dto.destinationBranchId,
+      },
+      { inStock: currentBranchStock.inStock - dto.quantity },
+    );
+  }
+
+  totalQuantities(entity: { productionToProducts: any[] }) {
+    if (!entity?.productionToProducts) {
+      return 0;
+    }
+    return entity?.productionToProducts?.reduce(
+      (acc: any, current: { quantity: any }) => acc + (current.quantity || 0),
+      0,
     );
   }
 }

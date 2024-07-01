@@ -66,6 +66,16 @@ export class CreateProductDto extends PickType(Product, [
   })
   isBundle: boolean;
 
+  @IsOptional()
+  @Transform(({ value }) => {
+    return JSON.parse(value);
+  })
+  @ApiProperty({
+    type: () => Boolean,
+    description: `utiliser la production`,
+  })
+  isUseProduction: boolean;
+
   @IsNotEmpty()
   @Transform(({ value }) => {
     return JSON.parse(value);

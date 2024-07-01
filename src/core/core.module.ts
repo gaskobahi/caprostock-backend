@@ -126,7 +126,7 @@ import { OrderToAdditionalCost } from './entities/stockmanagement/order-to-addti
 import { ReceptionToAdditionalCost } from './entities/stockmanagement/reception-to-addtionnal-cost.entity';
 import { VariantToProductService } from './services/subsidiary/variant-to-product.service';
 import { ProductionSubscriber } from './entities/stockmanagement/production.subscriber';
-import { ProductToProduction } from './entities/stockmanagement/product-to-production.entity';
+import { ProductionToProduct } from './entities/stockmanagement/production-to-product.entity';
 import { Production } from './entities/stockmanagement/production.entity';
 import { ProductionController } from './controllers/stockmanagement/production.controller';
 import { ProductionService } from './services/stockmanagement/production.service';
@@ -203,7 +203,7 @@ import { ProductionService } from './services/stockmanagement/production.service
       ReceptionToProduct,
       ReceptionToAdditionalCost,
 
-      ProductToProduction,
+      ProductionToProduct,
       Production,
     ]),
   ],

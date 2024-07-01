@@ -7,7 +7,7 @@ import {
 } from 'class-validator';
 import { ApiProperty, OmitType, PartialType } from '@nestjs/swagger';
 import {
-  CreateProductToProductionDto,
+  CreateProductionToProductDto,
   CreateProductionDto,
 } from './create-production.dto';
 import { Type } from 'class-transformer';
@@ -18,16 +18,16 @@ export class UpdateProductionDto extends PartialType(
   @IsNotEmpty()
   @IsArray()
   @ValidateNested()
-  @Type(() => UpdateProductToProductionDto)
+  @Type(() => UpdateProductionToProductDto)
   @ApiProperty({
-    type: () => [UpdateProductToProductionDto],
+    type: () => [UpdateProductionToProductDto],
     description: `Liste des produits lorsqu'il s'agit d'un stock d'ajustment`,
   })
-  productToProductions: UpdateProductToProductionDto[];
+  productionToProducts: UpdateProductionToProductDto[];
 }
 
-export class UpdateProductToProductionDto extends PartialType(
-  OmitType(CreateProductToProductionDto, [] as const),
+export class UpdateProductionToProductDto extends PartialType(
+  OmitType(CreateProductionToProductDto, [] as const),
 ) {
   @IsOptional()
   @IsUUID()

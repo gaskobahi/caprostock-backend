@@ -6,7 +6,7 @@ import { Product } from '../product/product.entity';
 import { Production } from './production.entity';
 
 @Entity()
-export class ProductToProduction extends CoreEntity {
+export class ProductionToProduct extends CoreEntity {
   @IsNotEmpty()
   @IsInt()
   @ApiProperty({
@@ -46,7 +46,7 @@ export class ProductToProduction extends CoreEntity {
   productId: string;
 
   @ApiProperty({ required: false, type: () => Product })
-  @ManyToOne(() => Product, (product) => product.productToProductions, {
+  @ManyToOne(() => Product, (product) => product.productionToProducts, {
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE',
     orphanedRowAction: 'delete',
@@ -62,7 +62,7 @@ export class ProductToProduction extends CoreEntity {
   @ApiProperty({ required: false, type: () => Production })
   @ManyToOne(
     () => Production,
-    (production) => production.productToProductions,
+    (production) => production.productionToProducts,
     {
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE',

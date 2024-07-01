@@ -17,9 +17,8 @@ import {
 } from 'class-validator';
 import { CoreEntity } from '../base/core.entity';
 import { instanceToPlain } from 'class-transformer';
-import { Reason } from './reason.entity';
 import { Branch } from '../subsidiary/branch.entity';
-import { ProductToProduction } from './product-to-production.entity';
+import { ProductionToProduct } from './production-to-product.entity';
 import { ProductionStatusEnum } from 'src/core/definitions/enums';
 
 @Entity({
@@ -50,6 +49,24 @@ export class Production extends CoreEntity {
   })
   date: Date;
 
+  @IsUUID()
+  @IsNotEmpty()
+  @Column({ name: 'destination_branch_id', type: 'uuid', nullable: false })
+  destinationBranchId: string;
+
+  @ApiProperty({ required: false, type: () => Branch })
+  @ManyToOne(
+    () => Branch,
+    (destinationbranch) => destinationbranch.productions,
+    {
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE',
+      orphanedRowAction: 'delete',
+    },
+  )
+  @JoinColumn({ name: 'destination_branch_id' })
+  destinationBranch: Branch;
+
   @IsNotEmpty()
   @IsIn(Object.values(ProductionStatusEnum))
   @ApiProperty({
@@ -78,15 +95,15 @@ export class Production extends CoreEntity {
   @JoinColumn({ name: 'branch_id' })
   branch: Branch;
 
-  @ApiProperty({ required: false, type: () => [ProductToProduction] })
+  @ApiProperty({ required: false, type: () => [ProductionToProduct] })
   @OneToMany(
-    () => ProductToProduction,
-    (productToProduction) => productToProduction.production,
+    () => ProductionToProduct,
+    (productionToProduct) => productionToProduct.production,
     {
       cascade: true,
     },
   )
-  productToProductions: ProductToProduction[];
+  productionToProducts: ProductionToProduct[];
 
   /**
    * Getters & Setters *******************************************

@@ -8,10 +8,10 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { Production } from 'src/core/entities/stockmanagement/production.entity';
-import { ProductToProduction } from 'src/core/entities/stockmanagement/product-to-production.entity';
+import { ProductionToProduct } from 'src/core/entities/stockmanagement/production-to-product.entity';
 
 export class CreateProductionDto extends PickType(Production, [
-  'branchId',
+  'destinationBranchId',
   'type',
 ] as const) {
   @IsOptional()
@@ -21,15 +21,15 @@ export class CreateProductionDto extends PickType(Production, [
   @IsNotEmpty()
   @IsArray()
   @ValidateNested()
-  @Type(() => CreateProductToProductionDto)
+  @Type(() => CreateProductionToProductDto)
   @ApiProperty({
-    type: () => [CreateProductToProductionDto],
+    type: () => [CreateProductionToProductDto],
     description: `Les differents produit de cet adjustement de stock`,
   })
-  productToProductions: CreateProductToProductionDto[];
+  productionToProducts: CreateProductionToProductDto[];
 }
 
-export class CreateProductToProductionDto extends PickType(
-  ProductToProduction,
+export class CreateProductionToProductDto extends PickType(
+  ProductionToProduct,
   ['productId', 'quantity', 'cost', 'sku'] as const,
 ) {}

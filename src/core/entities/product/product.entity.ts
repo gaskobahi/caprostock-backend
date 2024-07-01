@@ -36,7 +36,7 @@ import { ProductToStockAdjustment } from '../stockmanagement/product-to-stockadj
 import { ProductToInventoryCount } from '../stockmanagement/product-to-inventoryCount.entity';
 import { HistoryToInventoryCount } from '../stockmanagement/history-to-inventorycount.entity';
 import { ProductToTransfertOrder } from '../stockmanagement/product-to-transfertorder.entity';
-import { ProductToProduction } from '../stockmanagement/product-to-production.entity';
+import { ProductionToProduct } from '../stockmanagement/production-to-product.entity';
 
 @Entity({
   orderBy: { createdAt: 'DESC', updatedAt: 'DESC' },
@@ -149,6 +149,12 @@ export class Product extends CoreEntity {
   @ApiProperty({ required: false, description: `Actif` })
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  @ApiProperty({ required: false, description: `Utiliser la production` })
+  @Column({ name: 'isUseProduction', default: false })
+  isUseProduction: boolean;
 
   @IsOptional()
   @IsBoolean()
@@ -288,15 +294,15 @@ export class Product extends CoreEntity {
   )
   productToInventoryCounts: ProductToInventoryCount[];
 
-  @ApiProperty({ required: false, type: () => [ProductToProduction] })
+  @ApiProperty({ required: false, type: () => [ProductionToProduct] })
   @OneToMany(
-    () => ProductToProduction,
-    (productToProduction) => productToProduction.product,
+    () => ProductionToProduct,
+    (productionToProduct) => productionToProduct.product,
     {
       cascade: true,
     },
   )
-  productToProductions: ProductToProduction[];
+  productionToProducts: ProductionToProduct[];
 
   @ApiProperty({ required: false, type: () => [HistoryToInventoryCount] })
   @OneToMany(
