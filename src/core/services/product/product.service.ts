@@ -548,6 +548,10 @@ export class ProductService extends AbstractService<Product> {
     });
   }
 
+  async isBundle(productId: string) {
+    return await this.repository.existsBy({ id: productId, isBundle: true });
+  }
+
   async getAverageMarginItemVariantProduct(
     VariantToProducts: any,
   ): Promise<number> {
@@ -573,6 +577,7 @@ export class ProductService extends AbstractService<Product> {
       relations: {
         variantToProducts: { branchVariantToProducts: true },
         branchToProducts: true,
+        bundleToProducts: true,
       },
       where: { id: productId },
     });

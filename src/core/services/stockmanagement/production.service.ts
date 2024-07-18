@@ -69,6 +69,7 @@ export class ProductionService extends AbstractService<Production> {
 
   async createRecord(dto: CreateProductionDto): Promise<Production> {
     const result = await super.createRecord({ ...dto });
+    console.log('test22', dto);
 
     if (result) {
       for (const productionToProduct of dto.productionToProducts) {
@@ -79,6 +80,37 @@ export class ProductionService extends AbstractService<Production> {
           type: result.type,
         };
         await this.updateStocks(productionProductData);
+
+        // work for update stock of item of this composed item
+        const ciDetails = await this.productService.getDetails(
+          productionProductData.productId,
+        );
+        if (ciDetails) {
+          for (const itemProduct of ciDetails.bundleToProducts) {
+            //check isBundle
+            const ItemProductData = {
+              ...itemProduct,
+              bundleId: itemProduct.bundleId,
+              quantity: productionToProduct.quantity * itemProduct.quantity,
+              destinationBranchId: result.destinationBranchId,
+            };
+            if (await this.productService.isBundle(itemProduct.bundleId)) {
+              console.log('result true');
+            } else {
+              //update bundleProduct is notBundle
+              if (
+                productionProductData.type == ProductionStatusEnum.production
+              ) {
+                await this.updateComposedItemReduceStocks(ItemProductData);
+              }
+              if (
+                productionProductData.type == ProductionStatusEnum.disassembly
+              ) {
+                await this.updateComposedItemAddStocks(ItemProductData);
+              }
+            }
+          }
+        }
       }
     }
 
@@ -196,7 +228,7 @@ export class ProductionService extends AbstractService<Production> {
     const prd = await this.productService.getDetails(
       productionProductData.productId,
     );
-    console.log('aazazazz', prd);
+
     if (productionProductData.type == ProductionStatusEnum.production) {
       await this.updateProductStock(
         prd.branchToProducts,
@@ -205,10 +237,36 @@ export class ProductionService extends AbstractService<Production> {
       0;
     }
     if (productionProductData.type == ProductionStatusEnum.disassembly) {
-      await this.updateProductStockForDisassembly(
+      await this.updateProductReduceStock(
         prd.branchToProducts,
         productionProductData,
       );
+    }
+  }
+
+  async updateComposedItemAddStocks(productionProductData: any): Promise<void> {
+    const prd = await this.productService.getDetails(
+      productionProductData.bundleId,
+    );
+    if (prd.trackStock) {
+      await this.updateProductStock(prd.branchToProducts, {
+        ...productionProductData,
+        productId: prd.id,
+      });
+    }
+  }
+
+  async updateComposedItemReduceStocks(
+    productionProductData: any,
+  ): Promise<void> {
+    const prd = await this.productService.getDetails(
+      productionProductData.bundleId,
+    );
+    if (prd.trackStock) {
+      await this.updateProductReduceStock(prd.branchToProducts, {
+        ...productionProductData,
+        productId: prd.id,
+      });
     }
   }
 
@@ -217,11 +275,10 @@ export class ProductionService extends AbstractService<Production> {
     dto: any,
   ): Promise<void> {
     const currentBranchStock = branchToProducts.find(
-      (el: { productId: any; branchId: any }) =>
+      (el) =>
         el.productId === dto.productId &&
         el.branchId === dto.destinationBranchId,
     );
-
     await this.branchToProductService.updateRecord(
       {
         productId: dto.productId,
@@ -230,12 +287,12 @@ export class ProductionService extends AbstractService<Production> {
       { inStock: currentBranchStock.inStock + dto.quantity },
     );
   }
-  private async updateProductStockForDisassembly(
+  private async updateProductReduceStock(
     branchToProducts: any,
     dto: any,
   ): Promise<void> {
     const currentBranchStock = branchToProducts.find(
-      (el: { productId: any; branchId: any }) =>
+      (el) =>
         el.productId === dto.productId &&
         el.branchId === dto.destinationBranchId,
     );
