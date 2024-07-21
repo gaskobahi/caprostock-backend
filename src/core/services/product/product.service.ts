@@ -118,10 +118,25 @@ export class ProductService extends AbstractService<Product> {
             dt.inStock = await this.getInStockProductByBranch(
               r.branchToProducts,
             );
+            dt.cost = r.cost;
+            console.log('zzzzzzzzzz', r.cost);
           }
         } else {
+          if (dt.isUseProduction) {
+            dt.inStock = await this.getInStockProductByBranch(
+              r.branchToProducts.filter((el) => el.isAvailable),
+            );
+          } else {
+            dt.inStock = 0;
+          }
+          dt.cost =
+            r.bundleToProducts.reduce((accumulator, currentObject) => {
+              return accumulator + currentObject.cost;
+            }, 0) ?? 0;
+
+          dt.margin = this.getMargin(dt.avgprice, r.cost);
+
           // If the item is a bundle, set inStock to 0
-          dt.inStock = 0;
         }
       }),
     );
@@ -424,8 +439,27 @@ export class ProductService extends AbstractService<Product> {
     const newArray: Array<object> = [];
 
     for (const item of products as any) {
+      console.log('juesus', item.bundleToProducts);
+
       if (item.isBundle && item.isUseProduction) {
-        if (item.branchToProducts.length > 0) {
+        const _costsum = item.bundleToProducts.reduce(
+          (accumulator, currentObject) => {
+            return accumulator + currentObject.cost;
+          },
+          0,
+        );
+        const newItem = {
+          id: item.id,
+          reference: item.reference,
+          barreCode: item.barreCode,
+          displayName: item.displayName,
+          price: item.price,
+          cost: _costsum,
+          sku: item.sku,
+          branchToProducts: item.branchToProducts,
+        };
+        newArray.push(newItem);
+        /*if (item.branchToProducts.length > 0) {
           const branchToProducts = item.branchToProducts.filter(
             (e: any) => e.isAvailable == true,
           );
@@ -442,11 +476,12 @@ export class ProductService extends AbstractService<Product> {
             };
             newArray.push(newItem);
           }
-        }
+        }*/
       }
     }
     return newArray;
   }
+
   async readPaginatedListRecordForStockAdjustment(
     options?: FindManyOptions<any>,
     page?: number,

@@ -67,10 +67,8 @@ export class ProductionService extends AbstractService<Production> {
     return response;
   }
 
-  async createRecord(dto: CreateProductionDto): Promise<Production> {
+  /*async createRecord(dto: CreateProductionDto): Promise<Production> {
     const result = await super.createRecord({ ...dto });
-    console.log('test22', dto);
-
     if (result) {
       for (const productionToProduct of dto.productionToProducts) {
         const productionProductData = {
@@ -85,6 +83,7 @@ export class ProductionService extends AbstractService<Production> {
         const ciDetails = await this.productService.getDetails(
           productionProductData.productId,
         );
+        //level1
         if (ciDetails) {
           for (const itemProduct of ciDetails.bundleToProducts) {
             //check isBundle
@@ -95,7 +94,37 @@ export class ProductionService extends AbstractService<Production> {
               destinationBranchId: result.destinationBranchId,
             };
             if (await this.productService.isBundle(itemProduct.bundleId)) {
-              console.log('result true');
+              //level2
+              const ciDetails2 = await this.productService.getDetails(
+                itemProduct.bundleId,
+              );
+
+              const headciDetails2 = {
+                ...productionToProduct,
+                productId: ciDetails2.id,
+                destinationBranchId: result.destinationBranchId,
+                productionId: result.id,
+                type: result.type,
+              };
+              await this.updateStocks(headciDetails2);
+
+              for (const itemProduct2 of ciDetails2.bundleToProducts) {
+                //check isBundle
+                const ItemProductData2 = {
+                  ...itemProduct2,
+                  bundleId: itemProduct2.bundleId,
+                  quantity:
+                    productionToProduct.quantity * itemProduct2.quantity,
+                  destinationBranchId: result.destinationBranchId,
+                };
+                if (await this.productService.isBundle(itemProduct2.bundleId)) {
+                } else {
+                  await this.addAndReduceStocks(
+                    productionProductData.type,
+                    ItemProductData2,
+                  );
+                }
+              }
             } else {
               //update bundleProduct is notBundle
               if (
@@ -111,6 +140,66 @@ export class ProductionService extends AbstractService<Production> {
             }
           }
         }
+      }
+    }
+    return result as any;
+  }*/
+
+  async createRecord(dto: CreateProductionDto): Promise<Production> {
+    const result = await super.createRecord({ ...dto });
+    if (!result) return result as any;
+
+    const handleBundleProducts = async (productionProductData, products) => {
+      for (const itemProduct of products) {
+        const itemProductData = {
+          ...itemProduct,
+          bundleId: itemProduct.bundleId,
+          quantity: productionProductData.quantity * itemProduct.quantity,
+          destinationBranchId: result.destinationBranchId,
+        };
+
+        if (await this.productService.isBundle(itemProduct.bundleId)) {
+          const ciDetails2 = await this.productService.getDetails(
+            itemProduct.bundleId,
+          );
+          const headCiDetails2 = {
+            ...productionProductData,
+            productId: ciDetails2.id,
+            destinationBranchId: result.destinationBranchId,
+            productionId: result.id,
+            type: result.type,
+          };
+          await this.updateStocks(headCiDetails2);
+          await handleBundleProducts(
+            productionProductData,
+            ciDetails2.bundleToProducts,
+          );
+        } else {
+          await this.addAndReduceStocks(
+            productionProductData.type,
+            itemProductData,
+          );
+        }
+      }
+    };
+
+    for (const productionToProduct of dto.productionToProducts) {
+      const productionProductData = {
+        ...productionToProduct,
+        destinationBranchId: result.destinationBranchId,
+        productionId: result.id,
+        type: result.type,
+      };
+      await this.updateStocks(productionProductData);
+
+      const ciDetails = await this.productService.getDetails(
+        productionProductData.productId,
+      );
+      if (ciDetails) {
+        await handleBundleProducts(
+          productionProductData,
+          ciDetails.bundleToProducts,
+        );
       }
     }
 
@@ -286,6 +375,18 @@ export class ProductionService extends AbstractService<Production> {
       },
       { inStock: currentBranchStock.inStock + dto.quantity },
     );
+  }
+
+  private async addAndReduceStocks(
+    productionType: string,
+    ItemProductData: any,
+  ): Promise<void> {
+    if (productionType == ProductionStatusEnum.production) {
+      await this.updateComposedItemReduceStocks(ItemProductData);
+    }
+    if (productionType == ProductionStatusEnum.disassembly) {
+      await this.updateComposedItemAddStocks(ItemProductData);
+    }
   }
   private async updateProductReduceStock(
     branchToProducts: any,

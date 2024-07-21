@@ -2,7 +2,11 @@ import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Discount } from '../../entities/product/discount.entity';
 import { FindOptionsWhere, Repository } from 'typeorm';
-import { PaginatedService, isUniqueConstraint, isUniqueConstraintUpdate } from '@app/typeorm';
+import {
+  PaginatedService,
+  isUniqueConstraint,
+  isUniqueConstraintUpdate,
+} from '@app/typeorm';
 import { REQUEST } from '@nestjs/core';
 import { AbstractService } from '../abstract.service';
 import { UpdateDiscountDto } from 'src/core/dto/product/update-discount.dto';
