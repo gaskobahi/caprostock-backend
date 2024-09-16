@@ -31,6 +31,7 @@ export enum AbilitySubjectEnum {
   Box = 'Box',
 
   Reason = 'Reason',
+  OpenTicket = 'OpenTicket',
 }
 
 export enum AbilityActionEnum {
@@ -127,6 +128,13 @@ export enum OrderSourceEnum {
 }
 
 export enum OrderStatusEnum {
+  draft = 'draft',
+  pending = 'pending',
+  partialreceived = 'partialreceived',
+  closed = 'closed',
+}
+
+export enum CorderStatusEnum {
   draft = 'draft',
   pending = 'pending',
   partialreceived = 'partialreceived',

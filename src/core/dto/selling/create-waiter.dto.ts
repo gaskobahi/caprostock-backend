@@ -1,5 +1,5 @@
 import { ApiProperty, PickType } from '@nestjs/swagger';
-import { Waiter } from '../../entities/selling/waiter.entity';
+import { Waiter } from '../../entities/selling2/waiter.entity';
 import { IsNotEmpty, IsString } from 'class-validator';
 
 export class CreateWaiterDto extends PickType(Waiter, [

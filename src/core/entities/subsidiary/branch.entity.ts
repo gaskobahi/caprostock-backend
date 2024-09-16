@@ -19,6 +19,9 @@ import { Box } from '../setting/box.entity';
 import { Order } from '../stockmanagement/order.entity';
 import { Reception } from '../stockmanagement/reception.entity';
 import { Production } from '../stockmanagement/production.entity';
+import { Corder } from '../selling/Corder.entity';
+import { Ticket } from '../selling/ticket.entity';
+import { OpenTicket } from '../selling/open-ticket.entity';
 
 @Entity({
   orderBy: { createdAt: 'DESC', updatedAt: 'DESC' },
@@ -122,6 +125,18 @@ export class Branch extends CoreEntity {
   })
   orders: Order[];
 
+  @ApiProperty({ required: false, type: () => [Corder] })
+  @OneToMany(() => Corder, (corder) => corder.branch, {
+    cascade: true,
+  })
+  corders: Corder[];
+
+  @ApiProperty({ required: false, type: () => [Ticket] })
+  @OneToMany(() => Ticket, (ticket) => ticket.branch, {
+    cascade: true,
+  })
+  tickets: Ticket[];
+
   @ApiProperty({ required: false, type: () => [Reception] })
   @OneToMany(() => Reception, (reception) => reception.branch, {
     cascade: true,
@@ -134,11 +149,11 @@ export class Branch extends CoreEntity {
   })
   productions: Production[];
 
-  /* @ApiProperty({ required: false, type: () => [Order] })
-  @OneToMany(() => Order, (order) => order.branch, {
+  @ApiProperty({ required: false, type: () => [OpenTicket] })
+  @OneToMany(() => OpenTicket, (openTicket) => openTicket.branch, {
     cascade: true,
   })
-  orders: Order[];*/
+  opentickets: OpenTicket[];
 
   /*@ApiProperty({ required: false, type: () => [Sale] })
   @OneToMany(() => Order, (sale) => sale.branch, {

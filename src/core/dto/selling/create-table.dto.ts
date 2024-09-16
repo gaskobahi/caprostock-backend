@@ -1,5 +1,5 @@
 import { PickType } from '@nestjs/swagger';
-import { Table } from 'src/core/entities/selling/table.entity';
+import { Table } from 'src/core/entities/selling2/table.entity';
 
 export class CreateTableDto extends PickType(Table, [
   'displayName',

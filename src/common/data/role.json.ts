@@ -1,4 +1,3 @@
-import { AccessToRole } from 'src/core/entities/user/access-to-role.entity';
 import {
   AbilityActionEnum,
   AbilitySubjectEnum,
@@ -42,8 +41,7 @@ export const getDefaultRoles = () => {
         },
       },
       fieldPermissions: <RoleFieldPermissionsType>{},
-      accessToRoles: <any>[]
-
+      accessToRoles: <any>[],
     },
     {
       name: 'owner',
@@ -53,12 +51,11 @@ export const getDefaultRoles = () => {
       adminPermission: true,
       permissions: <RolePermissionsType>{},
       fieldPermissions: <RoleFieldPermissionsType>{},
-      accessToRoles: <any>[]
-
+      accessToRoles: <any>[],
     },
 
-     // Gestionnaire de vente
-     {
+    // Gestionnaire de vente
+    {
       name: 'manager',
       displayName: 'Gestionnaire de vente',
       isActive: true,
@@ -66,8 +63,7 @@ export const getDefaultRoles = () => {
       adminPermission: false,
       permissions: <RolePermissionsType>{},
       fieldPermissions: <RoleFieldPermissionsType>{},
-      accessToRoles: <any>[]
-
+      accessToRoles: <any>[],
     },
 
     // Gestionnaire de vente
@@ -79,9 +75,7 @@ export const getDefaultRoles = () => {
       adminPermission: false,
       permissions: <RolePermissionsType>{},
       fieldPermissions: <RoleFieldPermissionsType>{},
-      accessToRoles: <any>[]
-
+      accessToRoles: <any>[],
     },
-    
   ];
 };

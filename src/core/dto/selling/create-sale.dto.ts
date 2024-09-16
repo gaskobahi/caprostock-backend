@@ -5,7 +5,7 @@ import {
   PartialType,
   PickType,
 } from '@nestjs/swagger';
-import { SaleToProduct } from '../../entities/selling/sale-to-product.entity';
+import { SaleToProduct } from '../../entities/selling2/sale-to-product.entity';
 import {
   ArrayMaxSize,
   IsArray,
@@ -14,17 +14,16 @@ import {
   IsObject,
   IsOptional,
   IsUUID,
-  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { Sale } from '../../entities/selling/sale.entity';
+import { Sale } from '../../entities/selling2/sale.entity';
 import { CreateCustomerDto } from './create-customer.dto';
-import { ProductPrescription } from '../../entities/selling/product-prescription.entity';
-import { PrescriptionGlassCharacteristic } from '../../entities/selling/prescription-glass-characteristic.entity';
-import { SaleProductToAttribute } from '../../entities/selling/sale-product-to-attribute.entity';
-import { SalePayment } from '../../entities/selling/sale-payment.entity';
-import { Treatment } from '../../entities/selling/treatment.entity';
+import { ProductPrescription } from '../../entities/selling2/product-prescription.entity';
+import { PrescriptionGlassCharacteristic } from '../../entities/selling2/prescription-glass-characteristic.entity';
+import { SaleProductToAttribute } from '../../entities/selling2/sale-product-to-attribute.entity';
+import { SalePayment } from '../../entities/selling2/sale-payment.entity';
+import { Treatment } from '../../entities/selling2/treatment.entity';
 
 export class SaleCustomerDto extends PartialType(
   OmitType(CreateCustomerDto, [] as const),

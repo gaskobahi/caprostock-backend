@@ -29,16 +29,22 @@ export const getDefaultSettings = () => {
       position: 3,
     },
     {
+      name: 'openticket',
+      displayName: 'Tickets ouverts',
+      type: SettingTypeEnum.system,
+      position: 4,
+    },
+    {
       name: 'branch',
       displayName: 'Surccusale',
       type: SettingTypeEnum.store,
-      position: 4,
+      position: 0,
     },
     {
       name: 'box',
       displayName: 'Caisse',
       type: SettingTypeEnum.store,
-      position: 5,
+      position: 1,
     },
   ];
 };

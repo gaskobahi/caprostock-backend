@@ -40,7 +40,7 @@ import { BundleToProduct } from './entities/product/bundle-to-product.entity';
 import { Category } from './entities/product/category.entity';
 import { CategoryService } from './services/product/category.service';
 import { CategoryController } from './controllers/product/category.controller';
-import { Table } from './entities/selling/table.entity';
+import { Table } from './entities/selling2/table.entity';
 import { Pin } from './entities/user/pin.entity';
 import { PinController } from './controllers/user/pin.controller';
 import { PinService } from './services/user/pin.service';
@@ -130,6 +130,14 @@ import { ProductionToProduct } from './entities/stockmanagement/production-to-pr
 import { Production } from './entities/stockmanagement/production.entity';
 import { ProductionController } from './controllers/stockmanagement/production.controller';
 import { ProductionService } from './services/stockmanagement/production.service';
+import { Corder } from './entities/selling/Corder.entity';
+import { CorderToProduct } from './entities/selling/corder-to-product.entity';
+import { CorderSubscriber } from './entities/selling/corder.subscriber';
+import { Ticket } from './entities/selling/ticket.entity';
+import { OpenticketToPredefined } from './entities/selling/openticket-to-predefined.entity';
+import { OpenTicket } from './entities/selling/open-ticket.entity';
+import { OpenTicketService } from './services/selling/open-ticket.service';
+import { OpenTicketController } from './controllers/selling/open-ticket.controller';
 
 @Module({
   imports: [
@@ -205,6 +213,13 @@ import { ProductionService } from './services/stockmanagement/production.service
 
       ProductionToProduct,
       Production,
+
+      Ticket,
+      CorderToProduct,
+      Corder,
+
+      OpenticketToPredefined,
+      OpenTicket,
     ]),
   ],
   controllers: [
@@ -239,6 +254,8 @@ import { ProductionService } from './services/stockmanagement/production.service
     OrderController,
     ReceptionController,
     ProductionController,
+
+    OpenTicketController,
 
     FileController,
   ],
@@ -292,6 +309,10 @@ import { ProductionService } from './services/stockmanagement/production.service
 
     ProductionService,
     ProductionSubscriber,
+
+    CorderSubscriber,
+
+    OpenTicketService,
 
     ConfigService,
   ],

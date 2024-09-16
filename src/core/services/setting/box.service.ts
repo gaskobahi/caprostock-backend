@@ -4,7 +4,6 @@ import { FindOptionsWhere, Repository } from 'typeorm';
 import {
   PaginatedService,
   isUniqueConstraint,
-  isUniqueConstraintBranch,
   isUniqueConstraintUpdate,
 } from '@app/typeorm';
 import { REQUEST } from '@nestjs/core';
