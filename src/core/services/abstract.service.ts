@@ -109,7 +109,6 @@ export abstract class AbstractService<T extends BaseCoreEntity> {
         if (err || !addresses || addresses.length === 0) {
           reject(false); // Le domaine n'existe pas ou ne possède pas de serveurs MX
         } else {
-          console.log('rrrrr5656');
           resolve(true); // Le domaine est valide
         }
       });

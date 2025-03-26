@@ -21,8 +21,12 @@ export class OpenTicketService extends AbstractService<OpenTicket> {
     super();
   }
 
-  async createRecord(dto: CreateOpenTicketDto): Promise<OpenTicket> {
-    return await super.createRecord({ ...dto });
+  async createRecord(dto: any): Promise<OpenTicket> {
+    if ((await this.repository.countBy({ branchId: dto.branchId })) > 0) {
+      return await this.updateRecord({ branchId: dto.branchId }, dto);
+    } else {
+      return await super.createRecord({ ...dto });
+    }
   }
 
   async updateRecord(

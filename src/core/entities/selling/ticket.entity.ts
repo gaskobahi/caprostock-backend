@@ -8,9 +8,8 @@ import {
 } from 'class-validator';
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
 import { CoreEntity } from '../base/core.entity';
-//import { Order } from '../supply/order.entity';
-import { Corder } from './Corder.entity';
 import { Branch } from '../subsidiary/branch.entity';
+import { CorderToProduct } from './corder-to-product.entity';
 
 @Entity({
   orderBy: { createdAt: 'DESC', updatedAt: 'DESC' },
@@ -21,12 +20,6 @@ export class Ticket extends CoreEntity {
   @ApiProperty({ description: `Nom` })
   @Column({ name: 'display_name' })
   displayName: string;
-
-  @IsBoolean()
-  @IsOptional()
-  @ApiProperty({ required: false, description: `Predefinie` })
-  @Column({ name: 'is_predefined', default: false })
-  isPredefined: boolean;
 
   @IsBoolean()
   @IsOptional()
@@ -54,9 +47,11 @@ export class Ticket extends CoreEntity {
   @JoinColumn({ name: 'branch_id' })
   branch: Branch;
 
-  @ApiProperty({ required: false, type: () => [Corder] })
-  @OneToMany(() => Corder, (corder) => corder.ticket, {
-    cascade: true,
-  })
-  corders: Corder[];
+  @ApiProperty({ required: false, type: () => [CorderToProduct] })
+  @OneToMany(
+    () => CorderToProduct,
+    (corderToProduct) => corderToProduct.corder,
+    { cascade: true },
+  )
+  corderToProducts: CorderToProduct[];
 }

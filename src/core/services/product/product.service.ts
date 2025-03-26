@@ -17,7 +17,6 @@ import {
   FindManyOptions,
   FindOneOptions,
   FindOptionsWhere,
-  In,
   Repository,
 } from 'typeorm';
 import { CreateProductDto } from '../../dto/product/create-product.dto';
@@ -26,7 +25,6 @@ import { UpdateProductDto } from 'src/core/dto/product/update-product.dto';
 import { validate } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
 import { ConfigService } from '../system/config.service';
-import * as fs from 'file-system';
 import {
   ProductsymbolTypeEnum,
   TaxOptionEnum,
@@ -359,6 +357,20 @@ export class ProductService extends AbstractService<Product> {
     return newArray;
   }
 
+  async readPaginatedListRecordForSelling(
+    options?: FindManyOptions<any>,
+    page?: number,
+    perPage?: number,
+  ) {
+    const products = await this.readPaginatedListRecord(options, page, perPage);
+    const newArray = this.generateNewProductVersion(products.data);
+    const bundleProducts = await this.generateNewProductionProductVersion(
+      products.data,
+    );
+    (await newArray).push(...bundleProducts);
+    return newArray;
+  }
+
   async readPaginatedListRecordForProduction(
     options?: FindManyOptions<any>,
     page?: number,
@@ -381,7 +393,6 @@ export class ProductService extends AbstractService<Product> {
   }
   async generateNewProductVersion(products: Array<object>) {
     const newArray: Array<object> = [];
-
     for (const item of products as any) {
       if (!item.isBundle && item.trackStock) {
         if (item.hasVariant) {
@@ -397,6 +408,7 @@ export class ProductService extends AbstractService<Product> {
                   reference: item.reference,
                   variantId: vp.id,
                   hasVariant: item.hasVariant,
+                  isBundle: false,
                   barreCode: vp.barreCode,
                   displayName: `${item.displayName}(${vp.name})`,
                   price: vp.price,
@@ -422,6 +434,7 @@ export class ProductService extends AbstractService<Product> {
               price: item.price,
               cost: item.cost,
               sku: item.sku,
+              isBundle: false,
               hasVariant: item.hasVariant,
               variantId: null,
               branchToProducts: branchToProducts,
@@ -430,6 +443,7 @@ export class ProductService extends AbstractService<Product> {
             newArray.push(newItem);
           }
         }
+      } else {
       }
     }
     return newArray;
@@ -439,8 +453,6 @@ export class ProductService extends AbstractService<Product> {
     const newArray: Array<object> = [];
 
     for (const item of products as any) {
-      console.log('juesus', item.bundleToProducts);
-
       if (item.isBundle && item.isUseProduction) {
         const _costsum = item.bundleToProducts.reduce(
           (accumulator, currentObject) => {
@@ -457,6 +469,10 @@ export class ProductService extends AbstractService<Product> {
           cost: _costsum,
           sku: item.sku,
           branchToProducts: item.branchToProducts,
+          isBundle: true,
+          hasVariant: item.hasVariant,
+          variantId: null,
+          branchVariantToProducts: [],
         };
         newArray.push(newItem);
         /*if (item.branchToProducts.length > 0) {
@@ -612,9 +628,53 @@ export class ProductService extends AbstractService<Product> {
       relations: {
         variantToProducts: { branchVariantToProducts: true },
         branchToProducts: true,
-        bundleToProducts: true,
+        bundleToProducts: {
+          product: {
+            bundleToProducts: true,
+            branchToProducts: true,
+          },
+        },
       },
       where: { id: productId },
     });
+  }
+
+  /**
+   * Récupère le stock actuel d'un produit pour une branche spécifique.
+   */
+  getBranchStock(product: any, deliveryProductData: any): number {
+    if (product.hasVariant) {
+      // 🔹 Étape 1 : Filtrer les variantes du produit correspondant
+      const variantList = product.variantToProducts.filter(
+        (variant) =>
+          variant.productId === deliveryProductData.productId &&
+          variant.sku == deliveryProductData.sku,
+      );
+
+      // 🔹 Étape 2 : Filtrer les stocks de la branche actuelle
+      return variantList
+        .flatMap((variant) => variant.branchVariantToProducts) // Récupère toutes les entrées `branchVariantToProducts`
+        .filter(
+          (branchVariant) =>
+            branchVariant.branchId === deliveryProductData.destinationBranchId,
+        )
+        .reduce((total, variant) => total + variant.inStock, 0);
+    } /*else if (product.isBundle) {
+      // Pour les bundles, on filtre les stocks de la branche
+      const branchBundle = product.branchToProducts.find(
+        (branch) =>
+          branch.branchId === deliveryProductData.destinationBranchId &&
+          branch.productId == deliveryProductData.productId,
+      );
+      return branchBundle ? branchBundle.inStock : 0;
+    } */ else {
+      // Produit simple, on récupère directement le stock dans la branche
+      const branchProduct = product.branchToProducts.find(
+        (branch) =>
+          branch.branchId === deliveryProductData.destinationBranchId &&
+          branch.productId == deliveryProductData.productId,
+      );
+      return branchProduct ? branchProduct.inStock : 0;
+    }
   }
 }

@@ -16,6 +16,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  ParseEnumPipe,
   ParseUUIDPipe,
   Patch,
   Post,
@@ -26,34 +27,38 @@ import { merge } from 'lodash';
 import { ApiAuthJwtHeader } from 'src/modules/auth/decorators/api-auth-jwt-header.decorator';
 import { ApiRequestIssuerHeader } from 'src/modules/auth/decorators/api-request-issuer-header.decorator';
 import { CurrentUser } from 'src/modules/auth/decorators/current-user.decorator';
-import { AbilityActionEnum, AbilitySubjectEnum } from '../../definitions/enums';
+import {
+  AbilityActionEnum,
+  AbilitySubjectEnum,
+  SellingStatusEnum,
+} from '../../definitions/enums';
 import { AuthUser } from '../../entities/session/auth-user.entity';
-import { Reception } from 'src/core/entities/stockmanagement/reception.entity';
-import { CreateReceptionDto } from 'src/core/dto/stockmanagement/create-reception.dto';
-import { UpdateReceptionDto } from 'src/core/dto/stockmanagement/update-reception.dto';
-import { ReceptionService } from 'src/core/services/stockmanagement/reception.service';
+import { SellingService } from 'src/core/services/selling/selling.service';
+import { Selling } from 'src/core/entities/selling/selling.entity';
+import { UpdateSellingDto } from 'src/core/dto/selling/update-selling.dto';
+import { CreateSellingDto } from 'src/core/dto/selling/create-selling.dto';
+import { ValidateSellingDto } from 'src/core/dto/selling/validate-selling.dto';
 
 @ApiAuthJwtHeader()
 @ApiRequestIssuerHeader()
 @CustomApiErrorResponse()
-@ApiTags('reception')
-@Controller('reception')
-export class ReceptionController {
-  constructor(private service: ReceptionService) {}
+@ApiTags('selling')
+@Controller('selling')
+export class SellingController {
+  constructor(private service: SellingService) {}
 
   @ApiSearchQueryFilter()
-  @CustomApiPaginatedResponse(Reception)
+  @CustomApiPaginatedResponse(Selling)
   @Get()
   async findPaginated(
     @CurrentUser() authUser: AuthUser,
     @Query() query?: any,
-  ): Promise<Paginated<Reception>> {
+  ): Promise<Paginated<Selling>> {
     // Permission check
     await authUser?.throwUnlessCan(
       AbilityActionEnum.read,
-      AbilitySubjectEnum.Reception,
+      AbilitySubjectEnum.Order,
     );
-
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
       query as ApiSearchParamOptions,
@@ -68,16 +73,16 @@ export class ReceptionController {
       await this.service.getFilterByAuthUserBranch(),
     );
 
-    return this.service.readPaginatedListRecord(options);
+    return await this.service.readPaginatedListRecord(options);
   }
 
   @ApiSearchOneQueryFilter()
-  @Get(':receptionId')
+  @Get(':sellingId')
   async findOne(
     @CurrentUser() authUser: AuthUser,
-    @Param('receptionId', ParseUUIDPipe) id: string,
+    @Param('sellingId', ParseUUIDPipe) id: string,
     @Query() query?: any,
-  ): Promise<Reception> {
+  ): Promise<Selling> {
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
       query as ApiSearchOneParamOptions,
@@ -89,27 +94,27 @@ export class ReceptionController {
       await this.service.getFilterByAuthUserBranch(),
     );*/
 
-    const reception = await this.service.readOneRecord({
+    const selling = await this.service.readOneRecord({
       ...options,
       where: { ...options?.where, id: id ?? '' },
     });
 
     // Permission check
-    await authUser?.throwUnlessCan(AbilityActionEnum.read, reception);
+    await authUser?.throwUnlessCan(AbilityActionEnum.read, selling);
 
-    return reception;
+    return selling;
   }
 
   /**
-   * Create reception
+   * Create selling
    */
   @ApiSearchOneQueryFilter()
   @Post()
   async create(
-    @Body() dto: CreateReceptionDto,
+    @Body() dto: CreateSellingDto,
     @Query() query?: any,
-  ): Promise<Reception> {
-    const reception = await this.service.createRecord(dto);
+  ): Promise<Selling> {
+    const selling = await this.service.createRecord(dto);
 
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
@@ -124,24 +129,24 @@ export class ReceptionController {
 
     return this.service.readOneRecord({
       ...options,
-      where: { ...options?.where, id: reception.id },
+      where: { ...options?.where, id: selling.id },
     });
   }
 
   /**
-   * Update reception
+   * Update selling
    */
   @ApiSearchOneQueryFilter()
-  @Patch(':receptionId')
+  @Patch(':sellingId')
   async update(
-    @Param('receptionId', ParseUUIDPipe) id: string,
-    @Body() dto: UpdateReceptionDto,
+    @Param('sellingId', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateSellingDto,
     @Query() query?: any,
-  ): Promise<Reception> {
+  ): Promise<Selling> {
     // Apply auth user branch filter
     const filter = await this.service.getFilterByAuthUserBranch();
 
-    const reception = await this.service.updateRecord(
+    const selling = await this.service.updateRecord(
       { ...filter, id: id ?? '' },
       dto,
     );
@@ -153,20 +158,50 @@ export class ReceptionController {
 
     return this.service.readOneRecord({
       ...options,
-      where: { ...options?.where, ...filter, id: reception.id ?? '' },
+      where: { ...options?.where, ...filter, id: selling.id ?? '' },
     });
   }
 
   /**
-   * Remove reception
+   * Remove selling
    */
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Delete(':receptionId')
-  async remove(@Param('receptionId', ParseUUIDPipe) id: string) {
+  @Delete(':sellingId')
+  async remove(@Param('sellingId', ParseUUIDPipe) id: string) {
     // Apply auth user branch filter
     const filter = await this.service.getFilterByAuthUserBranch();
 
     await this.service.deleteRecord({ ...filter, id: id ?? '' });
     return;
+  }
+
+  @ApiSearchOneQueryFilter()
+  @HttpCode(HttpStatus.OK)
+  @Post(':sellingId/cancel/:status')
+  async cancelRecord(
+    @Param('sellingId', ParseUUIDPipe) id: string,
+    @Param('status', new ParseEnumPipe(SellingStatusEnum))
+    status: SellingStatusEnum,
+    @Body() dto: ValidateSellingDto,
+    @Query() query?: any,
+  ): Promise<Selling> {
+    // Apply auth user branch filter
+    const filter = await this.service.getFilterByAuthUserBranch();
+
+    const selling = await this.service.cancelRecord(
+      { ...filter, id: id ?? '' },
+      status,
+      dto,
+    );
+
+    const options = buildFilterFromApiSearchParams(
+      this.service.repository,
+      query as ApiSearchOneParamOptions,
+    );
+
+    return this.service.readOneRecord({
+      ...options,
+      where: { ...options?.where, ...filter, id: selling.id ?? '' },
+    });
   }
 }

@@ -17,6 +17,7 @@ export enum AbilitySubjectEnum {
   Brand = 'Brand',
   Supplier = 'Supplier',
   Order = 'Order',
+  Selling = 'Selling',
   Reception = 'Reception',
   Consult = 'Consult',
   ConsultType = 'ConsultType',
@@ -131,6 +132,13 @@ export enum OrderStatusEnum {
   draft = 'draft',
   pending = 'pending',
   partialreceived = 'partialreceived',
+  closed = 'closed',
+}
+
+export enum SellingStatusEnum {
+  draft = 'draft',
+  pending = 'pending',
+  partialdelivered = 'partialdelivered',
   closed = 'closed',
 }
 

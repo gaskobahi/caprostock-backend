@@ -1,5 +1,5 @@
 import { PaginatedService, isUniqueConstraint } from '@app/typeorm';
-import { BadRequestException, Inject, Injectable, NotImplementedException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Order } from '../../entities/stockmanagement/order.entity';
@@ -361,7 +361,7 @@ export class OrderService extends AbstractService<Order> {
       );
     }
 
-   /* switch (status) {
+    /* switch (status) {
       case OrderStatusEnum.validated:
         order.status = OrderStatusEnum.validated;
         let branchToProduct: BranchToProduct;

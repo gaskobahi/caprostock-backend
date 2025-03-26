@@ -23,6 +23,7 @@ export class CreateReceptionDto extends PickType(Reception, [
     description: `Produits de la reception`,
   })
   receptionToProducts: CreateReceptionToProductDto[];
+
   @IsArray()
   @IsOptional()
   @ValidateNested()

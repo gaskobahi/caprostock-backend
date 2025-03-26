@@ -9,16 +9,15 @@ import {
 import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import { CoreEntity } from '../base/core.entity';
 import { Product } from '../product/product.entity';
-import { Corder } from './Corder.entity';
-import { Ticket } from './ticket.entity';
+import { Selling } from './selling.entity';
 
 /**
- * Relationship table {corder, product} with custom properties
+ * Relationship table {selling, product} with custom properties
  */
 @Entity({
   orderBy: { createdAt: 'DESC', updatedAt: 'DESC' },
 })
-export class CorderToProduct extends CoreEntity {
+export class SellingToProduct extends CoreEntity {
   @IsNotEmpty()
   @IsInt()
   @ApiProperty({ required: true, default: 1, description: `Quantité` })
@@ -46,31 +45,17 @@ export class CorderToProduct extends CoreEntity {
 
   @IsUUID()
   @IsNotEmpty()
-  @Column({ name: 'corder_id', type: 'uuid', nullable: false })
-  corderId: string;
+  @Column({ name: 'selling_id', type: 'uuid', nullable: false })
+  sellingId: string;
 
-  @IsUUID()
-  @IsNotEmpty()
-  @Column({ name: 'ticket_id', type: 'uuid', nullable: false })
-  ticketId: string;
-
-  @ApiProperty({ required: false, type: () => Ticket })
-  @ManyToOne(() => Ticket, (ticket) => ticket.corderToProducts, {
+  @ApiProperty({ required: false, type: () => Selling })
+  @ManyToOne(() => Selling, (selling) => selling.sellingToProducts, {
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE',
     orphanedRowAction: 'delete',
   })
-  @JoinColumn({ name: 'ticket_id' })
-  ticket: Ticket;
-
-  @ApiProperty({ required: false, type: () => Corder })
-  @ManyToOne(() => Corder, (corder) => corder.corderToProducts, {
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-    orphanedRowAction: 'delete',
-  })
-  @JoinColumn({ name: 'corder_id' })
-  corder: Corder;
+  @JoinColumn({ name: 'selling_id' })
+  selling: Selling;
 
   @IsUUID()
   @IsNotEmpty()

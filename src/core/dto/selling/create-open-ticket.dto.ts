@@ -11,9 +11,9 @@ export class CreateOpenTicketDto extends PickType(OpenTicket, [
   @IsArray()
   @IsNotEmpty()
   @ValidateNested()
-  @Type(() => OpenticketToPredefined)
+  @Type(() => CreateOpenticketToPredefinedDto)
   @ApiProperty({
-    type: () => [OpenticketToPredefined],
+    type: () => [CreateOpenticketToPredefinedDto],
     description: `Les element(table) des tickets predefinis de chaque branche`,
   })
   openticketToPredefined: CreateOpenticketToPredefinedDto[];
@@ -21,5 +21,5 @@ export class CreateOpenTicketDto extends PickType(OpenTicket, [
 
 export class CreateOpenticketToPredefinedDto extends PickType(
   OpenticketToPredefined,
-  ['displayName', 'openticketId'] as const,
+  ['displayName'] as const,
 ) {}

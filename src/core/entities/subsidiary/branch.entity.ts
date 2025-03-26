@@ -22,6 +22,8 @@ import { Production } from '../stockmanagement/production.entity';
 import { Corder } from '../selling/Corder.entity';
 import { Ticket } from '../selling/ticket.entity';
 import { OpenTicket } from '../selling/open-ticket.entity';
+import { Selling } from '../selling/selling.entity';
+import { Delivery } from '../selling/delivery.entity';
 
 @Entity({
   orderBy: { createdAt: 'DESC', updatedAt: 'DESC' },
@@ -79,6 +81,12 @@ export class Branch extends CoreEntity {
   @OneToMany(() => User, (user) => user.branch)
   users: User[];
 
+  @ApiProperty({ required: false, type: () => [Delivery] })
+  @OneToMany(() => Delivery, (delivery) => delivery.branch, {
+    cascade: true,
+  })
+  deliverys: Delivery[];
+
   @ApiProperty({ required: false, type: () => [BranchToProduct] })
   @OneToMany(() => BranchToProduct, (banchToProduct) => banchToProduct.branch, {
     cascade: true,
@@ -124,6 +132,12 @@ export class Branch extends CoreEntity {
     cascade: true,
   })
   orders: Order[];
+
+  @ApiProperty({ required: false, type: () => [Selling] })
+  @OneToMany(() => Selling, (selling) => selling.branch, {
+    cascade: true,
+  })
+  sellings: Selling[];
 
   @ApiProperty({ required: false, type: () => [Corder] })
   @OneToMany(() => Corder, (corder) => corder.branch, {

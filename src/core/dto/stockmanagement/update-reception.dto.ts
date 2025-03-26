@@ -2,7 +2,6 @@ import { ApiProperty, OmitType, PartialType } from '@nestjs/swagger';
 import {
   IsArray,
   IsNotEmpty,
-  IsNumber,
   IsOptional,
   IsUUID,
   ValidateNested,

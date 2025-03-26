@@ -28,26 +28,26 @@ import { ApiRequestIssuerHeader } from 'src/modules/auth/decorators/api-request-
 import { CurrentUser } from 'src/modules/auth/decorators/current-user.decorator';
 import { AbilityActionEnum, AbilitySubjectEnum } from '../../definitions/enums';
 import { AuthUser } from '../../entities/session/auth-user.entity';
-import { Reception } from 'src/core/entities/stockmanagement/reception.entity';
-import { CreateReceptionDto } from 'src/core/dto/stockmanagement/create-reception.dto';
-import { UpdateReceptionDto } from 'src/core/dto/stockmanagement/update-reception.dto';
-import { ReceptionService } from 'src/core/services/stockmanagement/reception.service';
+import { DeliveryService } from 'src/core/services/selling/delivery.service';
+import { Delivery } from 'src/core/entities/selling/delivery.entity';
+import { CreateDeliveryDto } from 'src/core/dto/selling/create-delivery.dto';
+import { UpdateDeliveryDto } from 'src/core/dto/selling/update-delivery.dto';
 
 @ApiAuthJwtHeader()
 @ApiRequestIssuerHeader()
 @CustomApiErrorResponse()
-@ApiTags('reception')
-@Controller('reception')
-export class ReceptionController {
-  constructor(private service: ReceptionService) {}
+@ApiTags('delivery')
+@Controller('delivery')
+export class DeliveryController {
+  constructor(private service: DeliveryService) {}
 
   @ApiSearchQueryFilter()
-  @CustomApiPaginatedResponse(Reception)
+  @CustomApiPaginatedResponse(Delivery)
   @Get()
   async findPaginated(
     @CurrentUser() authUser: AuthUser,
     @Query() query?: any,
-  ): Promise<Paginated<Reception>> {
+  ): Promise<Paginated<Delivery>> {
     // Permission check
     await authUser?.throwUnlessCan(
       AbilityActionEnum.read,
@@ -72,12 +72,12 @@ export class ReceptionController {
   }
 
   @ApiSearchOneQueryFilter()
-  @Get(':receptionId')
+  @Get(':deliveryId')
   async findOne(
     @CurrentUser() authUser: AuthUser,
-    @Param('receptionId', ParseUUIDPipe) id: string,
+    @Param('deliveryId', ParseUUIDPipe) id: string,
     @Query() query?: any,
-  ): Promise<Reception> {
+  ): Promise<Delivery> {
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
       query as ApiSearchOneParamOptions,
@@ -89,27 +89,27 @@ export class ReceptionController {
       await this.service.getFilterByAuthUserBranch(),
     );*/
 
-    const reception = await this.service.readOneRecord({
+    const delivery = await this.service.readOneRecord({
       ...options,
       where: { ...options?.where, id: id ?? '' },
     });
 
     // Permission check
-    await authUser?.throwUnlessCan(AbilityActionEnum.read, reception);
+    await authUser?.throwUnlessCan(AbilityActionEnum.read, delivery);
 
-    return reception;
+    return delivery;
   }
 
   /**
-   * Create reception
+   * Create delivery
    */
   @ApiSearchOneQueryFilter()
   @Post()
   async create(
-    @Body() dto: CreateReceptionDto,
+    @Body() dto: CreateDeliveryDto,
     @Query() query?: any,
-  ): Promise<Reception> {
-    const reception = await this.service.createRecord(dto);
+  ): Promise<Delivery> {
+    const delivery = await this.service.createRecord(dto);
 
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
@@ -124,24 +124,24 @@ export class ReceptionController {
 
     return this.service.readOneRecord({
       ...options,
-      where: { ...options?.where, id: reception.id },
+      where: { ...options?.where, id: delivery.id },
     });
   }
 
   /**
-   * Update reception
+   * Update delivery
    */
   @ApiSearchOneQueryFilter()
-  @Patch(':receptionId')
+  @Patch(':deliveryId')
   async update(
-    @Param('receptionId', ParseUUIDPipe) id: string,
-    @Body() dto: UpdateReceptionDto,
+    @Param('deliveryId', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateDeliveryDto,
     @Query() query?: any,
-  ): Promise<Reception> {
+  ): Promise<Delivery> {
     // Apply auth user branch filter
     const filter = await this.service.getFilterByAuthUserBranch();
 
-    const reception = await this.service.updateRecord(
+    const delivery = await this.service.updateRecord(
       { ...filter, id: id ?? '' },
       dto,
     );
@@ -153,16 +153,16 @@ export class ReceptionController {
 
     return this.service.readOneRecord({
       ...options,
-      where: { ...options?.where, ...filter, id: reception.id ?? '' },
+      where: { ...options?.where, ...filter, id: delivery.id ?? '' },
     });
   }
 
   /**
-   * Remove reception
+   * Remove delivery
    */
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Delete(':receptionId')
-  async remove(@Param('receptionId', ParseUUIDPipe) id: string) {
+  @Delete(':deliveryId')
+  async remove(@Param('deliveryId', ParseUUIDPipe) id: string) {
     // Apply auth user branch filter
     const filter = await this.service.getFilterByAuthUserBranch();
 

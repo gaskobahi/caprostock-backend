@@ -120,7 +120,6 @@ import { OrderSubscriber } from './entities/stockmanagement/order.subscriber';
 import { ReceptionToProduct } from './entities/stockmanagement/reception-to-product.entity';
 import { Reception } from './entities/stockmanagement/reception.entity';
 import { ReceptionSubscriber } from './entities/stockmanagement/reception.subscriber';
-import { ReceptionService } from './services/stockmanagement/reception.service';
 import { ReceptionController } from './controllers/stockmanagement/reception.controller';
 import { OrderToAdditionalCost } from './entities/stockmanagement/order-to-addtionnal-cost.entity';
 import { ReceptionToAdditionalCost } from './entities/stockmanagement/reception-to-addtionnal-cost.entity';
@@ -138,6 +137,19 @@ import { OpenticketToPredefined } from './entities/selling/openticket-to-predefi
 import { OpenTicket } from './entities/selling/open-ticket.entity';
 import { OpenTicketService } from './services/selling/open-ticket.service';
 import { OpenTicketController } from './controllers/selling/open-ticket.controller';
+import { SellingToProduct } from './entities/selling/selling-to-product.entity';
+import { SellingToAdditionalCost } from './entities/selling/selling-to-addtionnal-cost.entity';
+import { Selling } from './entities/selling/selling.entity';
+import { SellingController } from './controllers/selling/selling.controller';
+import { SellingService } from './services/selling/selling.service';
+import { SellingSubscriber } from './entities/selling/selling.subscriber';
+import { Delivery } from './entities/selling/delivery.entity';
+import { DeliveryToProduct } from './entities/selling/delivery-to-product.entity';
+import { DeliveryToAdditionalCost } from './entities/selling/delivery-to-addtionnal-cost.entity';
+import { ReceptionService } from './services/stockmanagement/reception.service';
+import { DeliveryService } from './services/selling/delivery.service';
+import { DeliverySubscriber } from './entities/selling/delivery.subscriber';
+import { DeliveryController } from './controllers/stockmanagement/deliverycontroller';
 
 @Module({
   imports: [
@@ -207,9 +219,17 @@ import { OpenTicketController } from './controllers/selling/open-ticket.controll
       OrderToProduct,
       OrderToAdditionalCost,
 
+      Selling,
+      SellingToProduct,
+      SellingToAdditionalCost,
+
       Reception,
       ReceptionToProduct,
       ReceptionToAdditionalCost,
+
+      Delivery,
+      DeliveryToProduct,
+      DeliveryToAdditionalCost,
 
       ProductionToProduct,
       Production,
@@ -252,7 +272,9 @@ import { OpenTicketController } from './controllers/selling/open-ticket.controll
     InventoryCountController,
     TransfertOrderController,
     OrderController,
+    SellingController,
     ReceptionController,
+    DeliveryController,
     ProductionController,
 
     OpenTicketController,
@@ -304,8 +326,14 @@ import { OpenTicketController } from './controllers/selling/open-ticket.controll
     OrderService,
     OrderSubscriber,
 
+    SellingService,
+    SellingSubscriber,
+
     ReceptionService,
     ReceptionSubscriber,
+
+    DeliveryService,
+    DeliverySubscriber,
 
     ProductionService,
     ProductionSubscriber,

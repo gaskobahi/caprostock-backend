@@ -21,8 +21,6 @@ import { AuthUser } from '../session/auth-user.entity';
 import { Expose, instanceToPlain } from 'class-transformer';
 import { Branch } from '../subsidiary/branch.entity';
 import { CorderToProduct } from './corder-to-product.entity';
-import { Customer } from './customer.entity';
-import { Ticket } from './ticket.entity';
 
 @Entity({
   orderBy: { createdAt: 'DESC', updatedAt: 'DESC' },
@@ -72,7 +70,7 @@ export class Corder extends CoreEntity {
   @Column({ type: 'text', nullable: true })
   remark: string;
 
-  @IsUUID()
+  /* @IsUUID()
   @IsOptional()
   @Column({ name: 'customer_id', type: 'uuid', nullable: false })
   customerId: string;
@@ -84,7 +82,7 @@ export class Corder extends CoreEntity {
     orphanedRowAction: 'delete',
   })
   @JoinColumn({ name: 'customer_id' })
-  customer: Customer;
+  customer: Customer;*/
 
   @IsUUID()
   @IsNotEmpty()
@@ -99,20 +97,6 @@ export class Corder extends CoreEntity {
   })
   @JoinColumn({ name: 'branch_id' })
   branch: Branch;
-
-  @IsUUID()
-  @IsNotEmpty()
-  @Column({ name: 'ticket_id', type: 'uuid', nullable: false })
-  ticketId: string;
-
-  @ApiProperty({ required: false, type: () => Ticket })
-  @ManyToOne(() => Ticket, (ticket) => ticket.corders, {
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-    orphanedRowAction: 'delete',
-  })
-  @JoinColumn({ name: 'ticket_id' })
-  ticket: Ticket;
 
   @ApiProperty({ required: false, type: () => [CorderToProduct] })
   @OneToMany(

@@ -35,7 +35,7 @@ export class ReceptionToAdditionalCost extends CoreEntity {
   @Column({
     name: 'orderToAdditionalCost_id',
     type: 'uuid',
-    nullable: false,
+    nullable: true,
   })
   orderToAdditionalCostId: string;
 
