@@ -16,7 +16,7 @@ import { Product } from 'src/core/entities/product/product.entity';
 
 @Injectable()
 export class DeliveryService extends AbstractService<Delivery> {
-  public NOT_FOUND_MESSAGE = `Commande non trouvée`;
+  public NOT_FOUND_MESSAGE = `Commande non trouvée `;
 
   constructor(
     @InjectRepository(Delivery)
