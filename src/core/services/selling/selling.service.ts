@@ -133,7 +133,6 @@ export class SellingService extends AbstractService<Selling> {
       throw new BadRequestException(this.NOT_FOUND_MESSAGE);
     }
     const entity = { ...res, totalAmount: 0, sellingId: res.id } as any;
-    console.log('tytuuttutu', entity);
     const {
       destinationBranchId,
       deliverys,
@@ -173,9 +172,19 @@ export class SellingService extends AbstractService<Selling> {
           variantId: any;
           hasVariant: any;
           displayName: string;
+          equipmentId: string;
           sku: any;
+          equipmentName: string;
         }[],
-        { productId, quantity, cost, product: item, sku }: any,
+        {
+          productId,
+          quantity,
+          cost,
+          product: item,
+          sku,
+          equipmentId,
+          equipment,
+        }: any,
       ) => {
         if (item.hasVariant) {
           const variants = item.variantToProducts?.filter(
@@ -201,14 +210,15 @@ export class SellingService extends AbstractService<Selling> {
                   incoming: incoming ?? 0,
                   isDelivery: isDelivery,
                   cost: cost,
-                  amount:
-                    parseInt(cost.toString()) * parseInt(quantity.toString()),
+                  amount: parseInt(cost.toString()) * parseInt(quantity.toString()),
                   inStock: parseInt(dstbranchVariants.inStock.toString()),
                   //+parseInt(quantity.toString()),
                   variantId: vp.id,
                   hasVariant: item?.hasVariant,
                   displayName: `${item?.displayName} (${vp?.name})`,
                   sku: sku,
+                  equipmentId: equipmentId,
+                  equipmentName: equipment ? equipment.displayName : '',
                 });
               }
             },
@@ -238,6 +248,8 @@ export class SellingService extends AbstractService<Selling> {
               displayName: `${item.displayName}`,
               sku: sku,
               variantId: null,
+              equipmentId: equipmentId,
+              equipmentName: equipment ? equipment.displayName : '',
             });
           }
         }

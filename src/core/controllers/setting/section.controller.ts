@@ -27,156 +27,135 @@ import { ApiRequestIssuerHeader } from 'src/modules/auth/decorators/api-request-
 import { CurrentUser } from 'src/modules/auth/decorators/current-user.decorator';
 import { AbilityActionEnum, AbilitySubjectEnum } from '../../definitions/enums';
 import { AuthUser } from '../../entities/session/auth-user.entity';
-import { User } from '../../entities/user/user.entity';
-import { UserService } from '../../services/user/user.service';
-import { CreateUserDto } from '../../dto/user/create-user.dto';
-import { UpdateUserDto } from '../../dto/user/update-user.dto';
+import { Section } from 'src/core/entities/setting/section.entity';
+import { CreateSectionDto } from 'src/core/dto/setting/create-section.dto';
+import { UpdateSectionDto } from 'src/core/dto/setting/update-section.dto';
+import { UserService } from 'src/core/services/user/user.service';
+import { SectionService } from 'src/core/services/setting/section.service';
 
 @ApiAuthJwtHeader()
 @ApiRequestIssuerHeader()
 @CustomApiErrorResponse()
-@ApiTags('user')
-@Controller('user')
-export class UserController {
-  constructor(private service: UserService) {}
+@ApiTags('section')
+@Controller('section')
+export class SectionController {
+  constructor(
+    private service: SectionService,
+    private userService: UserService,
+  ) {}
 
+  /**
+   * Get paginated section list
+   */
   @ApiSearchQueryFilter()
-  @CustomApiPaginatedResponse(User)
+  @CustomApiPaginatedResponse(Section)
   @Get()
-  async findAll(
+  async findPaginated(
     @CurrentUser() authUser: AuthUser,
     @Query() query?: any,
-  ): Promise<Paginated<User>> {
+  ): Promise<Paginated<Section>> {
     // Permission check
     await authUser?.throwUnlessCan(
       AbilityActionEnum.read,
-      AbilitySubjectEnum.User,
+      AbilitySubjectEnum.Section,
     );
 
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
       query as ApiSearchParamOptions,
       {
-        textFilterFields: [
-          'username',
-          'firstName',
-          'lastName',
-          'phoneNumber',
-          'email',
-        ],
+        textFilterFields: ['displayName'],
       },
     );
 
-    // Apply auth user branch filter
+    // Apply auth user section filter
     /*options.where = merge(
       options?.where,
-      await this.service.getFilterByAuthUserBranch(),
+      await this.service.getFilterByAuthUserSection(),
     );*/
 
-    return await this.service.readPaginatedListRecord(options);
+    return this.service.readPaginatedListRecord(options);
   }
 
+  /**
+   * Get paginated section list for select
+
+  /**
+   * Get one section by id
+   */
   @ApiSearchOneQueryFilter()
-  @Get(':userId')
+  @Get(':sectionId')
   async findOne(
     @CurrentUser() authUser: AuthUser,
-    @Param('userId', ParseUUIDPipe) id: string,
+    @Param('sectionId', ParseUUIDPipe) id: string,
     @Query() query?: any,
-  ): Promise<User> {
+  ): Promise<Section> {
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
       query as ApiSearchOneParamOptions,
     );
-
-    // Apply auth user branch filter
-    /*options.where = merge(
-      options?.where,
-      await this.service.getFilterByAuthUserBranch(),
-    );*/
-
-    const user = await this.service.readOneRecord({
+    const section = await this.service.readOneRecord({
       ...options,
       where: { ...options?.where, id: id ?? '' },
     });
 
     // Permission check
-    await authUser?.throwUnlessCan(AbilityActionEnum.read, user);
+    await authUser?.throwUnlessCan(AbilityActionEnum.read, section);
 
-    return user;
+    return section;
   }
 
   /**
-   * Create user
+   * Create section
    */
   @ApiSearchOneQueryFilter()
   @Post()
   async create(
-    @Body() dto: CreateUserDto,
+    @Body() dto: CreateSectionDto,
     @Query() query?: any,
-  ): Promise<User> {
-    console.log('rrrrrrrrrrrr');
-    const user = await this.service.createRecord(dto);
+  ): Promise<Section> {
+    const section = await this.service.createRecord(dto);
+
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
       query as ApiSearchOneParamOptions,
     );
-    // Apply auth user branch filter
-    /*options.where = merge(
-      options?.where,
-      await this.service.getFilterByAuthUserBranch(),
-    );*/
 
     return this.service.readOneRecord({
       ...options,
-      where: { ...options?.where, id: user.id },
+      where: { ...options?.where, id: section.id },
     });
   }
 
   /**
-   * Update user
+   * Update section
    */
   @ApiSearchOneQueryFilter()
-  @Patch(':userId')
+  @Patch(':sectionId')
   async update(
-    @Param('userId', ParseUUIDPipe) id: string,
-    @Body() dto: UpdateUserDto,
+    @Param('sectionId', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateSectionDto,
     @Query() query?: any,
-  ): Promise<User> {
-    // Apply auth user branch filter
-    // const filter = await this.service.getFilterByAuthUserBranch();
-    /*
-    const user = await this.service.updateRecord(
-      { ...filter, id: id ?? '' },
-      dto,
-    );
-    */
-
-    const user = await this.service.updateRecord({ id: id ?? '' }, dto);
+  ): Promise<Section> {
+    const section = await this.service.updateRecord({ id: id ?? '' }, dto);
 
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
       query as ApiSearchOneParamOptions,
     );
+
     return this.service.readOneRecord({
       ...options,
-      where: { ...options?.where, id: user.id },
+      where: { ...options?.where, id: section.id },
     });
-
-    /*return this.service.readOneRecord({
-      ...options,
-      where: { ...options?.where, ...filter, id: user.id },
-    });*/
   }
 
   /**
-   * Remove user
+   * Remove section
    */
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Delete(':userId')
-  async remove(@Param('userId', ParseUUIDPipe) id: string) {
-    // Apply auth user branch filter
-    //const filter = await this.service.getFilterByAuthUserBranch();
-
+  @Delete(':sectionId')
+  async remove(@Param('sectionId', ParseUUIDPipe) id: string) {
     await this.service.deleteRecord({ id: id ?? '' });
     return;
   }

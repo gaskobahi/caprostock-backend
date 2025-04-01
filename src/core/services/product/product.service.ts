@@ -668,6 +668,9 @@ export class ProductService extends AbstractService<Product> {
       );
       return branchBundle ? branchBundle.inStock : 0;
     } */ else {
+      if (product.id != deliveryProductData.productId) {
+        deliveryProductData = { ...deliveryProductData, productId: product.id };
+      }
       // Produit simple, on récupère directement le stock dans la branche
       const branchProduct = product.branchToProducts.find(
         (branch) =>

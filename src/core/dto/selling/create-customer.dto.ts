@@ -11,6 +11,20 @@ export class CreateCustomerDto extends PickType(Customer, [
   'pointBalance',
 ] as const) {
   @IsOptional()
+  @ApiProperty({
+    type: () => String,
+    description: `departement du client `,
+  })
+  departmentId: string;
+
+  @IsOptional()
+  @ApiProperty({
+    type: () => String,
+    description: `section du client `,
+  })
+  sectionId: string;
+
+  @IsOptional()
   @IsString()
   @ApiProperty({ description: `Numéro de téléphone` })
   phoneNumber: string;

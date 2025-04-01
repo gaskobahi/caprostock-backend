@@ -1,6 +1,7 @@
 import { ApiProperty, PickType } from '@nestjs/swagger';
 import {
   IsArray,
+  IsDateString,
   IsNotEmpty,
   IsOptional,
   ValidateNested,
@@ -13,7 +14,13 @@ import { DeliveryToAdditionalCost } from 'src/core/entities/selling/delivery-to-
 export class CreateDeliveryDto extends PickType(Delivery, [
   'reference',
   'sellingId',
+  'transporterId',
+  'description',
 ] as const) {
+  @IsOptional()
+  @IsDateString()
+  @ApiProperty({ description: `date de la sortie` })
+  date: Date;
   @IsArray()
   @IsNotEmpty()
   @ValidateNested()
@@ -38,6 +45,7 @@ export class CreateDeliveryDto extends PickType(Delivery, [
 export class CreateDeliveryToProductDto extends PickType(DeliveryToProduct, [
   'quantity',
   'productId',
+  'equipmentId',
   'sku',
 ] as const) {}
 

@@ -1,20 +1,14 @@
-import { Column, Entity, Index } from 'typeorm';
+import { Column, Entity, Index, OneToMany } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsIn,
-  IsNotEmpty,
-  IsNumber,
-  IsOptional,
-  IsString,
-} from 'class-validator';
+import { IsNotEmpty, IsString } from 'class-validator';
 import { CoreEntity } from '../base/core.entity';
 import { instanceToPlain } from 'class-transformer';
-import { SettingTypeEnum } from 'src/core/definitions/enums';
+import { Equipment } from './equipment.entity';
 
 @Entity({
   orderBy: { createdAt: 'DESC', updatedAt: 'DESC' },
 })
-export class Setting extends CoreEntity {
+export class EquipmentType extends CoreEntity {
   @IsNotEmpty()
   @IsString()
   @ApiProperty({ description: `Name` })
@@ -28,6 +22,11 @@ export class Setting extends CoreEntity {
   @Column({ name: 'display_name' })
   displayName: string;
 
+  @ApiProperty({ required: false, type: () => [Equipment] })
+  @OneToMany(() => Equipment, (equipment) => equipment.equipmentType, {
+    cascade: true,
+  })
+  equipments: Equipment[];
   toJSON() {
     return instanceToPlain(this);
   }

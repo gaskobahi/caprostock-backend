@@ -27,39 +27,37 @@ import { ApiRequestIssuerHeader } from 'src/modules/auth/decorators/api-request-
 import { CurrentUser } from 'src/modules/auth/decorators/current-user.decorator';
 import { AbilityActionEnum, AbilitySubjectEnum } from '../../definitions/enums';
 import { AuthUser } from '../../entities/session/auth-user.entity';
-import { Box } from 'src/core/entities/setting/box.entity';
-import { CreateBoxDto } from 'src/core/dto/setting/create-box.dto';
-import { UpdateBoxDto } from 'src/core/dto/setting/update-box.dto';
-import { BoxService } from 'src/core/services/setting/box.service';
+import { Department } from 'src/core/entities/setting/department.entity';
+import { CreateDepartmentDto } from 'src/core/dto/setting/create-department.dto';
+import { UpdateDepartmentDto } from 'src/core/dto/setting/update-department.dto';
 import { UserService } from 'src/core/services/user/user.service';
+import { DepartmentService } from 'src/core/services/setting/department.service';
 
 @ApiAuthJwtHeader()
 @ApiRequestIssuerHeader()
 @CustomApiErrorResponse()
-@ApiTags('box')
-@Controller('box')
-export class BoxController {
+@ApiTags('department')
+@Controller('department')
+export class DepartmentController {
   constructor(
-    private service: BoxService,
+    private service: DepartmentService,
     private userService: UserService,
-    //private orderService: OrderService,
-    //private saleService: SaleService,
   ) {}
 
   /**
-   * Get paginated box list
+   * Get paginated department list
    */
   @ApiSearchQueryFilter()
-  @CustomApiPaginatedResponse(Box)
+  @CustomApiPaginatedResponse(Department)
   @Get()
   async findPaginated(
     @CurrentUser() authUser: AuthUser,
     @Query() query?: any,
-  ): Promise<Paginated<Box>> {
+  ): Promise<Paginated<Department>> {
     // Permission check
     await authUser?.throwUnlessCan(
       AbilityActionEnum.read,
-      AbilitySubjectEnum.Box,
+      AbilitySubjectEnum.Department,
     );
 
     const options = buildFilterFromApiSearchParams(
@@ -70,50 +68,53 @@ export class BoxController {
       },
     );
 
-    // Apply auth user box filter
+    // Apply auth user department filter
     /*options.where = merge(
       options?.where,
-      await this.service.getFilterByAuthUserBox(),
+      await this.service.getFilterByAuthUserDepartment(),
     );*/
 
     return this.service.readPaginatedListRecord(options);
   }
 
   /**
-   * Get paginated box list for select
+   * Get paginated department list for select
 
   /**
-   * Get one box by id
+   * Get one department by id
    */
   @ApiSearchOneQueryFilter()
-  @Get(':boxId')
+  @Get(':departmentId')
   async findOne(
     @CurrentUser() authUser: AuthUser,
-    @Param('boxId', ParseUUIDPipe) id: string,
+    @Param('departmentId', ParseUUIDPipe) id: string,
     @Query() query?: any,
-  ): Promise<Box> {
+  ): Promise<Department> {
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
       query as ApiSearchOneParamOptions,
     );
-    const box = await this.service.readOneRecord({
+    const department = await this.service.readOneRecord({
       ...options,
       where: { ...options?.where, id: id ?? '' },
     });
 
     // Permission check
-    await authUser?.throwUnlessCan(AbilityActionEnum.read, box);
+    await authUser?.throwUnlessCan(AbilityActionEnum.read, department);
 
-    return box;
+    return department;
   }
 
   /**
-   * Create box
+   * Create department
    */
   @ApiSearchOneQueryFilter()
   @Post()
-  async create(@Body() dto: CreateBoxDto, @Query() query?: any): Promise<Box> {
-    const box = await this.service.createRecord(dto);
+  async create(
+    @Body() dto: CreateDepartmentDto,
+    @Query() query?: any,
+  ): Promise<Department> {
+    const department = await this.service.createRecord(dto);
 
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
@@ -122,21 +123,21 @@ export class BoxController {
 
     return this.service.readOneRecord({
       ...options,
-      where: { ...options?.where, id: box.id },
+      where: { ...options?.where, id: department.id },
     });
   }
 
   /**
-   * Update box
+   * Update department
    */
   @ApiSearchOneQueryFilter()
-  @Patch(':boxId')
+  @Patch(':departmentId')
   async update(
-    @Param('boxId', ParseUUIDPipe) id: string,
-    @Body() dto: UpdateBoxDto,
+    @Param('departmentId', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateDepartmentDto,
     @Query() query?: any,
-  ): Promise<Box> {
-    const box = await this.service.updateRecord({ id: id ?? '' }, dto);
+  ): Promise<Department> {
+    const department = await this.service.updateRecord({ id: id ?? '' }, dto);
 
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
@@ -145,16 +146,16 @@ export class BoxController {
 
     return this.service.readOneRecord({
       ...options,
-      where: { ...options?.where, id: box.id },
+      where: { ...options?.where, id: department.id },
     });
   }
 
   /**
-   * Remove box
+   * Remove department
    */
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Delete(':boxId')
-  async remove(@Param('boxId', ParseUUIDPipe) id: string) {
+  @Delete(':departmentId')
+  async remove(@Param('departmentId', ParseUUIDPipe) id: string) {
     await this.service.deleteRecord({ id: id ?? '' });
     return;
   }

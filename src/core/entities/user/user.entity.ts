@@ -9,8 +9,6 @@ import {
   Index,
   JoinColumn,
   ManyToOne,
-  OneToMany,
-  OneToOne,
 } from 'typeorm';
 import bcrypt from 'bcrypt';
 import { PersonCoreEntity } from '../base/person.core.entity';
@@ -25,8 +23,6 @@ import {
   IsUUID,
 } from 'class-validator';
 import { AuthUser } from '../session/auth-user.entity';
-import { Pin } from './pin.entity';
-import { BranchToUser } from '../subsidiary/branch-to-user.entity';
 
 /**
  * Front office user
@@ -53,39 +49,10 @@ export class User extends PersonCoreEntity {
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
 
-  @IsBoolean()
-  @IsOptional()
-  @ApiProperty({ required: false, description: `CODE PIN actif` })
-  @Column({ name: 'is_pin_active', default: false })
-  isPinActive: boolean;
-
-  @IsBoolean()
-  @IsOptional()
-  @ApiProperty({
-    required: false,
-    description: `Invitation à se connecter au backoffice`,
-  })
-  @Column({ name: 'is_invited_back', default: false })
-  isInviteToBo: boolean;
-
-  @IsBoolean()
-  @IsOptional()
-  @ApiProperty({
-    required: false,
-    description: `User dispose t-il d'un code PIN`,
-  })
-  @Column({ name: 'has_pin_code', default: false })
-  hasPinCode: boolean;
-
   @IsUUID()
   @IsOptional()
   @Column({ name: 'role_id', type: 'uuid', nullable: true })
   roleId: string;
-
-  @IsUUID()
-  @IsOptional()
-  @Column({ name: 'pin_id', type: 'uuid', nullable: true })
-  pinId: string;
 
   @ApiProperty({ type: 'object', description: `Rôle` })
   @ManyToOne(() => Role, {
@@ -110,14 +77,6 @@ export class User extends PersonCoreEntity {
   @JoinColumn({ name: 'branch_id' })
   branch: Branch;
 
-  @ApiProperty({ type: 'object', description: `Code Pin` })
-  @OneToOne(() => Pin, {
-    onUpdate: 'CASCADE',
-    nullable: true,
-  })
-  @JoinColumn({ name: 'pin_id' })
-  pin: Pin;
-
   @ApiPropertyOptional()
   @Column({
     name: 'last_access_id',
@@ -134,12 +93,6 @@ export class User extends PersonCoreEntity {
   })
   @JoinColumn({ name: 'last_access_id' })
   lastAccess: AuthUser;
-
-  @ApiProperty({ required: false, type: () => [BranchToUser] })
-  @OneToMany(() => BranchToUser, (branchToUser) => branchToUser.user, {
-    cascade: true,
-  })
-  branchToUsers: BranchToUser[];
 
   /**
    * Getters & Setters

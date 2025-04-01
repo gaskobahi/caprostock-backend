@@ -27,156 +27,138 @@ import { ApiRequestIssuerHeader } from 'src/modules/auth/decorators/api-request-
 import { CurrentUser } from 'src/modules/auth/decorators/current-user.decorator';
 import { AbilityActionEnum, AbilitySubjectEnum } from '../../definitions/enums';
 import { AuthUser } from '../../entities/session/auth-user.entity';
-import { User } from '../../entities/user/user.entity';
-import { UserService } from '../../services/user/user.service';
-import { CreateUserDto } from '../../dto/user/create-user.dto';
-import { UpdateUserDto } from '../../dto/user/update-user.dto';
+import { EquipmentTypeService } from 'src/core/services/setting/equipment-type.service';
+import { EquipmentType } from 'src/core/entities/setting/equipment-type.entity';
+import { UserService } from 'src/core/services/user/user.service';
+import { UpdateEquipmentTypeDto } from 'src/core/dto/setting/update-equipment-type.dto';
+import { CreateEquipmentTypeDto } from 'src/core/dto/setting/create-equipment-type.dto';
 
 @ApiAuthJwtHeader()
 @ApiRequestIssuerHeader()
 @CustomApiErrorResponse()
-@ApiTags('user')
-@Controller('user')
-export class UserController {
-  constructor(private service: UserService) {}
+@ApiTags('equipmenttype')
+@Controller('equipmenttype')
+export class EquipmentTypeController {
+  constructor(
+    private service: EquipmentTypeService,
+    private userService: UserService,
+  ) {}
 
+  /**
+   * Get paginated equipmenttype list
+   */
   @ApiSearchQueryFilter()
-  @CustomApiPaginatedResponse(User)
+  @CustomApiPaginatedResponse(EquipmentType)
   @Get()
-  async findAll(
+  async findPaginated(
     @CurrentUser() authUser: AuthUser,
     @Query() query?: any,
-  ): Promise<Paginated<User>> {
+  ): Promise<Paginated<EquipmentType>> {
     // Permission check
     await authUser?.throwUnlessCan(
       AbilityActionEnum.read,
-      AbilitySubjectEnum.User,
+      AbilitySubjectEnum.EquipmentType,
     );
 
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
       query as ApiSearchParamOptions,
       {
-        textFilterFields: [
-          'username',
-          'firstName',
-          'lastName',
-          'phoneNumber',
-          'email',
-        ],
+        textFilterFields: ['displayName'],
       },
     );
 
-    // Apply auth user branch filter
+    // Apply auth user equipmenttype filter
     /*options.where = merge(
       options?.where,
-      await this.service.getFilterByAuthUserBranch(),
+      await this.service.getFilterByAuthUserEquipmentType(),
     );*/
 
-    return await this.service.readPaginatedListRecord(options);
+    return this.service.readPaginatedListRecord(options);
   }
 
+  /**
+   * Get paginated equipmenttype list for select
+
+  /**
+   * Get one equipmenttype by id
+   */
   @ApiSearchOneQueryFilter()
-  @Get(':userId')
+  @Get(':equipmenttypeId')
   async findOne(
     @CurrentUser() authUser: AuthUser,
-    @Param('userId', ParseUUIDPipe) id: string,
+    @Param('equipmenttypeId', ParseUUIDPipe) id: string,
     @Query() query?: any,
-  ): Promise<User> {
+  ): Promise<EquipmentType> {
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
       query as ApiSearchOneParamOptions,
     );
-
-    // Apply auth user branch filter
-    /*options.where = merge(
-      options?.where,
-      await this.service.getFilterByAuthUserBranch(),
-    );*/
-
-    const user = await this.service.readOneRecord({
+    const equipmenttype = await this.service.readOneRecord({
       ...options,
       where: { ...options?.where, id: id ?? '' },
     });
 
     // Permission check
-    await authUser?.throwUnlessCan(AbilityActionEnum.read, user);
+    await authUser?.throwUnlessCan(AbilityActionEnum.read, equipmenttype);
 
-    return user;
+    return equipmenttype;
   }
 
   /**
-   * Create user
+   * Create equipmenttype
    */
   @ApiSearchOneQueryFilter()
   @Post()
   async create(
-    @Body() dto: CreateUserDto,
+    @Body() dto: CreateEquipmentTypeDto,
     @Query() query?: any,
-  ): Promise<User> {
-    console.log('rrrrrrrrrrrr');
-    const user = await this.service.createRecord(dto);
+  ): Promise<EquipmentType> {
+    const equipmenttype = await this.service.createRecord(dto);
+
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
       query as ApiSearchOneParamOptions,
     );
-    // Apply auth user branch filter
-    /*options.where = merge(
-      options?.where,
-      await this.service.getFilterByAuthUserBranch(),
-    );*/
 
     return this.service.readOneRecord({
       ...options,
-      where: { ...options?.where, id: user.id },
+      where: { ...options?.where, id: equipmenttype.id },
     });
   }
 
   /**
-   * Update user
+   * Update equipmenttype
    */
   @ApiSearchOneQueryFilter()
-  @Patch(':userId')
+  @Patch(':equipmenttypeId')
   async update(
-    @Param('userId', ParseUUIDPipe) id: string,
-    @Body() dto: UpdateUserDto,
+    @Param('equipmenttypeId', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateEquipmentTypeDto,
     @Query() query?: any,
-  ): Promise<User> {
-    // Apply auth user branch filter
-    // const filter = await this.service.getFilterByAuthUserBranch();
-    /*
-    const user = await this.service.updateRecord(
-      { ...filter, id: id ?? '' },
+  ): Promise<EquipmentType> {
+    const equipmenttype = await this.service.updateRecord(
+      { id: id ?? '' },
       dto,
     );
-    */
-
-    const user = await this.service.updateRecord({ id: id ?? '' }, dto);
 
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
       query as ApiSearchOneParamOptions,
     );
+
     return this.service.readOneRecord({
       ...options,
-      where: { ...options?.where, id: user.id },
+      where: { ...options?.where, id: equipmenttype.id },
     });
-
-    /*return this.service.readOneRecord({
-      ...options,
-      where: { ...options?.where, ...filter, id: user.id },
-    });*/
   }
 
   /**
-   * Remove user
+   * Remove equipmenttype
    */
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Delete(':userId')
-  async remove(@Param('userId', ParseUUIDPipe) id: string) {
-    // Apply auth user branch filter
-    //const filter = await this.service.getFilterByAuthUserBranch();
-
+  @Delete(':equipmenttypeId')
+  async remove(@Param('equipmenttypeId', ParseUUIDPipe) id: string) {
     await this.service.deleteRecord({ id: id ?? '' });
     return;
   }

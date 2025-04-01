@@ -10,6 +10,7 @@ import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import { CoreEntity } from '../base/core.entity';
 import { Product } from '../product/product.entity';
 import { Selling } from './selling.entity';
+import { Equipment } from '../setting/equipment.entity';
 
 /**
  * Relationship table {selling, product} with custom properties
@@ -70,4 +71,17 @@ export class SellingToProduct extends CoreEntity {
   })
   @JoinColumn({ name: 'product_id' })
   product: Product;
+
+  @IsUUID()
+  @IsOptional()
+  @Column({ name: 'equipment_id', type: 'uuid', nullable: true })
+  equipmentId: string;
+  @ApiProperty({ required: false, type: () => Equipment })
+  @ManyToOne(() => Equipment, (equipment) => equipment.sellingToProducts, {
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE',
+    orphanedRowAction: 'delete',
+  })
+  @JoinColumn({ name: 'equipment_id' })
+  equipment: Equipment;
 }

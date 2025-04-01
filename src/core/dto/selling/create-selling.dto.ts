@@ -32,6 +32,15 @@ export class CreateSellingDto extends PickType(Selling, [
   action: SellingStatusEnum;
 
   @IsOptional()
+  @IsString()
+  @ApiProperty({
+    type: () => String,
+    required: false,
+    description: ` destination de la demande (equipement) `,
+  })
+  equipmentId: string;
+
+  @IsOptional()
   @ApiPropertyOptional({ description: `Statut` })
   @IsString()
   @ApiProperty({ required: false })
@@ -63,6 +72,7 @@ export class CreateSellingToProductDto extends PickType(SellingToProduct, [
   'cost',
   'productId',
   'sku',
+  'equipmentId',
 ] as const) {
   @IsOptional()
   @IsNumber({}, { message: 'incoming must be a number' })

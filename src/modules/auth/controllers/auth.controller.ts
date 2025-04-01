@@ -50,8 +50,8 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   @HttpCode(HttpStatus.OK)
   @Post('login')
-  async login(@Req() request: any): Promise<LoginConfirmResponseData>{
-   try {
+  async login(@Req() request: any): Promise<LoginConfirmResponseData> {
+    try {
       return await this.authService.confirmLogin(
         request[REQUEST_AUTH_USER_KEY] as AuthUser,
       );

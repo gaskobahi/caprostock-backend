@@ -21,7 +21,6 @@ import {
 } from '@app/typeorm';
 import { Role } from '../../entities/user/role.entity';
 import { AbstractService } from '../abstract.service';
-import { Pin } from 'src/core/entities/user/pin.entity';
 import { PinService } from './pin.service';
 import { MailerSenderService } from 'src/mailer/services/mailer.service';
 import { Branch } from 'src/core/entities/subsidiary/branch.entity';
@@ -47,7 +46,7 @@ export class UserService extends AbstractService<User> {
 
   async authenticate(username: string, password: string): Promise<AuthUser> {
     const user = await this._repository.findOne({
-      relations: { role: true, branchToUsers: true },
+      relations: { role: true, branch: true },
       where: { username: username },
     });
 
@@ -74,18 +73,16 @@ export class UserService extends AbstractService<User> {
         { message: `Le rôle sélectionné n'existe pas` },
       );
     }
-    // Check exists branchId
-    if (dto?.branchToUsers.length > 0) {
-      console.log('tek', dto.branchToUsers);
-      for (const el of dto.branchToUsers) {
-        await existsConstraint(
-          'branchId',
-          Branch,
-          { id: el.branchId },
-          { message: `La succursale sélectionnée n'existe pas` },
-        );
-      }
+
+    if (dto.branchId) {
+      await existsConstraint(
+        'branchId',
+        Branch,
+        { id: dto.branchId },
+        { message: `La surccusale sélectionné n'existe pas` },
+      );
     }
+
     // Check unique username
     if (dto.username) {
       await isUniqueConstraint(
@@ -106,47 +103,23 @@ export class UserService extends AbstractService<User> {
         { message: `L'email est déjà utilisé` },
       );
     }
-    // Invite user to acces backoffice
-    if (dto.isInviteToBo) {
-      /* const { email } = dto;
-      let subject='Creation de mot de passe';
-      let template= 'welcome';
-      const newpassword=this.generateRandomPassword(8)
-      console.log('newpassword')
-      console.log(newpassword)
-      let ctx= {
-        username: 'BAHI BORIS', 
-        password:newpassword// Replace this with the actual username dynamically fetched from your application
-        // Other data you want to pass to the template
-      };*/
+    console.log('fgfg88');
 
-      if (!dto.email) {
-        throw new BadRequestException(
-          `Email est obligatoire pour l'envoi de mail`,
-        );
-      }
-      if (this.validateEmail(dto.email)) {
-        //await this.mailerService.sendEmail(email, subject,template,ctx);
-        const newpassword = await this.sendNewPasswordToEmail(dto);
-        dto.newPassword = newpassword;
-      } else {
-        dto.isInviteToBo = false;
-      }
-    }
+    // Invite user to acces backoffice
+
+    //if (this.validateEmail(dto.email)) {
+    //await this.mailerService.sendEmail(email, subject,template,ctx);
+    //const newpassword = await this.sendNewPasswordToEmail(dto);
+    //dto.newPassword = newpassword;
+    //}
 
     const authUser = this.request[REQUEST_AUTH_USER_KEY] as AuthUser;
 
-    let pin: Pin;
-    if (dto?.pin) {
-      pin = await this.pinService.createRecord(dto.pin);
-    }
-
     const user = this._repository.create(dto);
-
-    user.pin = pin;
 
     user.isActive = true;
     user.roleId = dto.roleId;
+
     user.createdById = authUser?.id;
     user.updatedById = authUser?.id;
 
@@ -171,19 +144,13 @@ export class UserService extends AbstractService<User> {
         { message: `Le rôle sélectionné n'existe pas` },
       );
     }
-    console.log('P101131', dto?.branchToUsers);
 
-    // Check exists branchId
-   if (dto?.branchToUsers.length > 0) {
-      for (const el of dto.branchToUsers) {
-        await existsConstraint(
-          'branchId',
-          Branch,
-          { id: el.branchId },
-          { message: `La succursale sélectionnée n'existe pas` },
-        );
-      }
-    }
+    await existsConstraint(
+      'branchId',
+      Branch,
+      { id: dto.branchId },
+      { message: `La succursale sélectionnée n'existe pas` },
+    );
 
     if (dto.username) {
       // Check unique username
@@ -206,39 +173,7 @@ export class UserService extends AbstractService<User> {
       throw new BadRequestException(this.NOT_FOUND_MESSAGE);
     }
 
-    // Update the user's pin
-    if (dto.pin) {
-      // If the user already has a pin, update it
-      if (user.pinId) {
-        await this.pinService.updateRecord({ id: user.pinId }, dto.pin);
-      } else {
-        // If the user doesn't have a pin, create a new one and associate it
-        const newpin = await this.pinService.createRecord(dto.pin);
-        dto.pin = newpin;
-      }
-    }
-
     //invite user to backoffice
-
-    if (dto.isInviteToBo) {
-      if (!user.isInviteToBo) {
-        if (!dto.email) {
-          throw new BadRequestException(
-            `Email est obligatoire pour l'envoi de mail`,
-          );
-        }
-        if (!this.validateEmail(dto.email)) {
-          /*const isValid=await this.isValidDomain(dto.email);
-            if(!isValid){
-              dto.isInviteToBo=false;
-            }*/
-          dto.isInviteToBo = false;
-        } else {
-          const newpassword = await this.sendNewPasswordToEmail(dto);
-          dto.newPassword = newpassword;
-        }
-      }
-    }
 
     user = await super.updateRecord(optionsWhere, {
       ...dto,
@@ -257,13 +192,7 @@ export class UserService extends AbstractService<User> {
     if (!user) {
       throw new BadRequestException(this.NOT_FOUND_MESSAGE);
     }
-    const resp = await super.deleteRecord(optionsWhere);
-    if (resp) {
-      await this.pinService.deleteRecord({
-        id: user.pinId ?? '',
-      });
-    }
-    return resp;
+    return await super.deleteRecord(optionsWhere);
   }
 
   async setNewPassword(user: User, oldPassword: string, newPassword: string) {
@@ -305,13 +234,13 @@ export class UserService extends AbstractService<User> {
     authUser.username = user.username;
     authUser.userId = user.id;
     authUser.user = user;
-    authUser.branchId = user.branchToUsers[0].branchId;
-    authUser.branch = user.branchToUsers[0].branch;
-    authUser.targetBranchId = user.branchToUsers[0].branchId;
-    authUser.targetBranch = user.branchToUsers[0].branch;
+    authUser.branchId = user.branch.id;
+    authUser.branch = user.branch;
+    authUser.targetBranchId = user.branch.id;
+    authUser.targetBranch = user.branch;
     authUser.roleId = user.roleId;
     authUser.role = user.role;
-    authUser.applicationId = 'posgpt-app';
+    authUser.applicationId = 'bobrain-app';
     authUser.userData = {
       id: user.id,
       username: user.username,
@@ -320,7 +249,7 @@ export class UserService extends AbstractService<User> {
       firstName: user.firstName,
       lastName: user.lastName,
       address: user.address,
-      branchId: user.branchToUsers[0].branchId,
+      branchId: user.branchId,
       roleId: user.role?.id,
     } as AuthUserData;
 

@@ -89,9 +89,9 @@ import { LoyaltyService } from './services/setting/loyalty.service';
 import { Setting } from './entities/setting/setting.entity';
 import { SettingController } from './controllers/setting/setting.controller';
 import { SettingService } from './services/setting/setting.service';
-import { Box } from './entities/setting/box.entity';
-import { BoxService } from './services/setting/box.service';
-import { BoxController } from './controllers/setting/box.controller';
+import { Department } from './entities/setting/department.entity';
+import { DepartmentService } from './services/setting/department.service';
+import { DepartmentController } from './controllers/setting/department.controller';
 import { Reason } from './entities/stockmanagement/reason.entity';
 import { ReasonController } from './controllers/stockmanagement/reason.controller';
 import { ReasonService } from './services/stockmanagement/reason.service';
@@ -150,6 +150,15 @@ import { ReceptionService } from './services/stockmanagement/reception.service';
 import { DeliveryService } from './services/selling/delivery.service';
 import { DeliverySubscriber } from './entities/selling/delivery.subscriber';
 import { DeliveryController } from './controllers/stockmanagement/deliverycontroller';
+import { Section } from './entities/setting/section.entity';
+import { SectionController } from './controllers/setting/section.controller';
+import { SectionService } from './services/setting/section.service';
+import { Equipment } from './entities/setting/equipment.entity';
+import { EquipmentController } from './controllers/setting/equipment.controller';
+import { EquipmentService } from './services/setting/equipment.service';
+import { EquipmentType } from './entities/setting/equipment-type.entity';
+import { EquipmentTypeService } from './services/setting/equipment-type.service';
+import { EquipmentTypeController } from './controllers/setting/equipment-type.controller';
 
 @Module({
   imports: [
@@ -203,8 +212,11 @@ import { DeliveryController } from './controllers/stockmanagement/deliverycontro
       Loyalty,
 
       Setting,
+      Section,
 
-      Box,
+      Department,
+      Equipment,
+      EquipmentType,
 
       Reason,
       StockAdjustment,
@@ -265,7 +277,8 @@ import { DeliveryController } from './controllers/stockmanagement/deliverycontro
 
     LoyaltyController,
     SettingController,
-    BoxController,
+    DepartmentController,
+    SectionController,
 
     ReasonController,
     StockAdjustmentController,
@@ -278,6 +291,9 @@ import { DeliveryController } from './controllers/stockmanagement/deliverycontro
     ProductionController,
 
     OpenTicketController,
+
+    EquipmentController,
+    EquipmentTypeController,
 
     FileController,
   ],
@@ -311,7 +327,10 @@ import { DeliveryController } from './controllers/stockmanagement/deliverycontro
 
     LoyaltyService,
     SettingService,
-    BoxService,
+    DepartmentService,
+    EquipmentService,
+    EquipmentTypeService,
+    SectionService,
 
     ReasonService,
     StockAdjustmentService,

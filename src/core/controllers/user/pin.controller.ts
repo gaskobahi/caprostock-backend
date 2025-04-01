@@ -93,6 +93,7 @@ export class PinController {
   @Post()
   async create(@Body() dto: CreatePinDto, @Query() query?: any): Promise<Pin> {
     const pin = await this.service.createRecord(dto);
+    console.log('AZAZAZAZ', dto);
 
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
@@ -115,12 +116,15 @@ export class PinController {
     @Body() dto: UpdatePinDto,
     @Query() query?: any,
   ): Promise<Pin> {
+    console.log('AZAZAZAZ', dto);
+
     const pin = await this.service.updateRecord({ id: id ?? '' }, dto);
 
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
       query as ApiSearchOneParamOptions,
     );
+    console.log('AZAZAZAZ', dto);
 
     return this.service.readOneRecord({
       ...options,

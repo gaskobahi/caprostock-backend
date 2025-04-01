@@ -52,7 +52,7 @@ export class Selling extends CoreEntity {
   @ApiPropertyOptional({ description: `Date de la commande` })
   @Column({
     name: 'selling_date',
-    type: 'date',
+    type: 'datetime',
     nullable: true,
     default: () => '(CURRENT_DATE)',
   })
@@ -63,7 +63,7 @@ export class Selling extends CoreEntity {
   @ApiPropertyOptional({ description: `Date prévu de la delivery` })
   @Column({
     name: 'planned_for',
-    type: 'date',
+    type: 'datetime',
     nullable: true,
     //default: () => '(CURRENT_DATE)',
   })
@@ -98,6 +98,7 @@ export class Selling extends CoreEntity {
   @JoinColumn({ name: 'customer_id' })
   customer: Customer;
 
+  
   @IsUUID()
   @IsNotEmpty()
   @Column({ name: 'destination_branch_id', type: 'uuid', nullable: false })

@@ -93,7 +93,6 @@ export class SellingController {
       options?.where,
       await this.service.getFilterByAuthUserBranch(),
     );*/
-
     const selling = await this.service.readOneRecord({
       ...options,
       where: { ...options?.where, id: id ?? '' },

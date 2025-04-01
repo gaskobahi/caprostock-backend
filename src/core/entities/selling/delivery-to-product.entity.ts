@@ -1,9 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsNotEmpty, IsUUID } from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsUUID } from 'class-validator';
 import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import { CoreEntity } from '../base/core.entity';
 import { Product } from '../product/product.entity';
 import { Delivery } from './delivery.entity';
+import { Equipment } from '../setting/equipment.entity';
 
 /**
  * Relationship table {order, product} with custom properties
@@ -58,4 +59,17 @@ export class DeliveryToProduct extends CoreEntity {
   })
   @JoinColumn({ name: 'product_id' })
   product: Product;
+
+  @IsUUID()
+  @IsOptional()
+  @Column({ name: 'equipment_id', type: 'uuid', nullable: true })
+  equipmentId: string;
+  @ApiProperty({ required: false, type: () => Equipment })
+  @ManyToOne(() => Equipment, (equipment) => equipment.deliveryToProducts, {
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE',
+    orphanedRowAction: 'delete',
+  })
+  @JoinColumn({ name: 'equipment_id' })
+  equipment: Equipment;
 }

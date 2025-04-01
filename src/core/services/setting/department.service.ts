@@ -8,28 +8,28 @@ import {
 } from '@app/typeorm';
 import { REQUEST } from '@nestjs/core';
 import { AbstractService } from '../abstract.service';
-import { Box } from 'src/core/entities/setting/box.entity';
-import { UpdateBoxDto } from 'src/core/dto/setting/update-box.dto';
+import { Department } from 'src/core/entities/setting/department.entity';
+import { UpdateDepartmentDto } from 'src/core/dto/setting/update-department.dto';
 
 @Injectable()
-export class BoxService extends AbstractService<Box> {
+export class DepartmentService extends AbstractService<Department> {
   public NOT_FOUND_MESSAGE = `Caisse non trouvée`;
 
   constructor(
-    @InjectRepository(Box)
-    private _repository: Repository<Box>,
-    protected paginatedService: PaginatedService<Box>,
+    @InjectRepository(Department)
+    private _repository: Repository<Department>,
+    protected paginatedService: PaginatedService<Department>,
     @Inject(REQUEST) protected request: any,
   ) {
     super();
   }
 
-  async createRecord(dto: any): Promise<Box> {
+  async createRecord(dto: any): Promise<Department> {
     // Check unique displayName
     if (dto.displayName) {
       await isUniqueConstraint(
         'displayName',
-        Box,
+        Department,
         { displayName: dto.displayName, branchId: dto.branchId },
         {
           message: `Le nom "${dto.displayName}" est déjà utilisée`,
@@ -40,12 +40,15 @@ export class BoxService extends AbstractService<Box> {
     return await super.createRecord({ ...dto });
   }
 
-  async updateRecord(optionsWhere: FindOptionsWhere<Box>, dto: UpdateBoxDto) {
+  async updateRecord(
+    optionsWhere: FindOptionsWhere<Department>,
+    dto: UpdateDepartmentDto,
+  ) {
     // Check unique displayName
     if (dto.displayName) {
       await isUniqueConstraintUpdate(
         'displayName',
-        Box,
+        Department,
         {
           displayName: dto.displayName,
           branchId: dto.branchId,
@@ -60,7 +63,7 @@ export class BoxService extends AbstractService<Box> {
     });
   }
 
-  get repository(): Repository<Box> {
+  get repository(): Repository<Department> {
     return this._repository;
   }
 }
