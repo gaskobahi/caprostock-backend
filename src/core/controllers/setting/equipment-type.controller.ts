@@ -64,17 +64,21 @@ export class EquipmentTypeController {
       this.service.repository,
       query as ApiSearchParamOptions,
       {
-        textFilterFields: ['displayName'],
+        textFilterFields: ['name', 'displayName'],
       },
     );
+    console.log('tytytyty', query);
 
     // Apply auth user equipmenttype filter
     /*options.where = merge(
       options?.where,
       await this.service.getFilterByAuthUserEquipmentType(),
     );*/
-
-    return this.service.readPaginatedListRecord(options);
+    return this.service.readPaginatedListRecord(
+      options,
+      query.page,
+      query.perPage,
+    );
   }
 
   /**

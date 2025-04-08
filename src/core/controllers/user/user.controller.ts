@@ -114,7 +114,6 @@ export class UserController {
     @Body() dto: CreateUserDto,
     @Query() query?: any,
   ): Promise<User> {
-    console.log('rrrrrrrrrrrr');
     const user = await this.service.createRecord(dto);
     const options = buildFilterFromApiSearchParams(
       this.service.repository,

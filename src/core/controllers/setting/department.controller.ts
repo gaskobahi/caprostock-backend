@@ -74,7 +74,11 @@ export class DepartmentController {
       await this.service.getFilterByAuthUserDepartment(),
     );*/
 
-    return this.service.readPaginatedListRecord(options);
+    return this.service.readPaginatedListRecord(
+      options,
+      query.page,
+      query.perPage,
+    );
   }
 
   /**

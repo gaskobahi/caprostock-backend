@@ -32,6 +32,7 @@ import { ModifierService } from '../../services/product/modifier.service';
 import { Modifier } from '../../entities/product/modifier.entity';
 import { CreateModifierDto } from 'src/core/dto/product/create-modifier.dto';
 import { UpdateModifierDto } from 'src/core/dto/product/update-modifier.dto';
+import { Product } from 'src/core/entities/product/product.entity';
 
 @ApiAuthJwtHeader()
 @ApiRequestIssuerHeader()
@@ -95,7 +96,7 @@ export class ModifierController {
     });
 
     // Permission check
-    await authUser?.throwUnlessCan(AbilityActionEnum.read, modifier);
+    await authUser?.throwUnlessCan(AbilityActionEnum.read, Product);
 
     return modifier;
   }

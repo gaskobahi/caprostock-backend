@@ -31,6 +31,10 @@ import { CreateInventoryCountDto } from 'src/core/dto/stockmanagement/create-inv
 import { UpdateInventoryCountDto } from 'src/core/dto/stockmanagement/update-inventory-count.dto';
 import { InventoryCountService } from 'src/core/services/stockmanagement/inventory-count.service';
 import { UpdateInventoryCountSaveDto } from 'src/core/dto/stockmanagement/update-inventory-count-save.dto';
+import {
+  AbilityActionEnum,
+  AbilitySubjectEnum,
+} from 'src/core/definitions/enums';
 
 @ApiAuthJwtHeader()
 @ApiRequestIssuerHeader()
@@ -50,6 +54,12 @@ export class InventoryCountController {
     @CurrentUser() authUser: AuthUser,
     @Query() query?: any,
   ): Promise<Paginated<InventoryCount>> {
+    // Permission check
+    await authUser?.throwUnlessCan(
+      AbilityActionEnum.read,
+      AbilitySubjectEnum.Inventory,
+    );
+
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
       query as ApiSearchParamOptions,
@@ -57,7 +67,7 @@ export class InventoryCountController {
         textFilterFields: ['reference'],
       },
     );
-
+    console.log('ytyytytyt', options);
     return this.service.readPaginatedListRecord(options);
   }
 
@@ -67,6 +77,7 @@ export class InventoryCountController {
   @ApiSearchOneQueryFilter()
   @Get(':inventorycountId')
   async findOne(
+    @CurrentUser() authUser: AuthUser,
     @Param('inventorycountId', ParseUUIDPipe) id: string,
     @Query() query?: any,
   ): Promise<InventoryCount> {
@@ -75,10 +86,18 @@ export class InventoryCountController {
       query as ApiSearchOneParamOptions,
     );
 
-    return this.service.readOneRecord({
+    const inventory = this.service.readOneRecord({
       ...options,
       where: { ...options?.where, id: id ?? '' },
     });
+
+    // Permission check
+    await authUser?.throwUnlessCan(
+      AbilityActionEnum.read,
+      AbilitySubjectEnum.Inventory,
+    );
+
+    return inventory;
   }
 
   /**

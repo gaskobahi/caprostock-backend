@@ -48,18 +48,21 @@ export class SellingService extends AbstractService<Selling> {
     return {};
   }
 
-  async readPaginatedListRecord(
+  async myreadPaginatedListRecord(
     options?: FindManyOptions<Selling>,
     page: number = 1,
     perPage: number = 25,
   ) {
+    /*console.log("perPage",options)
     // Paginate using provided options, page, and perPage
     const response = await this.paginatedService.paginate(
       this.repository,
       page,
       perPage,
       options,
-    );
+    );*/
+    const response = await this.readPaginatedListRecord(options);
+
     // Retrieve detailed records for each item in the paginated response
     const detailedRecords = await Promise.all(
       response.data.map(async (record) => {
@@ -210,7 +213,8 @@ export class SellingService extends AbstractService<Selling> {
                   incoming: incoming ?? 0,
                   isDelivery: isDelivery,
                   cost: cost,
-                  amount: parseInt(cost.toString()) * parseInt(quantity.toString()),
+                  amount:
+                    parseInt(cost.toString()) * parseInt(quantity.toString()),
                   inStock: parseInt(dstbranchVariants.inStock.toString()),
                   //+parseInt(quantity.toString()),
                   variantId: vp.id,

@@ -1,4 +1,4 @@
-import { Column, Index, OneToMany } from 'typeorm';
+import { Column, Index } from 'typeorm';
 import { ApiHideProperty, ApiProperty } from '@nestjs/swagger';
 import {
   AbilityTuple,
@@ -16,8 +16,6 @@ import { CoreEntity } from '../base/core.entity';
 import { Exclude, instanceToPlain } from 'class-transformer';
 import { AbilityActionEnum, AbilitySubjectEnum } from '../../definitions/enums';
 import { Entity } from 'typeorm';
-import { BranchToUser } from '../subsidiary/branch-to-user.entity';
-import { AccessToRole } from './access-to-role.entity';
 
 @Entity()
 export class Role extends CoreEntity {
@@ -61,17 +59,6 @@ export class Role extends CoreEntity {
   @Column({ type: 'simple-json', nullable: true })
   permissions: RolePermissionsType;
 
-  @IsOptional()
-  @ApiProperty({ required: false })
-  @Column({ name: 'field_permissions', type: 'simple-json', nullable: true })
-  fieldPermissions: RoleFieldPermissionsType;
-
-  @ApiProperty({ required: false, type: () => [AccessToRole] })
-  @OneToMany(() => AccessToRole, (accessToRole) => accessToRole.role, {
-    cascade: true,
-  })
-  accessToRoles: AccessToRole[];
-
   /**
    * Methods *******************************************
    */
@@ -85,10 +72,8 @@ export class Role extends CoreEntity {
 
   async buildAbilityRules() {
     if (!_.isEmpty(this._abilityRules)) return this._abilityRules;
-
     let rules: RawRule[] = [];
     let rule: RawRule;
-
     for (const [key, value] of Object.entries(
       this?.permissions ?? ({} as RolePermissionsType),
     )) {
@@ -99,7 +84,7 @@ export class Role extends CoreEntity {
           for (const [actionKey, actionValue] of Object.entries(value)) {
             if (actionValue === true) {
               rule = { action: actionKey, subject: key } as RawRule;
-              rule = this.applyFieldPermissions(rule, this.fieldPermissions);
+              //rule = this.applyFieldPermissions(rule, this.permissions);
               rules.push(rule);
             }
             rule = null;

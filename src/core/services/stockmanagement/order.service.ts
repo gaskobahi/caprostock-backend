@@ -48,18 +48,20 @@ export class OrderService extends AbstractService<Order> {
     return {};
   }
 
-  async readPaginatedListRecord(
+  async myreadPaginatedListRecord(
     options?: FindManyOptions<Order>,
     page: number = 1,
     perPage: number = 25,
   ) {
     // Paginate using provided options, page, and perPage
-    const response = await this.paginatedService.paginate(
+    /*const response = await this.paginatedService.paginate(
       this.repository,
       page,
       perPage,
       options,
-    );
+    );*/
+    const response = await this.readPaginatedListRecord(options);
+
     // Retrieve detailed records for each item in the paginated response
     const detailedRecords = await Promise.all(
       response.data.map(async (record) => {

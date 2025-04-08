@@ -9,6 +9,7 @@ import {
 } from '@app/nestjs';
 import { buildFilterFromApiSearchParams } from '@app/typeorm';
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -110,12 +111,10 @@ export class RoleController {
     @Query() query?: any,
   ): Promise<Role> {
     const role = await this.service.updateRecord({ id: id ?? '' }, dto);
-
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
       query as ApiSearchOneParamOptions,
     );
-
     return this.service.readOneRecord({
       ...options,
       where: { ...options?.where, id: role.id },
@@ -128,7 +127,10 @@ export class RoleController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':roleId')
   async remove(@Param('roleId', ParseUUIDPipe) id: string) {
-    await this.service.deleteRecord({ id: id ?? '' });
+    const prevrole = await this.service.repository.findOneBy({ id: id });
+    if (prevrole.name !== 'owner') {
+      await this.service.deleteRecord({ id: id ?? '' });
+    }
     return;
   }
 }

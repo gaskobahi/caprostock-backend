@@ -3,7 +3,7 @@ export const REQUEST_CLIENT_ID_HEADER = 'x-client-id';
 export const AUTH_USER_JWT_HEADER = 'x-user-claims';
 export const REQUEST_USER_CODE_HEADER = 'x-user-code';
 
-export const DEFAULT_APPLICATION_ID = 'netvision-app';
+export const DEFAULT_APPLICATION_ID = 'bobrain-app';
 
 export const REQUEST_APP_KEY = 'issuerApplication';
 export const REQUEST_AUTH_LOG_KEY = 'authLog';

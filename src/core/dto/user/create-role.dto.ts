@@ -3,7 +3,6 @@ import { Role } from '../../entities/user/role.entity';
 import { AccessToRole } from 'src/core/entities/user/access-to-role.entity';
 import { IsArray, IsOptional, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
-import { CreateUserToBranchDto } from './create-user.dto';
 
 export class CreateRoleDto extends PickType(Role, [
   'name',
@@ -12,7 +11,6 @@ export class CreateRoleDto extends PickType(Role, [
   'isActive',
   'adminPermission',
   'permissions',
-  'fieldPermissions',
 ] as const) {
   @IsArray()
   @IsOptional()

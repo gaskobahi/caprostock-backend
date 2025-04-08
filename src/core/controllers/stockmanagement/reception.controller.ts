@@ -51,7 +51,7 @@ export class ReceptionController {
     // Permission check
     await authUser?.throwUnlessCan(
       AbilityActionEnum.read,
-      AbilitySubjectEnum.Reception,
+      AbilitySubjectEnum.Order,
     );
 
     const options = buildFilterFromApiSearchParams(
@@ -84,10 +84,10 @@ export class ReceptionController {
     );
 
     // Apply auth user branch filter
-    /*options.where = merge(
+    options.where = merge(
       options?.where,
       await this.service.getFilterByAuthUserBranch(),
-    );*/
+    );
 
     const reception = await this.service.readOneRecord({
       ...options,
@@ -95,7 +95,10 @@ export class ReceptionController {
     });
 
     // Permission check
-    await authUser?.throwUnlessCan(AbilityActionEnum.read, reception);
+    await authUser?.throwUnlessCan(
+      AbilityActionEnum.read,
+      AbilitySubjectEnum.Order,
+    );
 
     return reception;
   }
@@ -117,10 +120,10 @@ export class ReceptionController {
     );
 
     // Apply auth user branch filter
-    /* options.where = merge(
+    options.where = merge(
       options?.where,
       await this.service.getFilterByAuthUserBranch(),
-    );*/
+    );
 
     return this.service.readOneRecord({
       ...options,

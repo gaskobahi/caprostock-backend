@@ -1,22 +1,12 @@
-import { Column, Index, OneToMany } from 'typeorm';
+import { Column, Index } from 'typeorm';
 import { ApiHideProperty, ApiProperty } from '@nestjs/swagger';
-import {
-  AbilityTuple,
-  CanParameters,
-  createMongoAbility,
-  RawRule,
-} from '@casl/ability';
-import { IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { RawRule } from '@casl/ability';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import _ from 'lodash';
-import {
-  RolePermissionsType,
-  RoleFieldPermissionsType,
-} from '../../definitions/types';
+import { EntityType, PermissionsType } from '../../definitions/types';
 import { CoreEntity } from '../base/core.entity';
 import { Exclude, instanceToPlain } from 'class-transformer';
-import { AbilityActionEnum, AbilitySubjectEnum } from '../../definitions/enums';
 import { Entity } from 'typeorm';
-import { AccessToRole } from './access-to-role.entity';
 
 @Entity()
 export class Access extends CoreEntity {
@@ -26,50 +16,31 @@ export class Access extends CoreEntity {
 
   @IsNotEmpty()
   @IsString()
-  @ApiProperty({ description: `Code`, uniqueItems: true })
+  @ApiProperty({ description: `name`, uniqueItems: true })
   @Index()
   @Column()
   name: string;
 
   @IsNotEmpty()
   @IsString()
-  @ApiProperty({ description: `Nom` })
-  @Column({ name: 'display_name' })
-  displayName: string;
-
-  @IsString()
-  @IsOptional()
-  @ApiProperty({ required: false })
-  @Column({ type: 'text', nullable: true })
-  description: string;
-
- 
-  @IsBoolean()
-  @IsOptional()
-  @ApiProperty({ required: false })
-  @Column({ name: 'admin_permission', nullable: true, default: false })
-  adminPermission: boolean;
-
-  @IsOptional()
-  @ApiProperty({ required: false })
-  @Column({ type: 'simple-json', nullable: true })
-  permissions: RolePermissionsType;
-
-  @IsOptional()
-  @ApiProperty({ required: false })
-  @Column({ name: 'field_permissions', type: 'simple-json', nullable: true })
-  fieldPermissions: RoleFieldPermissionsType;
-
-  @ApiProperty({ required: false, type: () => [AccessToRole] })
-  @OneToMany(() => AccessToRole, (accessToRole) => accessToRole.access, {
-    cascade: true,
+  @ApiProperty({
+    description: `Entite pour la gestion des permission`,
+    uniqueItems: true,
   })
-  accessToRoles: AccessToRole[];
+  @Index()
+  @Column()
+  @Column({ type: 'simple-json', nullable: false })
+  entity: EntityType;
+
+  @IsOptional()
+  @ApiProperty({ required: false })
+  @Column({ type: 'simple-json', nullable: false })
+  permissions: PermissionsType;
 
   /**
    * Methods *******************************************
    */
-  async can(...args: CanParameters<AbilityTuple>) {
+  /*  async can(...args: CanParameters<AbilityTuple>) {
     return (await this.buildAbility()).can(...args);
   }
 
@@ -154,7 +125,7 @@ export class Access extends CoreEntity {
     });
 
     return rules;
-  }
+  }*/
 
   toJSON() {
     return instanceToPlain(this);

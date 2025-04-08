@@ -53,7 +53,7 @@ export class CustomerController {
     // Permission check
     await authUser?.throwUnlessCan(
       AbilityActionEnum.read,
-      AbilitySubjectEnum.Customer,
+      AbilitySubjectEnum.Selling,
     );
 
     const options = buildFilterFromApiSearchParams(
@@ -64,7 +64,11 @@ export class CustomerController {
       },
     );
 
-    return this.service.readPaginatedListRecord(options);
+    return this.service.readPaginatedListRecord(
+      options,
+      query.page,
+      query.perPage,
+    );
   }
 
   /**

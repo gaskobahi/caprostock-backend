@@ -74,7 +74,12 @@ export class EquipmentController {
       await this.service.getFilterByAuthUserEquipment(),
     );*/
 
-    return this.service.readPaginatedListRecord(options);
+    //return this.service.readPaginatedListRecord(options);
+    return this.service.readPaginatedListRecord(
+      options,
+      query.page ?? '',
+      query.perPage ?? '',
+    );
   }
 
   /**
@@ -114,7 +119,6 @@ export class EquipmentController {
     @Body() dto: CreateEquipmentDto,
     @Query() query?: any,
   ): Promise<Equipment> {
-
     const equipment = await this.service.createRecord(dto);
 
     const options = buildFilterFromApiSearchParams(

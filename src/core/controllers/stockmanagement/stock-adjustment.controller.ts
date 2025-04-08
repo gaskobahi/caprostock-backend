@@ -30,6 +30,10 @@ import { StockAdjustment } from 'src/core/entities/stockmanagement/stockadjustme
 import { CreateStockAdjustmentDto } from 'src/core/dto/stockmanagement/create-stock-adjustment.dto';
 import { UpdateStockAdjustmentDto } from 'src/core/dto/stockmanagement/update-stock-adjustment.dto';
 import { StockAdjustmentService } from 'src/core/services/stockmanagement/stock-adjustment.service';
+import {
+  AbilityActionEnum,
+  AbilitySubjectEnum,
+} from 'src/core/definitions/enums';
 
 @ApiAuthJwtHeader()
 @ApiRequestIssuerHeader()
@@ -49,6 +53,12 @@ export class StockAdjustmentController {
     @CurrentUser() authUser: AuthUser,
     @Query() query?: any,
   ): Promise<Paginated<StockAdjustment>> {
+    // Permission check
+    await authUser?.throwUnlessCan(
+      AbilityActionEnum.read,
+      AbilitySubjectEnum.Inventory,
+    );
+
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
       query as ApiSearchParamOptions,
@@ -56,6 +66,7 @@ export class StockAdjustmentController {
         textFilterFields: ['reference'],
       },
     );
+    console.log('iiiiiiiiiiiui', options);
 
     return this.service.readPaginatedListRecord(options);
   }
@@ -66,6 +77,7 @@ export class StockAdjustmentController {
   @ApiSearchOneQueryFilter()
   @Get(':stockadjustmentId')
   async findOne(
+    @CurrentUser() authUser: AuthUser,
     @Param('stockadjustmentId', ParseUUIDPipe) id: string,
     @Query() query?: any,
   ): Promise<StockAdjustment> {
@@ -74,10 +86,16 @@ export class StockAdjustmentController {
       query as ApiSearchOneParamOptions,
     );
 
-    return this.service.readOneRecord({
+    const stockAdjustment = this.service.readOneRecord({
       ...options,
       where: { ...options?.where, id: id ?? '' },
     });
+    // Permission check
+    await authUser?.throwUnlessCan(
+      AbilityActionEnum.read,
+      AbilitySubjectEnum.Inventory,
+    );
+    return stockAdjustment;
   }
 
   /**

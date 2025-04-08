@@ -1,11 +1,5 @@
-import {
-  AbilitySubjectEnum,
-  AccessTypeEnum,
-} from '../../core/definitions/enums';
-import {
-  AccessFieldPermissionsType,
-  AccessPermissionsType,
-} from '../../core/definitions/types';
+import { AbilitySubjectEnum } from '../../core/definitions/enums';
+import { EntityType, PermissionsType } from '../../core/definitions/types';
 import { CreateAccessDto } from '../../core/dto/user/create-access.dto';
 
 // Default Front accesss
@@ -13,15 +7,31 @@ export const getDefaultAccesss = () => {
   return <CreateAccessDto[]>[
     // Administrateur
     {
-      name: AccessTypeEnum.owner,
-      displayName: 'Proprietaire',
-      description: 'Proprietaire',
-      adminPermission: true,
-      permissions: <AccessPermissionsType>{ manage: 'all' },
-      fieldPermissions: <AccessFieldPermissionsType>{},
+      name: 'default',
+      entity: <EntityType>{
+        [AbilitySubjectEnum.User]: false,
+        [AbilitySubjectEnum.Branch]: false,
+        [AbilitySubjectEnum.Product]: false,
+        [AbilitySubjectEnum.Order]: false,
+        [AbilitySubjectEnum.Selling]: false,
+        [AbilitySubjectEnum.Customer]: false,
+        [AbilitySubjectEnum.Supplier]: false,
+        [AbilitySubjectEnum.Role]: false,
+        [AbilitySubjectEnum.Reception]: false,
+        [AbilitySubjectEnum.Department]: false,
+        [AbilitySubjectEnum.Inventory]: false,
+        [AbilitySubjectEnum.Setting]: false,
+      },
+      permissions: <PermissionsType>{
+        create: false,
+        read: false,
+        edit: false,
+        delete: false,
+        stream: false,
+      },
     },
 
-    // Gestionnaire de vente
+    /*// Gestionnaire de vente
     {
       name: AccessTypeEnum.manager,
       displayName: 'Gestionnaire de vente',
@@ -50,6 +60,6 @@ export const getDefaultAccesss = () => {
         [AbilitySubjectEnum.Order]: false,
       },
       fieldPermissions: <AccessFieldPermissionsType>{},
-    },
+    },*/
   ];
 };

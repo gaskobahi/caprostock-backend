@@ -37,7 +37,7 @@ export class InventoryCount extends CoreEntity {
   @Column({ name: 'description' })
   description: string;
 
-  @CreateDateColumn({ name: 'stockadjustment_date', nullable: true })
+  @CreateDateColumn({ name: 'inventorycount_date', nullable: true })
   date: Date;
 
   @Column({

@@ -1,11 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsIn, IsNotEmpty, IsOptional, IsUUID } from 'class-validator';
-import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
+import {
+  IsBoolean,
+  IsIn,
+  IsNotEmpty,
+  IsOptional,
+  IsUUID,
+} from 'class-validator';
+import { Column, Entity } from 'typeorm';
 import { CoreEntity } from '../base/core.entity';
-import { User } from './user.entity';
-import { Role } from './role.entity';
-import { Access } from './access.entity';
-import { RolePermissionsType, RoleFieldPermissionsType } from 'src/core/definitions/types';
+import {
+  RolePermissionsType,
+  RoleFieldPermissionsType,
+} from 'src/core/definitions/types';
 import { AccessTypeEnum } from 'src/core/definitions/enums';
 
 /**
@@ -17,32 +23,18 @@ import { AccessTypeEnum } from 'src/core/definitions/enums';
 export class AccessToRole extends CoreEntity {
   @IsUUID()
   @IsNotEmpty()
-  @Column({ name: 'role_id', type: 'uuid', nullable: false })
-  roleId: string;
-
-  @ApiProperty({ required: false, type: () => Role })
-  @ManyToOne(() => Role, (role) => role.accessToRoles, {
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-    orphanedRowAction: 'delete',
-  })
-  @JoinColumn({ name: 'role_id' })
-  role: Role;
-
-  @IsUUID()
-  @IsNotEmpty()
   @Column({ name: 'access_id', type: 'uuid', nullable: false })
   accessId: string;
 
-  @ApiProperty({ required: false, type: () => Access })
+  /* @ApiProperty({ required: false, type: () => Access })
   @ManyToOne(() => Access, (access) => access.accessToRoles, {
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE',
     orphanedRowAction: 'delete',
   })
   @JoinColumn({ name: 'access_id' })
-  access: Access;
-  
+  access: Access;*/
+
   @IsBoolean()
   @IsOptional()
   @ApiProperty({ required: false, description: ` Acces Vendeur Actif` })
@@ -60,7 +52,6 @@ export class AccessToRole extends CoreEntity {
   @ApiProperty({ required: false, description: `Acces Manager Actif` })
   @Column({ name: 'is_owner_access', default: false })
   isOwnerAccess: boolean;
-  
 
   @IsNotEmpty()
   @IsIn(Object.values(AccessTypeEnum))

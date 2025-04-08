@@ -8,8 +8,13 @@ export enum AbilitySubjectEnum {
   User = 'User',
   Branch = 'Branch',
   Product = 'Product',
-  Attribute = 'Attribute',
   Role = 'Role',
+  Order = 'Order',
+  Selling = 'Selling',
+  Inventory = 'Inventory',
+  Setting = 'Setting',
+
+  Attribute = 'Attribute',
   Modifier = 'Modifier',
   Transporter = 'Transporter',
   Tax = 'Tax',
@@ -17,8 +22,6 @@ export enum AbilitySubjectEnum {
   AuthUser = 'AuthUser',
   Brand = 'Brand',
   Supplier = 'Supplier',
-  Order = 'Order',
-  Selling = 'Selling',
   Reception = 'Reception',
   Consult = 'Consult',
   ConsultType = 'ConsultType',
@@ -34,7 +37,7 @@ export enum AbilitySubjectEnum {
   Equipment = 'Equipment',
   EquipmentType = 'EquipmentType',
   Section = 'Section',
-
+  Delivery = 'Delivery',
   Reason = 'Reason',
   OpenTicket = 'OpenTicket',
 }

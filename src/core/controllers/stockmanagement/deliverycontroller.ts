@@ -51,7 +51,7 @@ export class DeliveryController {
     // Permission check
     await authUser?.throwUnlessCan(
       AbilityActionEnum.read,
-      AbilitySubjectEnum.Reception,
+      AbilitySubjectEnum.Selling,
     );
 
     const options = buildFilterFromApiSearchParams(
@@ -95,7 +95,10 @@ export class DeliveryController {
     });
 
     // Permission check
-    await authUser?.throwUnlessCan(AbilityActionEnum.read, delivery);
+    await authUser?.throwUnlessCan(
+      AbilityActionEnum.read,
+      AbilitySubjectEnum.Selling,
+    );
 
     return delivery;
   }

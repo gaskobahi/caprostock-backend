@@ -74,7 +74,11 @@ export class SectionController {
       await this.service.getFilterByAuthUserSection(),
     );*/
 
-    return this.service.readPaginatedListRecord(options);
+    return this.service.readPaginatedListRecord(
+      options,
+      query.page,
+      query.perPage,
+    );
   }
 
   /**

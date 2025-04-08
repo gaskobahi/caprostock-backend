@@ -13,13 +13,20 @@ export type RolePermissionsType = {
       };
 };
 
+export type EntityType = {
+  [entityName: string]: boolean;
+};
+
+export type PermissionsType = {
+  [permissionName: string]: boolean;
+};
+
 export type RoleFieldPermissionsType = {
   [entityName: string]: {
     read?: string[];
     edit?: string[];
   };
 };
-
 
 export type VariantOptionsType = {
   name: string;

@@ -30,6 +30,10 @@ import { CategoryService } from '../../services/product/category.service';
 import { Category } from '../../entities/product/category.entity';
 import { CreateCategoryDto } from '../../dto/product/create-category.dto';
 import { UpdateCategoryDto } from '../../dto/product/update-category.dto';
+import {
+  AbilityActionEnum,
+  AbilitySubjectEnum,
+} from 'src/core/definitions/enums';
 
 @ApiAuthJwtHeader()
 @ApiRequestIssuerHeader()
@@ -50,10 +54,10 @@ export class CategoryController {
     @Query() query?: any,
   ): Promise<Paginated<Category>> {
     // Permission check
-   /* await authUser?.throwUnlessCan(
+    await authUser?.throwUnlessCan(
       AbilityActionEnum.read,
-      AbilitySubjectEnum.Category,
-    );*/
+      AbilitySubjectEnum.Product,
+    );
 
     const options = buildFilterFromApiSearchParams(
       this.service.repository,

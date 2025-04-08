@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsWhere, Repository } from 'typeorm';
+import { FindManyOptions, FindOptionsWhere, Repository } from 'typeorm';
 import {
   PaginatedService,
   isUniqueConstraint,
@@ -23,6 +23,19 @@ export class EquipmentTypeService extends AbstractService<EquipmentType> {
     super();
   }
 
+  /*c async myreadPaginatedListRecord(options?: FindManyOptions<EquipmentType>) {
+   onsole.log("perPage",options)
+      // Paginate using provided options, page, and perPage
+      const response = await this.paginatedService.paginate(
+        this.repository,
+        page,
+        perPage,
+        options,
+      );
+    console.log('sdsdsdsdsddsd', options);
+
+    return await this.readPaginatedListRecord(options);
+  }*/
   async createRecord(dto: any): Promise<EquipmentType> {
     // Check unique displayName
     if (dto.name) {

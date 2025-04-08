@@ -57,7 +57,7 @@ export class SellingController {
     // Permission check
     await authUser?.throwUnlessCan(
       AbilityActionEnum.read,
-      AbilitySubjectEnum.Order,
+      AbilitySubjectEnum.Selling,
     );
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
@@ -73,7 +73,7 @@ export class SellingController {
       await this.service.getFilterByAuthUserBranch(),
     );
 
-    return await this.service.readPaginatedListRecord(options);
+    return await this.service.myreadPaginatedListRecord(options);
   }
 
   @ApiSearchOneQueryFilter()
@@ -89,17 +89,21 @@ export class SellingController {
     );
 
     // Apply auth user branch filter
-    /*options.where = merge(
+    options.where = merge(
       options?.where,
       await this.service.getFilterByAuthUserBranch(),
-    );*/
+    );
+
     const selling = await this.service.readOneRecord({
       ...options,
       where: { ...options?.where, id: id ?? '' },
     });
 
     // Permission check
-    await authUser?.throwUnlessCan(AbilityActionEnum.read, selling);
+    await authUser?.throwUnlessCan(
+      AbilityActionEnum.read,
+      AbilitySubjectEnum.Selling,
+    );
 
     return selling;
   }
@@ -121,10 +125,10 @@ export class SellingController {
     );
 
     // Apply auth user branch filter
-    /* options.where = merge(
+    options.where = merge(
       options?.where,
       await this.service.getFilterByAuthUserBranch(),
-    );*/
+    );
 
     return this.service.readOneRecord({
       ...options,

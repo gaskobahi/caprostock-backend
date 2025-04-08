@@ -52,7 +52,7 @@ export class SupplierController {
     // Permission check
     await authUser?.throwUnlessCan(
       AbilityActionEnum.read,
-      AbilitySubjectEnum.Supplier,
+      AbilitySubjectEnum.Order,
     );
 
     const options = buildFilterFromApiSearchParams(

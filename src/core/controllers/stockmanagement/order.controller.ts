@@ -75,7 +75,7 @@ export class OrderController {
       await this.service.getFilterByAuthUserBranch(),
     );
 
-    return await this.service.readPaginatedListRecord(options);
+    return await this.service.myreadPaginatedListRecord(options);
   }
 
   @ApiSearchOneQueryFilter()
@@ -91,10 +91,10 @@ export class OrderController {
     );
 
     // Apply auth user branch filter
-    /*options.where = merge(
+    options.where = merge(
       options?.where,
       await this.service.getFilterByAuthUserBranch(),
-    );*/
+    );
 
     const order = await this.service.readOneRecord({
       ...options,
@@ -102,7 +102,10 @@ export class OrderController {
     });
 
     // Permission check
-    await authUser?.throwUnlessCan(AbilityActionEnum.read, order);
+    await authUser?.throwUnlessCan(
+      AbilityActionEnum.read,
+      AbilitySubjectEnum.Order,
+    );
 
     return order;
   }
@@ -124,10 +127,10 @@ export class OrderController {
     );
 
     // Apply auth user branch filter
-    /* options.where = merge(
+    options.where = merge(
       options?.where,
       await this.service.getFilterByAuthUserBranch(),
-    );*/
+    );
 
     return this.service.readOneRecord({
       ...options,

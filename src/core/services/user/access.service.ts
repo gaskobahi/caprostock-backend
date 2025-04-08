@@ -26,12 +26,12 @@ export class AccessService extends AbstractService<Access> {
 
   async createRecord(dto: CreateAccessDto) {
     // Check unique name
-    if (dto.name) {
+    if (dto.entity) {
       await isUniqueConstraint(
         'name',
         Access,
-        { name: dto.name },
-        { message: `Le code "${dto.name}" du rôle est déjà utilisé` },
+        { name: dto.entity },
+        { message: `Le code "${dto.entity}" du entité est déjà utilisé` },
       );
     }
 

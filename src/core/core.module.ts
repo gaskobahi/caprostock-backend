@@ -40,7 +40,6 @@ import { BundleToProduct } from './entities/product/bundle-to-product.entity';
 import { Category } from './entities/product/category.entity';
 import { CategoryService } from './services/product/category.service';
 import { CategoryController } from './controllers/product/category.controller';
-import { Table } from './entities/selling2/table.entity';
 import { Pin } from './entities/user/pin.entity';
 import { PinController } from './controllers/user/pin.controller';
 import { PinService } from './services/user/pin.service';
@@ -48,7 +47,6 @@ import { BranchToUser } from './entities/subsidiary/branch-to-user.entity';
 import { AccessService } from './services/user/access.service';
 import { AccessController } from './controllers/user/access.controller';
 import { Access } from './entities/user/access.entity';
-import { AccessToRole } from './entities/user/access-to-role.entity';
 import { ProductOption } from './entities/product/product-option.entity';
 import { VariantToProduct } from './entities/product/variant-to-product.entity';
 import { BranchVariantToProduct } from './entities/subsidiary/branch-variant-to-product.entity';
@@ -129,14 +127,6 @@ import { ProductionToProduct } from './entities/stockmanagement/production-to-pr
 import { Production } from './entities/stockmanagement/production.entity';
 import { ProductionController } from './controllers/stockmanagement/production.controller';
 import { ProductionService } from './services/stockmanagement/production.service';
-import { Corder } from './entities/selling/Corder.entity';
-import { CorderToProduct } from './entities/selling/corder-to-product.entity';
-import { CorderSubscriber } from './entities/selling/corder.subscriber';
-import { Ticket } from './entities/selling/ticket.entity';
-import { OpenticketToPredefined } from './entities/selling/openticket-to-predefined.entity';
-import { OpenTicket } from './entities/selling/open-ticket.entity';
-import { OpenTicketService } from './services/selling/open-ticket.service';
-import { OpenTicketController } from './controllers/selling/open-ticket.controller';
 import { SellingToProduct } from './entities/selling/selling-to-product.entity';
 import { SellingToAdditionalCost } from './entities/selling/selling-to-addtionnal-cost.entity';
 import { Selling } from './entities/selling/selling.entity';
@@ -169,11 +159,10 @@ import { EquipmentTypeController } from './controllers/setting/equipment-type.co
       User,
       Pin,
       Role,
-      AccessToRole,
+      //AccessToRole,
       Access,
       Product,
       Category,
-      Table,
       Modifier,
       OptionToModifier,
       BranchToModifier,
@@ -245,13 +234,6 @@ import { EquipmentTypeController } from './controllers/setting/equipment-type.co
 
       ProductionToProduct,
       Production,
-
-      Ticket,
-      CorderToProduct,
-      Corder,
-
-      OpenticketToPredefined,
-      OpenTicket,
     ]),
   ],
   controllers: [
@@ -289,8 +271,6 @@ import { EquipmentTypeController } from './controllers/setting/equipment-type.co
     ReceptionController,
     DeliveryController,
     ProductionController,
-
-    OpenTicketController,
 
     EquipmentController,
     EquipmentTypeController,
@@ -356,10 +336,6 @@ import { EquipmentTypeController } from './controllers/setting/equipment-type.co
 
     ProductionService,
     ProductionSubscriber,
-
-    CorderSubscriber,
-
-    OpenTicketService,
 
     ConfigService,
   ],

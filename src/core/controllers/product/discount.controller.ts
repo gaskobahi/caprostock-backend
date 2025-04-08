@@ -30,6 +30,10 @@ import { DiscountService } from '../../services/product/discount.service';
 import { Discount } from '../../entities/product/discount.entity';
 import { CreateDiscountDto } from '../../dto/product/create-discount.dto';
 import { UpdateDiscountDto } from '../../dto/product/update-discount.dto';
+import {
+  AbilityActionEnum,
+  AbilitySubjectEnum,
+} from 'src/core/definitions/enums';
 
 @ApiAuthJwtHeader()
 @ApiRequestIssuerHeader()
@@ -50,10 +54,10 @@ export class DiscountController {
     @Query() query?: any,
   ): Promise<Paginated<Discount>> {
     // Permission check
-   /* await authUser?.throwUnlessCan(
+    await authUser?.throwUnlessCan(
       AbilityActionEnum.read,
-      AbilitySubjectEnum.Discount,
-    );*/
+      AbilitySubjectEnum.Product,
+    );
 
     const options = buildFilterFromApiSearchParams(
       this.service.repository,

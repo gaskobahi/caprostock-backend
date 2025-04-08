@@ -210,9 +210,7 @@ export class AuthUser extends CoreEntity {
 
   async getAbililyRules() {
     if (!_.isEmpty(this._abilityRules)) return this._abilityRules;
-
     let rules: RawRule[] = await this.role.buildAbilityRules();
-
     rules = await this.applyBranchRules(rules);
 
     this._abilityRules = rules;

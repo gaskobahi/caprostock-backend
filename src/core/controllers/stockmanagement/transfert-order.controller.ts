@@ -29,6 +29,10 @@ import { AuthUser } from '../../entities/session/auth-user.entity';
 import { TransfertOrder } from 'src/core/entities/stockmanagement/transfertorder.entity';
 import { CreateTransfertOrderDto } from 'src/core/dto/stockmanagement/create-transfert-order.dto';
 import { TransfertOrderService } from 'src/core/services/stockmanagement/transfert-order.service';
+import {
+  AbilityActionEnum,
+  AbilitySubjectEnum,
+} from 'src/core/definitions/enums';
 
 @ApiAuthJwtHeader()
 @ApiRequestIssuerHeader()
@@ -48,6 +52,12 @@ export class TransfertOrderController {
     @CurrentUser() authUser: AuthUser,
     @Query() query?: any,
   ): Promise<Paginated<TransfertOrder>> {
+    // Permission check
+    await authUser?.throwUnlessCan(
+      AbilityActionEnum.read,
+      AbilitySubjectEnum.Inventory,
+    );
+
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
       query as ApiSearchParamOptions,
@@ -65,6 +75,7 @@ export class TransfertOrderController {
   @ApiSearchOneQueryFilter()
   @Get(':transfertorderId')
   async findOne(
+    @CurrentUser() authUser: AuthUser,
     @Param('transfertorderId', ParseUUIDPipe) id: string,
     @Query() query?: any,
   ): Promise<TransfertOrder> {
@@ -73,10 +84,17 @@ export class TransfertOrderController {
       query as ApiSearchOneParamOptions,
     );
 
-    return this.service.readOneRecord({
+    const transfertOrder = this.service.readOneRecord({
       ...options,
       where: { ...options?.where, id: id ?? '' },
     });
+
+    // Permission check
+    await authUser?.throwUnlessCan(
+      AbilityActionEnum.read,
+      AbilitySubjectEnum.Inventory,
+    );
+    return transfertOrder;
   }
 
   /**

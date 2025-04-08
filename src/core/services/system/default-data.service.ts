@@ -231,7 +231,7 @@ export class DefaultDataService {
     }
     for (const dto of defaultRoles) {
       let modifiedDto: any;
-      if (dto.name == AccessTypeEnum.owner) {
+      /*if (dto.name == AccessTypeEnum.owner) {
         modifiedDto = {
           ...dto,
           accessToRoles: [
@@ -271,10 +271,12 @@ export class DefaultDataService {
             ],
           };
         }
-      }
+      }*/
       if (dto.name == 'admin') {
         modifiedDto = dto;
       }
+
+      console.log('zezazazz', modifiedDto);
 
       exists = await Role.countBy({ name: dto.name });
       if (exists <= 0) {
