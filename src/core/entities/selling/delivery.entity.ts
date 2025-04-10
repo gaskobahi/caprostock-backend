@@ -44,12 +44,6 @@ export class Delivery extends CoreEntity {
   })
   date: Date;
 
-  @IsOptional()
-  @IsString()
-  @ApiPropertyOptional()
-  @Column({ type: 'text', nullable: true })
-  description: string;
-
   @IsUUID()
   @IsNotEmpty()
   @Column({ name: 'branch_id', type: 'uuid', nullable: false })
@@ -77,6 +71,12 @@ export class Delivery extends CoreEntity {
   })
   @JoinColumn({ name: 'selling_id' })
   selling: Selling;
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional()
+  @Column({ type: 'text', nullable: true })
+  description: string;
 
   @IsUUID()
   @IsNotEmpty()

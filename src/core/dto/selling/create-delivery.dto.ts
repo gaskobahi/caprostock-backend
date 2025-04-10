@@ -47,9 +47,10 @@ export class CreateDeliveryToProductDto extends PickType(DeliveryToProduct, [
   'productId',
   'equipmentId',
   'sku',
+  'cost',
 ] as const) {}
 
 export class CreateDeliveryToAdditionalCostDto extends PickType(
   DeliveryToAdditionalCost,
-  ['sellingToAdditionalCostId'] as const,
+  ['sellingToAdditionalCostId', 'amount'] as const,
 ) {}

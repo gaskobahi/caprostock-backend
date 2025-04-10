@@ -46,11 +46,23 @@ export class InventoryCountService extends AbstractService<InventoryCount> {
     return this._repository;
   }
 
-  async readPaginatedListRecord(
+  async myreadPaginatedListRecord(
     options?: FindManyOptions<InventoryCount>,
     page: number = 1,
     perPage: number = 25,
   ) {
+    console.log('dfsfsf',options)
+    return await this.readPaginatedListRecord(options);
+  }
+  /*async readPaginatedListRecord(
+    options?: FindManyOptions<InventoryCount>,
+    page: number = 1,
+    perPage: number = 25,
+  ) {
+    console.log('sdsdsdsdsdsds4',options)
+    console.log('sdsdsdsdsdsds5',page)
+    console.log('sdsdsdsdsdsds6',page)
+
     // Paginate using provided options, page, and perPage
     const response = await this.paginatedService.paginate(
       this.repository,
@@ -61,7 +73,7 @@ export class InventoryCountService extends AbstractService<InventoryCount> {
 
     // Update response data with processed items and return
     return response;
-  }
+  }*/
 
   async createRecord(dto: CreateInventoryCountDto): Promise<InventoryCount> {
     if (dto.type == InventoryCountTypeEnum.partial) {

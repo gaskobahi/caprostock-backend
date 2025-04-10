@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsUUID } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsOptional, IsUUID } from 'class-validator';
 import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import { CoreEntity } from '../base/core.entity';
 import { OrderToAdditionalCost } from './order-to-addtionnal-cost.entity';
@@ -16,6 +16,12 @@ export class ReceptionToAdditionalCost extends CoreEntity {
   @IsNotEmpty()
   @Column({ name: 'reception_id', type: 'uuid', nullable: false })
   receptionId: string;
+
+  @IsNumber()
+  @IsOptional()
+  @ApiProperty({ description: `Coût additionnel recu` })
+  @Column({ type: 'double precision', default: 0 })
+  amount: number;
 
   @ApiProperty({ required: false, type: () => Reception })
   @ManyToOne(

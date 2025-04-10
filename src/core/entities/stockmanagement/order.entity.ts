@@ -53,7 +53,7 @@ export class Order extends CoreEntity {
   @ApiPropertyOptional({ description: `Date de la commande` })
   @Column({
     name: 'order_date',
-    type: 'date',
+    type: 'datetime',
     nullable: true,
     default: () => '(CURRENT_DATE)',
   })
@@ -64,9 +64,9 @@ export class Order extends CoreEntity {
   @ApiPropertyOptional({ description: `Date prévu de la reception` })
   @Column({
     name: 'planned_for',
-    type: 'date',
+    type: 'datetime',
     nullable: true,
-    //default: () => '(CURRENT_DATE)',
+    default: () => '(CURRENT_DATE)',
   })
   plannedFor: Date;
 

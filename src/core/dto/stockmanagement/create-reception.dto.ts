@@ -13,6 +13,7 @@ import { ReceptionToAdditionalCost } from 'src/core/entities/stockmanagement/rec
 export class CreateReceptionDto extends PickType(Reception, [
   'reference',
   'orderId',
+  'date',
 ] as const) {
   @IsArray()
   @IsNotEmpty()
@@ -39,9 +40,10 @@ export class CreateReceptionToProductDto extends PickType(ReceptionToProduct, [
   'quantity',
   'productId',
   'sku',
+  'cost',
 ] as const) {}
 
 export class CreateReceptionToAdditionalCostDto extends PickType(
   ReceptionToAdditionalCost,
-  ['orderToAdditionalCostId'] as const,
+  ['orderToAdditionalCostId', 'amount'] as const,
 ) {}

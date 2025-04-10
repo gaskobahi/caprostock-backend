@@ -7,8 +7,15 @@ import {
   ManyToOne,
   OneToMany,
 } from 'typeorm';
-import { ApiProperty } from '@nestjs/swagger';
-import { IsIn, IsNotEmpty, IsString, IsUUID } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsDateString,
+  IsIn,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator';
 import { CoreEntity } from '../base/core.entity';
 import { instanceToPlain } from 'class-transformer';
 import { Branch } from '../subsidiary/branch.entity';
@@ -37,13 +44,25 @@ export class InventoryCount extends CoreEntity {
   @Column({ name: 'description' })
   description: string;
 
-  @CreateDateColumn({ name: 'inventorycount_date', nullable: true })
-  date: Date;
-
+  @IsOptional()
+  @IsDateString()
+  @ApiPropertyOptional({ description: `Date` })
   @Column({
-    name: 'stockadjustment_date_completed',
+    name: 'inventorycount_date',
     type: 'date',
     nullable: true,
+    default: () => '(CURRENT_DATE)',
+  })
+  date: Date;
+
+  @IsOptional()
+  @IsDateString()
+  @ApiPropertyOptional({ description: `Date` })
+  @Column({
+    name: 'date_completed',
+    type: 'date',
+    nullable: true,
+    default: () => '(CURRENT_DATE)',
   })
   dateCompleted: Date;
 

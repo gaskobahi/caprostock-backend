@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsDateString,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
   IsUUID,
@@ -34,14 +35,20 @@ export class Reception extends CoreEntity {
 
   @IsOptional()
   @IsDateString()
-  @ApiPropertyOptional({ description: `Date de la reception` })
+  @ApiPropertyOptional({ description: `Date de la commande` })
   @Column({
     name: 'reception_date',
-    type: 'date',
+    type: 'datetime',
     nullable: true,
     default: () => '(CURRENT_DATE)',
   })
   date: Date;
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional()
+  @Column({ type: 'text', nullable: true })
+  description: string;
 
   @IsUUID()
   @IsNotEmpty()

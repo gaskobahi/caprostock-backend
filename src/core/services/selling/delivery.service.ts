@@ -131,6 +131,7 @@ export class DeliveryService extends AbstractService<Delivery> {
   }*/
 
   async createRecord(dto: DeepPartial<CreateDeliveryDto>): Promise<Delivery> {
+    console.log('rrerer',dto)
     const authUser = await super.checkSessionBranch();
     let createdDelivery: Delivery;
 

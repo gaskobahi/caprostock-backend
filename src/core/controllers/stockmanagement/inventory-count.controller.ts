@@ -67,8 +67,7 @@ export class InventoryCountController {
         textFilterFields: ['reference'],
       },
     );
-    console.log('ytyytytyt', options);
-    return this.service.readPaginatedListRecord(options);
+    return this.service.myreadPaginatedListRecord(options);
   }
 
   /**

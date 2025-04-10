@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsUUID } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsOptional, IsUUID } from 'class-validator';
 import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import { CoreEntity } from '../base/core.entity';
 import { Delivery } from './delivery.entity';
@@ -16,6 +16,12 @@ export class DeliveryToAdditionalCost extends CoreEntity {
   @IsNotEmpty()
   @Column({ name: 'delivery_id', type: 'uuid', nullable: false })
   deliveryId: string;
+
+  @IsNumber()
+  @IsOptional()
+  @ApiProperty({ description: `Coût additionnel livraison` })
+  @Column({ type: 'double precision', default: 0 })
+  amount: number;
 
   @ApiProperty({ required: false, type: () => Delivery })
   @ManyToOne(() => Delivery, (delivery) => delivery.deliveryToAdditionalCosts, {

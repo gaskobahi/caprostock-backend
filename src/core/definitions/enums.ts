@@ -140,6 +140,7 @@ export enum OrderStatusEnum {
   pending = 'pending',
   partialreceived = 'partialreceived',
   closed = 'closed',
+  canceled = 'canceled',
 }
 
 export enum SellingStatusEnum {
@@ -147,6 +148,7 @@ export enum SellingStatusEnum {
   pending = 'pending',
   partialdelivered = 'partialdelivered',
   closed = 'closed',
+  canceled = 'canceled',
 }
 
 export enum CorderStatusEnum {

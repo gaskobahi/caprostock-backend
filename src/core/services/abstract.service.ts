@@ -97,7 +97,6 @@ export abstract class AbstractService<T extends BaseCoreEntity> {
         `Impossible de recupérer la succursale`,
       );
     }
-    console.log('P2023', authUser);
 
     return authUser;
   }

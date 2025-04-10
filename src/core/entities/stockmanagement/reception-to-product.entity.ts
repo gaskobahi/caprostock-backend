@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsNotEmpty, IsUUID } from 'class-validator';
+import { IsInt, IsNotEmpty, IsNumber, IsOptional, IsUUID } from 'class-validator';
 import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import { CoreEntity } from '../base/core.entity';
 import { Product } from '../product/product.entity';
@@ -21,6 +21,12 @@ export class ReceptionToProduct extends CoreEntity {
     default: 1,
   })
   quantity: number;
+
+  @IsNumber()
+  @IsOptional()
+  @ApiProperty({ description: `Coût reception` })
+  @Column({ type: 'double precision', default: 0 })
+  cost: number;
 
   @IsNotEmpty()
   @IsInt()
