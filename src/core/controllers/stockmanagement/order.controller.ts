@@ -221,23 +221,15 @@ export class OrderController {
    */
   @ApiSearchOneQueryFilter()
   @HttpCode(HttpStatus.OK)
-  @Post(':orderId/cancel/:status')
+  @Post(':orderId/cancel')
   async cancelRecord(
     @Param('orderId', ParseUUIDPipe) id: string,
-    @Param('status', new ParseEnumPipe(OrderStatusEnum))
-    status: OrderStatusEnum,
-    @Body() dto: ValidateOrderDto,
     @Query() query?: any,
   ): Promise<Order> {
     // Apply auth user branch filter
     const filter = await this.service.getFilterByAuthUserBranch();
-
-    const order = await this.service.cancelRecord(
-      { ...filter, id: id ?? '' },
-      status,
-      dto,
-    );
-
+    await this.service.cancelRecord({ ...filter, id: id ?? '' });
+    console.log('kykiannnnn', filter, id);
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
       query as ApiSearchOneParamOptions,
@@ -245,7 +237,7 @@ export class OrderController {
 
     return this.service.readOneRecord({
       ...options,
-      where: { ...options?.where, ...filter, id: order.id ?? '' },
+      where: { ...options?.where, ...filter, id: id ?? '' },
     });
   }
 }

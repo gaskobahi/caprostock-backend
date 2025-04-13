@@ -1,8 +1,8 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreatePinDto } from '../../dto/user/create-pin.dto';
-import { FindOptionsWhere, Not, Repository } from 'typeorm';
+import { FindOptionsWhere, Repository } from 'typeorm';
 import { Pin } from '../../entities/user/pin.entity';
 import {
   PaginatedService,
@@ -12,8 +12,6 @@ import {
 import { AbstractService } from '../abstract.service';
 import { generate } from 'generate-password';
 import { UpdatePinDto } from 'src/core/dto/user/update-pin.dto';
-import { AuthUser } from 'src/core/entities/session/auth-user.entity';
-import { REQUEST_AUTH_USER_KEY } from 'src/modules/auth/definitions/constants';
 
 @Injectable()
 export class PinService extends AbstractService<Pin> {

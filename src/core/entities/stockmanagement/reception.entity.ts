@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsDateString,
+  IsIn,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -9,6 +10,7 @@ import {
 } from 'class-validator';
 import {
   Column,
+  DeleteDateColumn,
   Entity,
   Index,
   JoinColumn,
@@ -16,11 +18,13 @@ import {
   OneToMany,
 } from 'typeorm';
 import { CoreEntity } from '../base/core.entity';
-import { instanceToPlain } from 'class-transformer';
+import { Expose, instanceToPlain } from 'class-transformer';
 import { Branch } from '../subsidiary/branch.entity';
 import { Order } from './order.entity';
 import { ReceptionToProduct } from './reception-to-product.entity';
 import { ReceptionToAdditionalCost } from './reception-to-addtionnal-cost.entity';
+import { OrderStatusEnum } from 'src/core/definitions/enums';
+import { AuthUser } from '../session/auth-user.entity';
 
 @Entity({
   orderBy: { createdAt: 'DESC', updatedAt: 'DESC' },
@@ -49,6 +53,68 @@ export class Reception extends CoreEntity {
   @ApiPropertyOptional()
   @Column({ type: 'text', nullable: true })
   description: string;
+
+  @IsNotEmpty()
+  @IsIn(Object.values(OrderStatusEnum))
+  @ApiProperty({
+    enum: OrderStatusEnum,
+    enumName: 'OrderStatusEnum',
+    default: OrderStatusEnum.pending,
+    description: `Status`,
+  })
+  @Column({
+    name: 'reception_status',
+    default: OrderStatusEnum.pending,
+  })
+  status: OrderStatusEnum;
+
+  @ApiPropertyOptional()
+  @Column({
+    name: 'canceled_by_id',
+    nullable: true,
+    type: 'uuid',
+  })
+  @IsOptional()
+  canceledById: string;
+
+  @ApiPropertyOptional()
+  @Column({
+    name: 'closed_by_id',
+    nullable: true,
+    type: 'uuid',
+  })
+  @IsOptional()
+  closedById: string;
+
+  @ApiPropertyOptional({ type: 'object' })
+  @ManyToOne(() => AuthUser, {
+    nullable: true,
+    createForeignKeyConstraints: false,
+  })
+  @JoinColumn({ name: 'closed_by_id' })
+  closedBy: AuthUser;
+
+  @ApiProperty({
+    description: 'La date de cloture ',
+    required: false,
+  })
+  @DeleteDateColumn({ name: 'closed_at', nullable: true })
+  closedAt: Date;
+
+  @ApiPropertyOptional({ type: 'object' })
+  @ManyToOne(() => AuthUser, {
+    nullable: true,
+    createForeignKeyConstraints: false,
+  })
+  @JoinColumn({ name: 'canceled_by_id' })
+  canceledBy: AuthUser;
+
+  @ApiProperty({
+    description: 'La date de cloture ',
+    required: false,
+  })
+  @DeleteDateColumn({ name: 'canceled_at', nullable: true })
+  canceledAt: Date;
 
   @IsUUID()
   @IsNotEmpty()
@@ -97,6 +163,11 @@ export class Reception extends CoreEntity {
     },
   )
   receptionToAdditionalCosts: ReceptionToAdditionalCost[];
+
+  @Expose()
+  get isClosed(): boolean {
+    return Boolean(~[OrderStatusEnum.closed].indexOf(this.status));
+  }
 
   /**
    * Getters & Setters

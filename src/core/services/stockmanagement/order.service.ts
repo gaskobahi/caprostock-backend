@@ -1,5 +1,11 @@
 import { PaginatedService, isUniqueConstraint } from '@app/typeorm';
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  forwardRef,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Order } from '../../entities/stockmanagement/order.entity';
@@ -16,8 +22,8 @@ import { AbstractService } from '../abstract.service';
 import { REQUEST_AUTH_USER_KEY } from 'src/modules/auth/definitions/constants';
 import { AuthUser } from 'src/core/entities/session/auth-user.entity';
 import { UpdateOrderDto } from 'src/core/dto/stockmanagement/update-order.dto';
-import { ValidateOrderDto } from 'src/core/dto/stockmanagement/validate-order.dto';
-import { LockedException } from '@app/nestjs';
+import { OrderToProduct } from 'src/core/entities/stockmanagement/order-to-product.entity';
+import { ReceptionService } from './reception.service';
 
 @Injectable()
 export class OrderService extends AbstractService<Order> {
@@ -27,6 +33,8 @@ export class OrderService extends AbstractService<Order> {
     @InjectRepository(Order)
     private _repository: Repository<Order>,
     protected paginatedService: PaginatedService<Order>,
+    @Inject(forwardRef(() => ReceptionService))
+    private receptionService: ReceptionService,
 
     @Inject(REQUEST) protected request: any,
   ) {
@@ -73,7 +81,6 @@ export class OrderService extends AbstractService<Order> {
     );
     // Update response data with detailed records
     response.data = detailedRecords;
-
     return response;
   }
 
@@ -246,13 +253,17 @@ export class OrderService extends AbstractService<Order> {
       },
       [],
     );
+    //const totalReceived = this.receptionService.calculateTotalReceived(otherReceptions);
 
     entity.orderToProducts = newOrderToProducts;
     entity.totalOrdered = this.totalOrdered(entity);
     entity.totalReceived = this.totalReceived(entity);
     entity.totalAmount = this.totalAmount(entity);
     entity.hasIncoming = this.hasIncoming(entity);
-    entity.isAllreceived = this.isAllReceive(entity?.orderToProducts);
+    entity.isAllreceived = this.isAllReceive(
+      entity?.orderToProducts,
+      //entity?.reception?.receptionToProducts,
+    );
     return entity;
   }
 
@@ -336,9 +347,8 @@ export class OrderService extends AbstractService<Order> {
     return await this.repository.save(order);
   }*/
 
-  async cancelRecord(
+  /*async cancelRecord(
     optionsWhere: FindOptionsWhere<Order>,
-    status: OrderStatusEnum,
     dto: ValidateOrderDto,
   ) {
     const order = await this._repository.findOne({
@@ -353,75 +363,16 @@ export class OrderService extends AbstractService<Order> {
     if (!order) {
       throw new BadRequestException(this.NOT_FOUND_MESSAGE);
     }
-
-    const authUser = this.request[REQUEST_AUTH_USER_KEY] as AuthUser;
-
     // Vérifier que la commande est disponible pour validation
-    if (order.isClosed) {
+    if (order.status == OrderStatusEnum.closed) {
       throw new LockedException(
         `Cette opération n'est plus possible, la commande est déjà clôturée`,
       );
     }
 
-    /* switch (status) {
-      case OrderStatusEnum.validated:
-        order.status = OrderStatusEnum.validated;
-        let branchToProduct: BranchToProduct;
-        // Pour chaque ligne de la commande
-        // Approvisionner le stock du produit
-        for (const orderToProduct of order.orderToProducts ?? []) {
-          branchToProduct =
-            await this.branchToProductService.repository.findOne({
-              where: {
-                branchId: order.branchId,
-                productId: orderToProduct.productId,
-              },
-              relations: {
-                product: true,
-              },
-            });
+   // return this.cancelOrderIfNoClosedReception(order.id, order.branchId);
+  }*/
 
-          // Si le produit n'existe pas dans la succursale, le créer
-          if (!branchToProduct) {
-            branchToProduct = this.branchToProductService.repository.create({
-              branchId: order.branchId,
-              productId: orderToProduct.productId,
-              availableStock: 0,
-              createdById: authUser?.id,
-            });
-          }
-
-          // Mettre le  stock à jour
-          if (branchToProduct.product.isBundle !== true) {
-            branchToProduct.availableStock += orderToProduct.quantity;
-            branchToProduct.updatedById = authUser?.id;
-          }
-
-          await this.branchToProductService.repository.save(branchToProduct);
-
-          branchToProduct = null;
-        }
-        break;
-      case OrderStatusEnum.cancelled:
-        order.status = OrderStatusEnum.cancelled;
-        break;
-      default:
-        throw new NotImplementedException(`Opération non autorisée`);
-    }*/
-
-    order.remark = dto.remark;
-    order.status = status;
-
-    order.updatedById = authUser?.id;
-    order.validatedById = authUser?.id;
-    order.validatedAt = new Date();
-
-    return await this.repository.save(order);
-  }
-
-
-
-  
   /*async validateRecord(
     optionsWhere: FindOptionsWhere<Order>,
     status: OrderStatusEnum,
@@ -510,8 +461,10 @@ export class OrderService extends AbstractService<Order> {
   ) => {
     return receptions
       .filter(
-        (reception: { orderId: any; branchId: any }) =>
-          reception.orderId === orderId && reception.branchId === branchId,
+        (reception: { orderId: any; branchId: any; status: OrderStatusEnum }) =>
+          reception.orderId === orderId &&
+          reception.branchId === branchId &&
+          reception.status == OrderStatusEnum.closed,
       )
       .reduce((sum: any, reception: { receptionToProducts: any[] }) => {
         const skuQuantity = reception.receptionToProducts
@@ -530,6 +483,21 @@ export class OrderService extends AbstractService<Order> {
         product.quantity - product.incoming <= 0,
     );
   };
+
+  isAllReceivev2(
+    orderToProducts: OrderToProduct[],
+    received: Record<string, number>,
+  ): boolean {
+    for (const otp of orderToProducts) {
+      const orderedQty = otp.quantity;
+      const receivedQty = received[otp.productId] || 0;
+
+      if (receivedQty < orderedQty) {
+        return false; // Produit pas encore totalement livré
+      }
+    }
+    return true; // Tous les produits sont reçus
+  }
 
   //apply this on update order
   _isLineIncomingMoreThanQuantity(quantity: number, incoming: number) {
@@ -663,5 +631,56 @@ export class OrderService extends AbstractService<Order> {
         orderToAdditionalCosts: { receptionToAdditionalCosts: true },
       },
     });
+  }
+
+  async cancelRecord(optionsWhere: FindOptionsWhere<Order>) {
+    // Récupérer la commande
+    const order = await this.readOneRecord({
+      where: optionsWhere,
+      relations: {
+        orderToProducts: {
+          product: {
+            variantToProducts: { branchVariantToProducts: true },
+            branchToProducts: true,
+          },
+        },
+        receptions: { receptionToProducts: true },
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException(['Commande introuvable.']);
+    }
+
+    // Vérifier s'il existe au moins une réception en statut "closed"
+
+    const closedReceptions =
+      await this.receptionService.existClosedRecordByOrderId(order.id);
+
+    if (closedReceptions) {
+      throw new BadRequestException(
+        "Impossible d'annuler cette commande car elle contient déjà des réceptions validées.",
+      );
+    }
+
+    const receptions = order.receptions;
+
+    // Annuler toutes les réceptions en pending (si tu veux les conserver comme trace logique, change juste le statut)
+    for (const reception of receptions ?? []) {
+      await this.receptionService.updateRecord(
+        { ...optionsWhere, id: reception?.id, status: OrderStatusEnum.pending },
+        { status: OrderStatusEnum.canceled },
+      );
+    }
+
+    // Mettre à jour le statut de la commande
+    await this.updateRecord(optionsWhere, {
+      status: OrderStatusEnum.canceled,
+    });
+
+    /*return {
+      success: true,
+      message: `Commande ${order.reference} annulée avec succès.`,
+    };*/
   }
 }

@@ -161,6 +161,64 @@ export class ReceptionController {
   }
 
   /**
+   * Update reception
+   */
+  @ApiSearchOneQueryFilter()
+  @Post(':receptionId/cancel')
+  async cancel(
+    @Param('receptionId', ParseUUIDPipe) id: string,
+    @Query() query?: any,
+  ): Promise<Reception> {
+    // Apply auth user branch filter
+    const filter = await this.service.getFilterByAuthUserBranch();
+    const options = buildFilterFromApiSearchParams(
+      this.service.repository,
+      query as ApiSearchOneParamOptions,
+    );
+
+    await this.service.cancel({ ...filter, id: id ?? '' });
+    // Apply auth user branch filter
+    options.where = merge(
+      options?.where,
+      await this.service.getFilterByAuthUserBranch(),
+    );
+
+    return this.service.readOneRecord({
+      ...options,
+      where: { ...options?.where, ...filter, id: id ?? '' },
+    });
+  }
+
+  /**
+   * Update reception
+   */
+  @ApiSearchOneQueryFilter()
+  @Post(':receptionId/closed')
+  async validateReception(
+    @Param('receptionId', ParseUUIDPipe) id: string,
+    @Query() query?: any,
+  ): Promise<Reception> {
+    // Apply auth user branch filter
+    const filter = await this.service.getFilterByAuthUserBranch();
+    const options = buildFilterFromApiSearchParams(
+      this.service.repository,
+      query as ApiSearchOneParamOptions,
+    );
+
+    await this.service.validateReception({ ...filter, id: id ?? '' });
+    // Apply auth user branch filter
+    options.where = merge(
+      options?.where,
+      await this.service.getFilterByAuthUserBranch(),
+    );
+
+    return this.service.readOneRecord({
+      ...options,
+      where: { ...options?.where, ...filter, id: id ?? '' },
+    });
+  }
+
+  /**
    * Remove reception
    */
   @HttpCode(HttpStatus.NO_CONTENT)

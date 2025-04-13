@@ -1,7 +1,6 @@
 import { BadRequestException, ConflictException } from '@nestjs/common';
 import { BaseEntity, Not } from 'typeorm';
 import * as fs from 'file-system';
-import { IsPhoneNumber } from 'class-validator';
 
 export type ConstraintOptions = {
   message?: string;
