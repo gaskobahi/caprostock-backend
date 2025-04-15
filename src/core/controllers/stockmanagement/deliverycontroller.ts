@@ -71,6 +71,35 @@ export class DeliveryController {
     return this.service.readPaginatedListRecord(options);
   }
 
+  /**
+   * Update delivery
+   */
+  @ApiSearchOneQueryFilter()
+  @Post(':deliveryId/cancel')
+  async cancelRecord(
+    @Param('deliveryId', ParseUUIDPipe) id: string,
+    @Query() query?: any,
+  ): Promise<Delivery> {
+    // Apply auth user branch filter
+    const filter = await this.service.getFilterByAuthUserBranch();
+    const options = buildFilterFromApiSearchParams(
+      this.service.repository,
+      query as ApiSearchOneParamOptions,
+    );
+
+    await this.service.cancelRecord({ ...filter, id: id ?? '' });
+    // Apply auth user branch filter
+    options.where = merge(
+      options?.where,
+      await this.service.getFilterByAuthUserBranch(),
+    );
+
+    return this.service.readOneRecord({
+      ...options,
+      where: { ...options?.where, ...filter, id: id ?? '' },
+    });
+  }
+
   @ApiSearchOneQueryFilter()
   @Get(':deliveryId')
   async findOne(
@@ -101,6 +130,35 @@ export class DeliveryController {
     );
 
     return delivery;
+  }
+
+  /**
+   * Update delivery
+   */
+  @ApiSearchOneQueryFilter()
+  @Post(':deliveryId/closed')
+  async validateDelivery(
+    @Param('deliveryId', ParseUUIDPipe) id: string,
+    @Query() query?: any,
+  ): Promise<Delivery> {
+    // Apply auth user branch filter
+    const filter = await this.service.getFilterByAuthUserBranch();
+    const options = buildFilterFromApiSearchParams(
+      this.service.repository,
+      query as ApiSearchOneParamOptions,
+    );
+
+    await this.service.validateDelivery({ ...filter, id: id ?? '' });
+    // Apply auth user branch filter
+    options.where = merge(
+      options?.where,
+      await this.service.getFilterByAuthUserBranch(),
+    );
+
+    return this.service.readOneRecord({
+      ...options,
+      where: { ...options?.where, ...filter, id: id ?? '' },
+    });
   }
 
   /**

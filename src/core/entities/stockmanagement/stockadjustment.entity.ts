@@ -42,7 +42,7 @@ export class StockAdjustment extends CoreEntity {
   @ApiPropertyOptional({ description: `Date` })
   @Column({
     name: 'stockadjustment_date',
-    type: 'date',
+    type: 'datetime',
     nullable: true,
     default: () => '(CURRENT_DATE)',
   })

@@ -16,7 +16,6 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseEnumPipe,
   ParseUUIDPipe,
   Patch,
   Post,
@@ -30,13 +29,11 @@ import { CurrentUser } from 'src/modules/auth/decorators/current-user.decorator'
 import {
   AbilityActionEnum,
   AbilitySubjectEnum,
-  OrderStatusEnum,
 } from '../../definitions/enums';
 import { AuthUser } from '../../entities/session/auth-user.entity';
 //import { OrderService } from '../../services/supply/order.service';
 import { CreateOrderDto } from '../../dto/stockmanagement/create-order.dto';
 import { UpdateOrderDto } from '../../dto/stockmanagement/update-order.dto';
-import { ValidateOrderDto } from '../../dto/stockmanagement/validate-order.dto';
 import { Order } from 'src/core/entities/stockmanagement/order.entity';
 import { OrderService } from 'src/core/services/stockmanagement/order.service';
 
@@ -229,7 +226,6 @@ export class OrderController {
     // Apply auth user branch filter
     const filter = await this.service.getFilterByAuthUserBranch();
     await this.service.cancelRecord({ ...filter, id: id ?? '' });
-    console.log('kykiannnnn', filter, id);
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
       query as ApiSearchOneParamOptions,

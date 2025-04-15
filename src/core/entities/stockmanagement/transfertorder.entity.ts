@@ -56,7 +56,7 @@ export class TransfertOrder extends CoreEntity {
   @ApiPropertyOptional({ description: `Date` })
   @Column({
     name: 'transfertorder_date',
-    type: 'date',
+    type: 'datetime',
     nullable: true,
     default: () => '(CURRENT_DATE)',
   })

@@ -59,7 +59,7 @@ export class InventoryCountController {
       AbilityActionEnum.read,
       AbilitySubjectEnum.Inventory,
     );
-
+    console.log('zaazazdsdsd',query)
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
       query as ApiSearchParamOptions,

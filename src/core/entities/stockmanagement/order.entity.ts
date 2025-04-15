@@ -195,6 +195,7 @@ export class Order extends CoreEntity {
       this.plannedFor = this.addDays(1); // Add 7 days to the current date as an example
     }
   }
+
   private addDays(days: number): Date {
     const date = new Date();
     date.setDate(date.getDate() + days);

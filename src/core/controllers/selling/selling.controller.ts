@@ -183,19 +183,16 @@ export class SellingController {
   @Post(':sellingId/cancel/:status')
   async cancelRecord(
     @Param('sellingId', ParseUUIDPipe) id: string,
-    @Param('status', new ParseEnumPipe(SellingStatusEnum))
-    status: SellingStatusEnum,
-    @Body() dto: ValidateSellingDto,
-    @Query() query?: any,
+    @Query()
+    query?: any,
   ): Promise<Selling> {
     // Apply auth user branch filter
     const filter = await this.service.getFilterByAuthUserBranch();
 
-    const selling = await this.service.cancelRecord(
-      { ...filter, id: id ?? '' },
-      status,
-      dto,
-    );
+    await this.service.cancelRecord({
+      ...filter,
+      id: id ?? '',
+    });
 
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
@@ -204,7 +201,7 @@ export class SellingController {
 
     return this.service.readOneRecord({
       ...options,
-      where: { ...options?.where, ...filter, id: selling.id ?? '' },
+      where: { ...options?.where, ...filter, id: id ?? '' },
     });
   }
 }

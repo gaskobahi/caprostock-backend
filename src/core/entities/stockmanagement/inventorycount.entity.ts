@@ -49,7 +49,7 @@ export class InventoryCount extends CoreEntity {
   @ApiPropertyOptional({ description: `Date` })
   @Column({
     name: 'inventorycount_date',
-    type: 'date',
+    type: 'datetime',
     nullable: true,
     default: () => '(CURRENT_DATE)',
   })

@@ -1,9 +1,21 @@
 import { PaginatedService, isUniqueConstraint } from '@app/typeorm';
-import { BadRequestException, forwardRef, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  forwardRef,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Reception } from '../../entities/stockmanagement/reception.entity';
-import { DeepPartial, Equal, FindOptionsWhere, Not, Repository } from 'typeorm';
+import {
+  DeepPartial,
+  Equal,
+  FindOneOptions,
+  FindOptionsWhere,
+  Not,
+  Repository,
+} from 'typeorm';
 import { AbstractService } from '../abstract.service';
 import { CreateReceptionDto } from 'src/core/dto/stockmanagement/create-reception.dto';
 import { OrderService } from './order.service';
@@ -78,32 +90,6 @@ export class ReceptionService extends AbstractService<Reception> {
       const orderDetails = await this.orderService.getDetails(dto.orderId);
       if (!orderDetails)
         throw new BadRequestException(['Commande introuvable']);
-
-      // Vérification si toute la commande est reçue
-     /* const isAllReceive = this.orderService.isAllReceive(
-        orderDetails?.orderToProducts,
-      );*/
-
-      // Mise à jour des stocks
-      /*for (const receptionToProduct of dto.receptionToProducts) {
-        const receptionProductData = {
-          ...receptionToProduct,
-          destinationBranchId: orderDetails.destinationBranchId,
-          orderId: dto.orderId,
-        };
-        await this.updateStocks(receptionProductData);
-      }*/
-
-      // Mise à jour du statut de la commande
-      /*await this.orderService.updateRecord(
-        { id: orderDetails.id },
-        {
-          status: isAllReceive
-            ? OrderStatusEnum.closed
-            : OrderStatusEnum.partialreceived,
-        },
-      );*/
-
       return response;
     } catch (error) {
       // En cas d'erreur, suppression de la réception créée
@@ -161,34 +147,6 @@ export class ReceptionService extends AbstractService<Reception> {
       await this.updateProductStock(prd.branchToProducts, receptionProductData);
     }
   }
-
-  /*async updateStocksV2(receptionProductData: any): Promise<void> {
-    const prd = await this.productService.getDetails(
-      receptionProductData.productId,
-    );
-    const orderData = await this.getDetailByOrderId(
-      receptionProductData.orderId,
-    );
-
-    //update item product cost
-
-    if (orderData && orderData.orderToProducts) {
-      await this.updateProductCost(
-        orderData.orderToProducts,
-        receptionProductData,
-      );
-    }
-
-    //update product stock
-    if (prd.hasVariant) {
-      await this.updateVariantStock(
-        prd.variantToProducts,
-        receptionProductData,
-      );
-    } else {
-      await this.updateProductStock(prd.branchToProducts, receptionProductData);
-    }
-  }*/
 
   private async updateVariantStock(variants: any[], dto: any): Promise<void> {
     const vp = variants.find((el: { sku: any }) => el.sku === dto.sku);
@@ -257,75 +215,17 @@ export class ReceptionService extends AbstractService<Reception> {
     }
   }
 
-  private async cancelOrderWithReceptionRollback(
-    orderId: string,
-  ): Promise<void> {
-    // 1. Récupérer la commande et vérifier qu'elle peut être annulée
-    const order = await this.orderService.getDetails(orderId);
-    if (!order) throw new BadRequestException(['Commande introuvable']);
-
-    if (order.status === OrderStatusEnum.closed) {
-      throw new BadRequestException([
-        "Impossible d'annuler une commande déjà clôturée.",
-      ]);
+  async readOneRecord(options?: FindOneOptions<Reception>) {
+    const res = await this.repository.findOne(options);
+    if (!res) {
+      throw new BadRequestException(this.NOT_FOUND_MESSAGE);
     }
-
-    // 2. Récupérer toutes les réceptions liées à la commande
-    const receptions = await this.repository.find({
-      where: { orderId },
-      relations: ['receptionToProducts'],
-    });
-
-    for (const reception of receptions) {
-      // 3. Pour chaque produit réceptionné, faire un "retour stock"
-      for (const rtp of reception.receptionToProducts) {
-        await this.rollbackStock({
-          productId: rtp.productId,
-          quantity: rtp.quantity,
-          branchId: reception.branchId,
-          receptionId: reception.id,
-        });
-      }
-
-      // 4. Supprimer ou marquer la réception comme annulée
-      await this.repository.delete(reception.id);
-    }
-
-    // 5. Changer le statut de la commande
-    await this.orderService.updateRecord(
-      { id: orderId },
-      { status: OrderStatusEnum.canceled },
-    );
+    const entity = { ...res, totalAmount: 0, receptionId: res.id } as any;
+    entity.totalAmount = this.totalAmount(entity);
+    return entity;
   }
 
-  private async rollbackStock({ productId, quantity, branchId, receptionId }) {
-    // Tu peux soit diminuer le stock, soit créer un mouvement "sortie"
-    const currentStock = await this.productService.getBranchStock(
-      productId,
-      branchId,
-    );
-
-    /*if (currentStock.quantity < quantity) {
-      throw new Error(
-        `Stock insuffisant pour annuler la réception ${receptionId}`,
-      );
-    }*/
-
-    // Mise à jour
-    //await this.stockService.updateQuantity(productId, branchId, -quantity);
-
-    // Journaliser le mouvement
-    /*await this.stockMovementsService.create({
-      productId,
-      branchId,
-      quantity: -quantity,
-      type: 'RETOUR_RECEPTION',
-      reference: `Annulation réception ${receptionId}`,
-    });*/
-    return;
-  }
-
-  async cancel(option: any): Promise<any> {
+  async cancelRecord(option: any): Promise<any> {
     const reception = await this.readOneRecord({
       relations: {
         receptionToProducts: { product: true },
@@ -361,95 +261,12 @@ export class ReceptionService extends AbstractService<Reception> {
     );
     // 3. Recalculer le statut de la commande liée
     await this.recalculerOrderStatus(reception);
-    /*const order = reception.order;
-    const otherReceptions = await this.readListRecord({
-      where: {
-        orderId: order.id,
-        status: Not(OrderStatusEnum.canceled),
-      },
-      relations: { receptionToProducts: true },
-    });
-
-    const totalReceived = this.calculateTotalReceived(otherReceptions);
-
-    const isAllReceived = this.orderService.isAllReceivev2(
-      order.orderToProducts,
-      totalReceived,
-    );
-
-    let newStatus: OrderStatusEnum;
-
-    const totalReceivedQuantities = Object.values(totalReceived).reduce(
-      (sum, quantity) => sum + quantity,
-      0,
-    );
-
-    if (totalReceivedQuantities === 0) {
-      newStatus = OrderStatusEnum.pending; // ou 'open'
-    } else if (isAllReceived) {
-      newStatus = OrderStatusEnum.closed;
-    } else {
-      newStatus = OrderStatusEnum.partialreceived;
-    }
-    await this.orderService.updateRecord(
-      { id: order.id },
-      { status: newStatus },
-    );*/
 
     const entity = await this.repository.findOneBy({ id: reception.id });
     if (entity.status == OrderStatusEnum.canceled) {
       const authUser = this.request[REQUEST_AUTH_USER_KEY] as AuthUser;
       entity.canceledById = authUser?.id;
       entity.canceledAt = new Date();
-      await this.repository.update(option, entity);
-    }
-  }
-
-  async closed(option: any): Promise<any> {
-    const reception = await this.readOneRecord({
-      relations: {
-        receptionToProducts: { product: true },
-        order: { orderToProducts: true },
-        receptionToAdditionalCosts: true,
-      },
-      where: option,
-    });
-
-    if (!reception) throw new BadRequestException(['Réception introuvable']);
-    // Vérifier si déjà annulée
-    if (reception.status === OrderStatusEnum.closed) {
-      throw new BadRequestException(['Réception déjà cloturée']);
-    }
-    if (reception.status === OrderStatusEnum.canceled) {
-      throw new BadRequestException([
-        'impossible de cloturé reception annulée',
-      ]);
-    }
-
-    // Mise à jour des stocks
-    for (const receptionToProduct of reception.receptionToProducts) {
-      const receptionProductData = {
-        ...receptionToProduct,
-        destinationBranchId: reception.branchId,
-        orderId: reception.orderId,
-      };
-      await this.updateStocks(receptionProductData);
-    }
-
-    // 2. Marquer la réception comme cloturee
-    await this.updateRecord(
-      { id: reception.id },
-      { status: OrderStatusEnum.closed },
-    );
-
-    // 3. Recalculer le statut de la commande liée
-    await this.recalculerOrderStatus(reception);
-
-    const entity = await this.repository.findOneBy({ id: reception.id });
-    if (entity.status == OrderStatusEnum.closed) {
-      const authUser = this.request[REQUEST_AUTH_USER_KEY] as AuthUser;
-      entity.closedById = authUser?.id;
-      entity.closedAt = new Date();
       await this.repository.update(option, entity);
     }
   }
@@ -542,12 +359,9 @@ export class ReceptionService extends AbstractService<Reception> {
       const ordered =
         order.orderToProducts.find((o) => o.productId === rtp.productId)
           ?.quantity || 0;
-      console.log('rttrtrt888888', alreadyReceived, ordered);
 
       const newTotal = alreadyReceived + rtp.quantity;
       if (newTotal > ordered) {
-        console.log('5852222ppopop', newTotal);
-
         throw new BadRequestException([
           `Tu ne peux pas valider cette réception : le produit ${rtp.product?.displayName ?? ''}-${rtp.product?.sku ?? ''} dépasserait la quantité commandée (${newTotal}/${ordered}).`,
         ]);
@@ -586,5 +400,21 @@ export class ReceptionService extends AbstractService<Reception> {
         status: OrderStatusEnum.closed,
       },
     });
+  }
+
+  totalAmount(entity: any): number {
+    if (!entity?.receptionToProducts) {
+      return 0;
+    }
+    const totalRepAMOUNT = entity.receptionToProducts.reduce(
+      (acc, { quantity = 0, cost = 0 }) => acc + quantity * cost,
+      0,
+    );
+    const totalAddAMOUNT =
+      entity.receptionToAdditionalCosts?.reduce(
+        (acc, { amount = 0 }) => acc + amount,
+        0,
+      ) || 0;
+    return totalRepAMOUNT + totalAddAMOUNT;
   }
 }

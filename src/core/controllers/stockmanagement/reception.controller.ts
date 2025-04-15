@@ -176,7 +176,7 @@ export class ReceptionController {
       query as ApiSearchOneParamOptions,
     );
 
-    await this.service.cancel({ ...filter, id: id ?? '' });
+    await this.service.cancelRecord({ ...filter, id: id ?? '' });
     // Apply auth user branch filter
     options.where = merge(
       options?.where,

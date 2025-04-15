@@ -1,5 +1,11 @@
 import { PaginatedService, isUniqueConstraint } from '@app/typeorm';
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  forwardRef,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
@@ -18,6 +24,8 @@ import { UpdateSellingDto } from 'src/core/dto/selling/update-selling.dto';
 import { CreateSellingDto } from 'src/core/dto/selling/create-selling.dto';
 import { Selling } from 'src/core/entities/selling/selling.entity';
 import { ValidateSellingDto } from 'src/core/dto/selling/validate-selling.dto';
+import { SellingToProduct } from 'src/core/entities/selling/selling-to-product.entity';
+import { DeliveryService } from './delivery.service';
 
 @Injectable()
 export class SellingService extends AbstractService<Selling> {
@@ -27,6 +35,8 @@ export class SellingService extends AbstractService<Selling> {
     @InjectRepository(Selling)
     private _repository: Repository<Selling>,
     protected paginatedService: PaginatedService<Selling>,
+    @Inject(forwardRef(() => DeliveryService))
+    private deliveryService: DeliveryService,
 
     @Inject(REQUEST) protected request: any,
   ) {
@@ -271,7 +281,7 @@ export class SellingService extends AbstractService<Selling> {
     return entity;
   }
 
-  async cancelRecord(
+  /*async cancelRecord(
     optionsWhere: FindOptionsWhere<Selling>,
     status: SellingStatusEnum,
     dto: ValidateSellingDto,
@@ -306,7 +316,7 @@ export class SellingService extends AbstractService<Selling> {
     selling.validatedAt = new Date();
 
     return await this.repository.save(selling);
-  }
+  }*/
 
   sumQuantitiesDeliveryBySKU = (
     deliverys: any[],
@@ -314,11 +324,16 @@ export class SellingService extends AbstractService<Selling> {
     branchId: any,
     sku: any,
   ) => {
-    console.log('eeeeeee', deliverys, sellingId, branchId, sku);
     return deliverys
       .filter(
-        (delivery: { sellingId: any; branchId: any }) =>
-          delivery.sellingId === sellingId && delivery.branchId === branchId,
+        (delivery: {
+          sellingId: any;
+          branchId: any;
+          status: SellingStatusEnum;
+        }) =>
+          delivery.sellingId === sellingId &&
+          delivery.branchId === branchId &&
+          delivery.status === SellingStatusEnum.closed,
       )
       .reduce((sum: any, delivery: { deliveryToProducts: any[] }) => {
         const skuQuantity = delivery.deliveryToProducts
@@ -337,6 +352,21 @@ export class SellingService extends AbstractService<Selling> {
         product.quantity - product.incoming <= 0,
     );
   };
+
+  isAllDeliveryv2(
+    sellingToProducts: SellingToProduct[],
+    delivered: Record<string, number>,
+  ): boolean {
+    for (const otp of sellingToProducts) {
+      const sellingedQty = otp.quantity;
+      const deliveredQty = delivered[otp.productId] || 0;
+
+      if (deliveredQty < sellingedQty) {
+        return false; // Produit pas encore totalement livré
+      }
+    }
+    return true; // Tous les produits sont reçus
+  }
 
   //apply this on update selling
   _isLineIncomingMoreThanQuantity(quantity: number, incoming: number) {
@@ -415,6 +445,56 @@ export class SellingService extends AbstractService<Selling> {
         deliverys: { deliveryToProducts: true },
         sellingToAdditionalCosts: { deliveryToAdditionalCosts: true },
       },
+    });
+  }
+
+  async cancelRecord(optionsWhere: FindOptionsWhere<Selling>) {
+    // Récupérer la demande
+    const selling = await this.readOneRecord({
+      where: optionsWhere,
+      relations: {
+        sellingToProducts: {
+          product: {
+            variantToProducts: { branchVariantToProducts: true },
+            branchToProducts: true,
+          },
+        },
+        deliverys: { deliveryToProducts: true },
+      },
+    });
+
+    if (!selling) {
+      throw new NotFoundException(['Commande introuvable.']);
+    }
+
+    // Vérifier s'il existe au moins une réception en statut "closed"
+
+    const closedDeliverys =
+      await this.deliveryService.existClosedRecordBySellingId(selling.id);
+
+    if (closedDeliverys) {
+      throw new BadRequestException(
+        "Impossible d'annuler cette demande car elle contient déjà des livraisons validées.",
+      );
+    }
+
+    const deliverys = selling.deliverys;
+
+    // Annuler toutes les réceptions en pending (si tu veux les conserver comme trace logique, change juste le statut)
+    for (const delivery of deliverys ?? []) {
+      await this.deliveryService.updateRecord(
+        {
+          ...optionsWhere,
+          id: delivery?.id,
+          status: SellingStatusEnum.pending,
+        },
+        { status: SellingStatusEnum.canceled },
+      );
+    }
+
+    // Mettre à jour le statut de la commande
+    await this.updateRecord(optionsWhere, {
+      status: SellingStatusEnum.canceled,
     });
   }
 }

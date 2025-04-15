@@ -24,7 +24,7 @@ export class CreateOrderDto extends PickType(Order, [
   @IsOptional()
   @IsDateString()
   @ApiPropertyOptional({ description: `Date prévu de la reception` })
-  plannedFor: Date;
+  plannedFor?: Date = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
   @IsOptional()
   @IsString()

@@ -51,7 +51,7 @@ export const imageFileFilter = (req, file, callback) => {
   if (!allowedMimeTypes.includes(file.mimetype)) {
     callback(
       new UnprocessableEntityException(
-        'File extention not acceptable: ' + file.mimetype,
+        ['File extention not acceptable: ' + file.mimetype]
       ),
       false,
     );

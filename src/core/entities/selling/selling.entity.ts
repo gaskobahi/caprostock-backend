@@ -65,7 +65,7 @@ export class Selling extends CoreEntity {
     name: 'planned_for',
     type: 'datetime',
     nullable: true,
-    //default: () => '(CURRENT_DATE)',
+    default: () => '(CURRENT_DATE)',
   })
   plannedFor: Date;
 
@@ -98,7 +98,6 @@ export class Selling extends CoreEntity {
   @JoinColumn({ name: 'customer_id' })
   customer: Customer;
 
-  
   @IsUUID()
   @IsNotEmpty()
   @Column({ name: 'destination_branch_id', type: 'uuid', nullable: false })

@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsDateString,
+  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -8,6 +9,7 @@ import {
 } from 'class-validator';
 import {
   Column,
+  DeleteDateColumn,
   Entity,
   Index,
   JoinColumn,
@@ -21,6 +23,8 @@ import { Selling } from './selling.entity';
 import { DeliveryToProduct } from './delivery-to-product.entity';
 import { DeliveryToAdditionalCost } from './delivery-to-addtionnal-cost.entity';
 import { Customer } from './customer.entity';
+import { SellingStatusEnum } from 'src/core/definitions/enums';
+import { AuthUser } from '../session/auth-user.entity';
 
 @Entity({
   orderBy: { createdAt: 'DESC', updatedAt: 'DESC' },
@@ -43,6 +47,68 @@ export class Delivery extends CoreEntity {
     default: () => '(CURRENT_DATE)',
   })
   date: Date;
+
+  @IsNotEmpty()
+  @IsIn(Object.values(SellingStatusEnum))
+  @ApiProperty({
+    enum: SellingStatusEnum,
+    enumName: 'SellingStatusEnum',
+    default: SellingStatusEnum.pending,
+    description: `Status`,
+  })
+  @Column({
+    name: 'reception_status',
+    default: SellingStatusEnum.pending,
+  })
+  status: SellingStatusEnum;
+
+  @ApiPropertyOptional()
+  @Column({
+    name: 'canceled_by_id',
+    nullable: true,
+    type: 'uuid',
+  })
+  @IsOptional()
+  canceledById: string;
+
+  @ApiPropertyOptional()
+  @Column({
+    name: 'closed_by_id',
+    nullable: true,
+    type: 'uuid',
+  })
+  @IsOptional()
+  closedById: string;
+
+  @ApiPropertyOptional({ type: 'object' })
+  @ManyToOne(() => AuthUser, {
+    nullable: true,
+    createForeignKeyConstraints: false,
+  })
+  @JoinColumn({ name: 'closed_by_id' })
+  closedBy: AuthUser;
+
+  @ApiProperty({
+    description: 'La date de cloture ',
+    required: false,
+  })
+  @DeleteDateColumn({ name: 'closed_at', nullable: true })
+  closedAt: Date;
+
+  @ApiPropertyOptional({ type: 'object' })
+  @ManyToOne(() => AuthUser, {
+    nullable: true,
+    createForeignKeyConstraints: false,
+  })
+  @JoinColumn({ name: 'canceled_by_id' })
+  canceledBy: AuthUser;
+
+  @ApiProperty({
+    description: 'La date de cloture ',
+    required: false,
+  })
+  @DeleteDateColumn({ name: 'canceled_at', nullable: true })
+  canceledAt: Date;
 
   @IsUUID()
   @IsNotEmpty()

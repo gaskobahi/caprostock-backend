@@ -1,8 +1,20 @@
-import { PaginatedService } from '@app/typeorm';
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { isUniqueConstraint, PaginatedService } from '@app/typeorm';
+import {
+  BadRequestException,
+  forwardRef,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DeepPartial, FindOptionsWhere, Repository } from 'typeorm';
+import {
+  DeepPartial,
+  Equal,
+  FindOneOptions,
+  FindOptionsWhere,
+  Not,
+  Repository,
+} from 'typeorm';
 import { AbstractService } from '../abstract.service';
 import { BranchVariantToProductService } from '../subsidiary/branch-variant-to-product.service';
 import { BranchToProductService } from '../subsidiary/branch-to-product.service';
@@ -13,6 +25,8 @@ import { CreateDeliveryDto } from 'src/core/dto/selling/create-delivery.dto';
 import { SellingStatusEnum } from 'src/core/definitions/enums';
 import { SellingService } from './selling.service';
 import { Product } from 'src/core/entities/product/product.entity';
+import { REQUEST_AUTH_USER_KEY } from 'src/modules/auth/definitions/constants';
+import { AuthUser } from 'src/core/entities/session/auth-user.entity';
 
 @Injectable()
 export class DeliveryService extends AbstractService<Delivery> {
@@ -22,6 +36,7 @@ export class DeliveryService extends AbstractService<Delivery> {
     @InjectRepository(Delivery)
     private _repository: Repository<Delivery>,
     protected paginatedService: PaginatedService<Delivery>,
+    @Inject(forwardRef(() => SellingService))
     private sellingService: SellingService,
     private branchToProductService: BranchToProductService,
     private readonly branchVariantToProductService: BranchVariantToProductService,
@@ -131,8 +146,17 @@ export class DeliveryService extends AbstractService<Delivery> {
   }*/
 
   async createRecord(dto: DeepPartial<CreateDeliveryDto>): Promise<Delivery> {
-    console.log('rrerer',dto)
     const authUser = await super.checkSessionBranch();
+    if (dto.reference) {
+      await isUniqueConstraint(
+        'reference',
+        Delivery,
+        { reference: dto.reference },
+        {
+          message: `La référence "${dto.reference}" de la réception est déjà utilisée`,
+        },
+      );
+    }
     let createdDelivery: Delivery;
 
     try {
@@ -141,22 +165,33 @@ export class DeliveryService extends AbstractService<Delivery> {
         ...dto,
         branchId: authUser.targetBranchId,
       });
+
+      // Récupération des détails de la commande
+      const sellingDetails = await this.sellingService.getDetails(
+        dto.sellingId,
+      );
+      if (!sellingDetails)
+        throw new BadRequestException(['Commande introuvable']);
+      return createdDelivery;
     } catch (error) {
-      console.error('❌ Erreur lors de la création de la livraison:', error);
+      // En cas d'erreur, suppression de la réception créée
+      if (createdDelivery?.id) {
+        await this.deleteRecord({ id: createdDelivery.id });
+      }
       throw new BadRequestException(
         `Impossible de créer la livraison : ${error.message}`,
       );
     }
 
     // 🔹 Récupération des détails de la vente associée
-    const sellingDetails = await this.sellingService.getDetails(dto.sellingId);
+    /*const sellingDetails = await this.sellingService.getDetails(dto.sellingId);
     if (!sellingDetails) {
       throw new BadRequestException(
         `Détails de vente introuvables pour l'ID: ${dto.sellingId}`,
       );
-    }
+    }*/
 
-    try {
+    /*try {
       // 🔹 Vérification et mise à jour du stock en une seule boucle
       for (const deliveryToProduct of dto.deliveryToProducts) {
         const deliveryProductData = {
@@ -178,10 +213,10 @@ export class DeliveryService extends AbstractService<Delivery> {
       throw new BadRequestException(
         `Livraison annulée en raison d'une erreur de stock : ${error.message}`,
       );
-    }
+    }*/
 
     // 🔹 Mise à jour du statut de la vente après la livraison
-    const isFullyDelivered = this.sellingService.isAllDelivery(
+    /*const isFullyDelivered = this.sellingService.isAllDelivery(
       sellingDetails.sellingToProducts,
     );
 
@@ -192,9 +227,9 @@ export class DeliveryService extends AbstractService<Delivery> {
           ? SellingStatusEnum.closed
           : SellingStatusEnum.partialdelivered,
       },
-    );
+    );*/
 
-    return createdDelivery;
+    //aaé Qaareturn createdDelivery;
   }
 
   getDetailBySellingId = async (sellingId: string) => {
@@ -272,9 +307,9 @@ export class DeliveryService extends AbstractService<Delivery> {
       );
 
       if (!productDetails) {
-        throw new BadRequestException(
+        throw new BadRequestException([
           `Produit ${deliveryProductData.productId} introuvable.`,
-        );
+        ]);
       }
 
       // 🔹 Vérifier le stock du produit principal
@@ -293,7 +328,7 @@ export class DeliveryService extends AbstractService<Delivery> {
             });
           } catch (error) {
             console.error('❌ Stock insuffisant dans le bundle:', error);
-            throw new BadRequestException(error);
+            throw new BadRequestException({ errors: error });
             //stockErrors.push(error.response || error.message);
           }
         }
@@ -785,5 +820,218 @@ export class DeliveryService extends AbstractService<Delivery> {
     } else {
       return 'Stock insuffisant pour la demande actuelle. Ajustez les quantités ou vérifiez les autres branches.';
     }
+  }
+
+  async readOneRecord(options?: FindOneOptions<Delivery>) {
+    const res = await this.repository.findOne(options);
+    if (!res) {
+      throw new BadRequestException(this.NOT_FOUND_MESSAGE);
+    }
+    const entity = { ...res, totalAmount: 0, deliveryId: res.id } as any;
+    entity.totalAmount = this.totalAmount(entity);
+    return entity;
+  }
+
+  async cancelRecord(option: any): Promise<any> {
+    const delivery = await this.readOneRecord({
+      relations: {
+        deliveryToProducts: { product: true },
+        selling: { sellingToProducts: true },
+        deliveryToAdditionalCosts: true,
+      },
+      where: option,
+    });
+
+    if (!delivery) throw new BadRequestException('Réception introuvable');
+    // Vérifier si déjà annulée
+    if (delivery.status === SellingStatusEnum.canceled) {
+      throw new BadRequestException('Réception déjà annulée');
+    }
+
+    if (delivery.status == SellingStatusEnum.closed) {
+      // Mise à jour des stocks Inverser les effets sur le stock
+      for (const deliveryToProduct of delivery.deliveryToProducts) {
+        const deliveryProductData = {
+          ...deliveryToProduct,
+          quantity: -deliveryToProduct.quantity,
+          orderId: '',
+          destinationBranchId: delivery.branchId,
+        };
+        await this.updateStocks(deliveryProductData);
+      }
+    }
+
+    // 2. Marquer la réception comme annulée (ou la supprimer)
+    await this.updateRecord(
+      { id: delivery.id },
+      { status: SellingStatusEnum.canceled },
+    );
+    // 3. Recalculer le statut de la commande liée
+    await this.recalculerSellingStatus(delivery);
+
+    const entity = await this.repository.findOneBy({ id: delivery.id });
+    if (entity.status == SellingStatusEnum.canceled) {
+      const authUser = this.request[REQUEST_AUTH_USER_KEY] as AuthUser;
+      entity.canceledById = authUser?.id;
+      entity.canceledAt = new Date();
+      await this.repository.update(option, entity);
+    }
+  }
+
+  totalAmount(entity: any): number {
+    if (!entity?.deliveryToProducts) {
+      return 0;
+    }
+    const totalDELAMOUNT = entity.deliveryToProducts.reduce(
+      (acc, { quantity = 0, cost = 0 }) => acc + quantity * cost,
+      0,
+    );
+    const totalAddAMOUNT =
+      entity.deliveryToProducts?.reduce(
+        (acc, { amount = 0 }) => acc + amount,
+        0,
+      ) || 0;
+    return totalDELAMOUNT + totalAddAMOUNT;
+  }
+
+  recalculerSellingStatus = async (delivery: any) => {
+    const selling = delivery.selling;
+    const otherDeliverys = await this.readListRecord({
+      where: {
+        sellingId: selling.id,
+        status: Not(SellingStatusEnum.canceled),
+      },
+      relations: { deliveryToProducts: true },
+    });
+
+    const totalDelivered = this.calculateTotalDelivered(otherDeliverys);
+
+    const isAllReceived = this.sellingService.isAllDeliveryv2(
+      selling.sellingToProducts,
+      totalDelivered,
+    );
+
+    let newStatus: SellingStatusEnum;
+
+    const totalDeliveredQuantities = Object.values(totalDelivered).reduce(
+      (sum, quantity) => sum + quantity,
+      0,
+    );
+
+    if (totalDeliveredQuantities === 0) {
+      newStatus = SellingStatusEnum.pending; // ou 'open'
+    } else if (isAllReceived) {
+      newStatus = SellingStatusEnum.closed;
+    } else {
+      newStatus = SellingStatusEnum.partialdelivered;
+    }
+    await this.sellingService.updateRecord(
+      { id: selling.id },
+      { status: newStatus },
+    );
+  };
+
+  calculateTotalDelivered(deliverys: Delivery[]): Record<string, number> {
+    const totalDelivered: Record<string, number> = {};
+    for (const delivery of deliverys) {
+      for (const rtp of delivery.deliveryToProducts) {
+        if (!totalDelivered[rtp.productId]) {
+          totalDelivered[rtp.productId] = 0;
+        }
+        totalDelivered[rtp.productId] += rtp.quantity;
+      }
+    }
+
+    return totalDelivered;
+  }
+
+  async validateDelivery(options: any): Promise<any> {
+    const delivery = await this.readOneRecord({
+      relations: {
+        deliveryToProducts: { product: true },
+        selling: { sellingToProducts: true },
+        deliveryToAdditionalCosts: true,
+      },
+      where: { id: options.id, branchId: options.branchId },
+    });
+
+    if (delivery.status !== SellingStatusEnum.pending) {
+      throw new BadRequestException([
+        "Cette livraison n'est pas en attente de validation.",
+      ]);
+    }
+
+    const selling = delivery.selling;
+
+    const otherClosedDeliverys = await this.readListRecord({
+      where: {
+        sellingId: selling.id,
+        status: Equal(SellingStatusEnum.closed),
+        id: Not(delivery.id),
+      },
+      relations: {
+        deliveryToProducts: { product: true },
+      },
+    });
+
+    const totalDelivered = this.calculateTotalDelivered(otherClosedDeliverys);
+
+    // ⚠️ Ajout des quantités de la réception en cours de validation
+    for (const rtp of delivery.deliveryToProducts) {
+      const alreadyDelivered = totalDelivered[rtp.productId] || 0;
+      const sellinged =
+        selling.sellingToProducts.find((o) => o.productId === rtp.productId)
+          ?.quantity || 0;
+
+      const newTotal = alreadyDelivered + rtp.quantity;
+      if (newTotal > sellinged) {
+        throw new BadRequestException([
+          `Tu ne peux pas valider cette livraison : le produit ${rtp.product?.displayName ?? ''}-${rtp.product?.sku ?? ''} dépasserait la quantité commandée (${newTotal}/${sellinged}).`,
+        ]);
+      }
+    }
+    // 1. Vérification des stocks et données avant toute modification
+    for (const deliveryToProduct of delivery.deliveryToProducts) {
+      const deliveryProductData = {
+        ...deliveryToProduct,
+        destinationBranchId: delivery.branchId,
+        sellingId: delivery.sellingId,
+      };
+
+      await this.checkStocks(deliveryProductData); // Vérifie que le stock est suffisant
+    }
+    // Si tout est OK → on valide la réception
+    delivery.status = SellingStatusEnum.closed;
+    await this.repository.save(delivery);
+
+    // Puis mettre à jour le statut de la commande
+    await this.recalculerSellingStatus(delivery);
+
+    for (const deliveryToProduct of delivery.deliveryToProducts) {
+      const deliveryProductData = {
+        ...deliveryToProduct,
+        destinationBranchId: delivery.branchId,
+        sellingId: delivery.sellingId,
+      };
+      await this.updateStocks(deliveryProductData);
+    }
+
+    // 4. Mise à jour des stocks uniquement après validation complète
+    const entity = await this.repository.findOneBy({ id: delivery.id });
+    if (entity.status == SellingStatusEnum.closed) {
+      const authUser = this.request[REQUEST_AUTH_USER_KEY] as AuthUser;
+      entity.closedById = authUser?.id;
+      entity.closedAt = new Date();
+      await this.repository.update(options, entity);
+    }
+  }
+
+  async existClosedRecordBySellingId(sellingId: string): Promise<any> {
+    return await this.repository.exists({
+      where: {
+        sellingId: sellingId,
+        status: SellingStatusEnum.closed,
+      },
+    });
   }
 }
