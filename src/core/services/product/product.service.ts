@@ -103,6 +103,7 @@ export class ProductService extends AbstractService<Product> {
                     v.inStock = await this.getInStockItemVariantProductByBranch(
                       v.branchVariantToProducts,
                     );
+
                     return v;
                   }),
               );
@@ -118,8 +119,6 @@ export class ProductService extends AbstractService<Product> {
               r.branchToProducts,
             );
             dt.cost = r.cost;
-            if (dt.image)
-              dt.image = `${baseUrl}/${process.env.IMAGE_PATH}/${dt.image}`;
           }
         } else {
           if (dt.isUseProduction) {
@@ -135,9 +134,9 @@ export class ProductService extends AbstractService<Product> {
             }, 0) ?? 0;
 
           dt.margin = this.getMargin(dt.avgprice, r.cost);
-          if (dt.image)
-            dt.image = `${baseUrl}/${process.env.IMAGE_PATH}/${dt.image}`; // If the item is a bundle, set inStock to 0
         }
+        if (dt.image)
+          dt.image = `${baseUrl}/${process.env.IMAGE_PATH}/${dt.image}`; // If the item is a bundle, set inStock to 0
       }),
     );
     // Update response data with processed items and return
