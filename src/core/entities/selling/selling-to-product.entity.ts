@@ -72,7 +72,6 @@ export class SellingToProduct extends CoreEntity {
   @JoinColumn({ name: 'product_id' })
   product: Product;
 
-  @IsUUID()
   @IsOptional()
   @Column({ name: 'equipment_id', type: 'uuid', nullable: true })
   equipmentId: string;

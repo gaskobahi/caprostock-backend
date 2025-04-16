@@ -424,6 +424,7 @@ export class ProductService extends AbstractService<Product> {
           const branchToProducts = item.branchToProducts.filter(
             (e: any) => e.isAvailable == true,
           );
+          console.log('branchToProducts202225', branchToProducts);
           if (branchToProducts.length > 0) {
             const newItem = {
               id: item.id,
@@ -442,7 +443,6 @@ export class ProductService extends AbstractService<Product> {
             newArray.push(newItem);
           }
         }
-      } else {
       }
     }
     return newArray;

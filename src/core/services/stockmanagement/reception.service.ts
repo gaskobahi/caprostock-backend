@@ -352,13 +352,15 @@ export class ReceptionService extends AbstractService<Reception> {
     });
 
     const totalReceived = this.calculateTotalReceived(otherClosedReceptions);
+    console.log('ddfdfdf', totalReceived);
 
     // ⚠️ Ajout des quantités de la réception en cours de validation
     for (const rtp of reception.receptionToProducts) {
       const alreadyReceived = totalReceived[rtp.productId] || 0;
       const ordered =
-        order.orderToProducts.find((o) => o.productId === rtp.productId)
-          ?.quantity || 0;
+        order.orderToProducts.find(
+          (o) => o.productId === rtp.productId && o.sku === rtp.sku,
+        )?.quantity || 0;
 
       const newTotal = alreadyReceived + rtp.quantity;
       if (newTotal > ordered) {

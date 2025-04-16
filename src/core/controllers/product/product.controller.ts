@@ -130,10 +130,10 @@ export class ProductController {
     );
 
     // Apply auth user branch filter
-    /*options.where = merge(
+    options.where = merge(
       options?.where,
       await this.service.getFilterByAuthUserBranch(),
-    );*/
+    );
 
     return this.service.readPaginatedListRecordForOrder(options, 1, 10000);
   }

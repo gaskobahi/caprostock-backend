@@ -157,79 +157,28 @@ export class DeliveryService extends AbstractService<Delivery> {
         },
       );
     }
-    let createdDelivery: Delivery;
+    let delivery: Delivery;
 
     try {
-      // 🔹 Création de la livraison
-      createdDelivery = await super.createRecord({
-        ...dto,
-        branchId: authUser.targetBranchId,
-      });
-
       // Récupération des détails de la commande
       const sellingDetails = await this.sellingService.getDetails(
         dto.sellingId,
       );
       if (!sellingDetails)
         throw new BadRequestException(['Commande introuvable']);
-      return createdDelivery;
+      // 🔹 Création de la livraison
+      const delivery = await super.createRecord({
+        ...dto,
+        branchId: authUser.targetBranchId,
+      });
+      return delivery;
     } catch (error) {
       // En cas d'erreur, suppression de la réception créée
-      if (createdDelivery?.id) {
-        await this.deleteRecord({ id: createdDelivery.id });
-      }
+      if (delivery?.id) await this.deleteRecord({ id: delivery?.id });
       throw new BadRequestException(
         `Impossible de créer la livraison : ${error.message}`,
       );
     }
-
-    // 🔹 Récupération des détails de la vente associée
-    /*const sellingDetails = await this.sellingService.getDetails(dto.sellingId);
-    if (!sellingDetails) {
-      throw new BadRequestException(
-        `Détails de vente introuvables pour l'ID: ${dto.sellingId}`,
-      );
-    }*/
-
-    /*try {
-      // 🔹 Vérification et mise à jour du stock en une seule boucle
-      for (const deliveryToProduct of dto.deliveryToProducts) {
-        const deliveryProductData = {
-          ...deliveryToProduct,
-          destinationBranchId: sellingDetails.destinationBranchId,
-          sellingId: dto.sellingId,
-        };
-
-        await this.checkStocks(deliveryProductData); // Vérification du stock
-        await this.updateStocks(deliveryProductData); // Mise à jour du stock
-      }
-    } catch (error) {
-      console.error('❌ Erreur lors de la mise à jour du stock:', error);
-
-      // 🛑 Suppression de la livraison en cas d'échec
-      if (createdDelivery.reference) {
-        await this.deleteRecord({ reference: createdDelivery.reference });
-      }
-      throw new BadRequestException(
-        `Livraison annulée en raison d'une erreur de stock : ${error.message}`,
-      );
-    }*/
-
-    // 🔹 Mise à jour du statut de la vente après la livraison
-    /*const isFullyDelivered = this.sellingService.isAllDelivery(
-      sellingDetails.sellingToProducts,
-    );
-
-    await this.sellingService.updateRecord(
-      { id: sellingDetails.id },
-      {
-        status: isFullyDelivered
-          ? SellingStatusEnum.closed
-          : SellingStatusEnum.partialdelivered,
-      },
-    );*/
-
-    //aaé Qaareturn createdDelivery;
   }
 
   getDetailBySellingId = async (sellingId: string) => {
@@ -946,14 +895,7 @@ export class DeliveryService extends AbstractService<Delivery> {
   }
 
   async validateDelivery(options: any): Promise<any> {
-    const delivery = await this.readOneRecord({
-      relations: {
-        deliveryToProducts: { product: true },
-        selling: { sellingToProducts: true },
-        deliveryToAdditionalCosts: true,
-      },
-      where: { id: options.id, branchId: options.branchId },
-    });
+    const delivery = await this.getDeliveryWithRelations(options);
 
     if (delivery.status !== SellingStatusEnum.pending) {
       throw new BadRequestException([
@@ -983,10 +925,10 @@ export class DeliveryService extends AbstractService<Delivery> {
         selling.sellingToProducts.find((o) => o.productId === rtp.productId)
           ?.quantity || 0;
 
-      const newTotal = alreadyDelivered + rtp.quantity;
-      if (newTotal > sellinged) {
+      const totalDeliveredIncludingCurrent = alreadyDelivered + rtp.quantity;
+      if (totalDeliveredIncludingCurrent > sellinged) {
         throw new BadRequestException([
-          `Tu ne peux pas valider cette livraison : le produit ${rtp.product?.displayName ?? ''}-${rtp.product?.sku ?? ''} dépasserait la quantité commandée (${newTotal}/${sellinged}).`,
+          `Tu ne peux pas valider cette livraison : le produit ${rtp.product?.displayName ?? ''}-${rtp.product?.sku ?? ''} dépasserait la quantité commandée (${totalDeliveredIncludingCurrent}/${sellinged}).`,
         ]);
       }
     }
@@ -1032,6 +974,17 @@ export class DeliveryService extends AbstractService<Delivery> {
         sellingId: sellingId,
         status: SellingStatusEnum.closed,
       },
+    });
+  }
+
+  async getDeliveryWithRelations(options: any) {
+    return await this.readOneRecord({
+      relations: {
+        deliveryToProducts: { product: true },
+        selling: { sellingToProducts: true },
+        deliveryToAdditionalCosts: true,
+      },
+      where: { id: options.id, branchId: options.branchId },
     });
   }
 }
