@@ -16,7 +16,6 @@ import { AuthLogService } from './services/session/auth-log.service';
 import { RoleService } from './services/user/role.service';
 import { AuthUserService } from './services/session/auth-user.service';
 import { AttributeController } from './controllers/product/attribute.controller';
-//import { Consult } from './entities/consultation/consult.entity';
 import { Product } from './entities/product/product.entity';
 import { Attribute } from './entities/product/attribute.entity';
 import { AttributeValue } from './entities/product/attribute-value.entity';
@@ -149,6 +148,7 @@ import { EquipmentService } from './services/setting/equipment.service';
 import { EquipmentType } from './entities/setting/equipment-type.entity';
 import { EquipmentTypeService } from './services/setting/equipment-type.service';
 import { EquipmentTypeController } from './controllers/setting/equipment-type.controller';
+import { RunInTransactionService } from './services/transaction/runInTransaction.service';
 
 @Module({
   imports: [
@@ -278,6 +278,7 @@ import { EquipmentTypeController } from './controllers/setting/equipment-type.co
     FileController,
   ],
   providers: [
+    RunInTransactionService,
     UserService,
     AuthUserService,
     AuthLogService,
@@ -339,7 +340,13 @@ import { EquipmentTypeController } from './controllers/setting/equipment-type.co
 
     ConfigService,
   ],
-  exports: [TypeOrmModule, UserService, AuthUserService, AuthLogService],
+  exports: [
+    TypeOrmModule,
+    UserService,
+    AuthUserService,
+    AuthLogService,
+    RunInTransactionService,
+  ],
 })
 export class CoreModule implements OnApplicationBootstrap {
   constructor(private moduleRef: ModuleRef) {}

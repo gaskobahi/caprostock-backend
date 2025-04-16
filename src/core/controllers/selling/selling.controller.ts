@@ -180,7 +180,7 @@ export class SellingController {
 
   @ApiSearchOneQueryFilter()
   @HttpCode(HttpStatus.OK)
-  @Post(':sellingId/cancel/:status')
+  @Post(':sellingId/cancel')
   async cancelRecord(
     @Param('sellingId', ParseUUIDPipe) id: string,
     @Query()

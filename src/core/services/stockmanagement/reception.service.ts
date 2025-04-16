@@ -26,6 +26,7 @@ import { ProductService } from '../product/product.service';
 import { VariantToProductService } from '../subsidiary/variant-to-product.service';
 import { REQUEST_AUTH_USER_KEY } from 'src/modules/auth/definitions/constants';
 import { AuthUser } from 'src/core/entities/session/auth-user.entity';
+import { RunInTransactionService } from '../transaction/runInTransaction.service';
 
 @Injectable()
 export class ReceptionService extends AbstractService<Reception> {
@@ -42,6 +43,7 @@ export class ReceptionService extends AbstractService<Reception> {
     private readonly branchVariantToProductService: BranchVariantToProductService,
     private readonly productService: ProductService,
     private readonly variantToProductService: VariantToProductService,
+    private readonly runInTransactionService: RunInTransactionService,
 
     @Inject(REQUEST) protected request: any,
   ) {
@@ -118,7 +120,7 @@ export class ReceptionService extends AbstractService<Reception> {
     });
   };
 
-  async updateStocks(receptionProductData: any): Promise<void> {
+  async updateStocks(receptionProductData: any, manager?: any): Promise<void> {
     const prd = await this.productService.getDetails(
       receptionProductData.productId,
     );
@@ -133,6 +135,7 @@ export class ReceptionService extends AbstractService<Reception> {
         await this.updateProductCost(
           orderData.orderToProducts,
           receptionProductData,
+          manager,
         );
       }
     }
@@ -148,7 +151,11 @@ export class ReceptionService extends AbstractService<Reception> {
     }
   }
 
-  private async updateVariantStock(variants: any[], dto: any): Promise<void> {
+  private async updateVariantStock(
+    variants: any[],
+    dto: any,
+    manager?: any,
+  ): Promise<void> {
     const vp = variants.find((el: { sku: any }) => el.sku === dto.sku);
 
     if (!vp) return;
@@ -159,34 +166,55 @@ export class ReceptionService extends AbstractService<Reception> {
     );
 
     if (srcProductBranch) {
-      await this.branchVariantToProductService.updateRecord(
-        { sku: srcProductBranch.sku, branchId: dto.destinationBranchId },
-        { inStock: srcProductBranch.inStock + dto.quantity },
-      );
+      if (manager) {
+        await manager
+          .getRepository(this.branchVariantToProductService.entity)
+          .update(
+            { sku: srcProductBranch.sku, branchId: dto.destinationBranchId },
+            { inStock: srcProductBranch.inStock + dto.quantity },
+          );
+      } else {
+        await this.branchVariantToProductService.updateRecord(
+          { sku: srcProductBranch.sku, branchId: dto.destinationBranchId },
+          { inStock: srcProductBranch.inStock + dto.quantity },
+        );
+      }
     }
   }
 
   private async updateProductStock(
     branchToProducts: any, //branchToProducts,
     dto: any,
+    manager?: any,
   ): Promise<void> {
     const currentBranchStock = branchToProducts.find(
       (el: { productId: any; branchId: any }) =>
         el.productId === dto.productId &&
         el.branchId === dto.destinationBranchId,
     );
-    await this.branchToProductService.updateRecord(
-      {
-        productId: dto.productId,
-        branchId: dto.destinationBranchId,
-      },
-      { inStock: currentBranchStock.inStock + dto.quantity },
-    );
+    if (manager) {
+      await manager.getRepository(this.branchToProductService.entity).update(
+        {
+          productId: dto.productId,
+          branchId: dto.destinationBranchId,
+        },
+        { inStock: currentBranchStock.inStock + dto.quantity },
+      );
+    } else {
+      await this.branchToProductService.updateRecord(
+        {
+          productId: dto.productId,
+          branchId: dto.destinationBranchId,
+        },
+        { inStock: currentBranchStock.inStock + dto.quantity },
+      );
+    }
   }
 
   private async updateProductCost(
     arrayToProducts: any,
     receptionProductData: any,
+    manager?: any,
   ): Promise<void> {
     for (const oproduct of arrayToProducts ?? []) {
       //consider received quantity more that 0
@@ -195,21 +223,43 @@ export class ReceptionService extends AbstractService<Reception> {
         receptionProductData.quantity > 0
       ) {
         if (oproduct.variantId) {
-          await this.variantToProductService.updateRecord(
-            {
-              id: oproduct.variantId,
-              productId: oproduct.productId,
-              sku: oproduct.sku,
-            },
-            { cost: oproduct.cost },
-          );
+          if (manager) {
+            await manager
+              .getRepository(this.variantToProductService.entity)
+              .update(
+                {
+                  id: oproduct.variantId,
+                  productId: oproduct.productId,
+                  sku: oproduct.sku,
+                },
+                { cost: oproduct.cost },
+              );
+          } else {
+            await this.variantToProductService.updateRecord(
+              {
+                id: oproduct.variantId,
+                productId: oproduct.productId,
+                sku: oproduct.sku,
+              },
+              { cost: oproduct.cost },
+            );
+          }
         } else {
-          await this.productService.updateRecord(
-            {
-              id: oproduct.productId,
-            },
-            { cost: oproduct.cost },
-          );
+          if (manager) {
+            await manager.getRepository(this.productService.entity).update(
+              {
+                id: oproduct.productId,
+              },
+              { cost: oproduct.cost },
+            );
+          } else {
+            await this.productService.updateRecord(
+              {
+                id: oproduct.productId,
+              },
+              { cost: oproduct.cost },
+            );
+          }
         }
       }
     }
@@ -323,76 +373,27 @@ export class ReceptionService extends AbstractService<Reception> {
   };
 
   async validateReception(options: any): Promise<any> {
-    const reception = await this.readOneRecord({
-      relations: {
-        receptionToProducts: { product: true },
-        order: { orderToProducts: true },
-        receptionToAdditionalCosts: true,
-      },
-      where: { id: options.id, branchId: options.branchId },
-    });
-
+    const reception = await this.getReceptionWithRelations(options);
     if (reception.status !== OrderStatusEnum.pending) {
       throw new BadRequestException([
         "Cette réception n'est pas en attente de validation.",
       ]);
     }
+    const otherClosedReceptions = await this.otherClosedReceptions(reception);
+    this.validateReceptedQuantities(reception, otherClosedReceptions);
+    await this.runInTransactionService.runInTransaction(async (manager) => {
+      // Si tout est OK → on valide la réception
+      reception.status = OrderStatusEnum.closed;
+      await manager.save(Reception, reception);
 
-    const order = reception.order;
-
-    const otherClosedReceptions = await this.readListRecord({
-      where: {
-        orderId: order.id,
-        status: Equal(OrderStatusEnum.closed),
-        id: Not(reception.id),
-      },
-      relations: {
-        receptionToProducts: { product: true },
-      },
-    });
-
-    const totalReceived = this.calculateTotalReceived(otherClosedReceptions);
-    console.log('ddfdfdf', totalReceived);
-
-    // ⚠️ Ajout des quantités de la réception en cours de validation
-    for (const rtp of reception.receptionToProducts) {
-      const alreadyReceived = totalReceived[rtp.productId] || 0;
-      const ordered =
-        order.orderToProducts.find(
-          (o) => o.productId === rtp.productId && o.sku === rtp.sku,
-        )?.quantity || 0;
-
-      const newTotal = alreadyReceived + rtp.quantity;
-      if (newTotal > ordered) {
-        throw new BadRequestException([
-          `Tu ne peux pas valider cette réception : le produit ${rtp.product?.displayName ?? ''}-${rtp.product?.sku ?? ''} dépasserait la quantité commandée (${newTotal}/${ordered}).`,
-        ]);
-      }
-    }
-
-    // Si tout est OK → on valide la réception
-    reception.status = OrderStatusEnum.closed;
-    await this.repository.save(reception);
-
-    // Puis mettre à jour le statut de la commande
-    await this.recalculerOrderStatus(reception);
-
-    for (const receptionToProduct of reception.receptionToProducts) {
-      const receptionProductData = {
-        ...receptionToProduct,
-        destinationBranchId: reception.branchId,
-        orderId: reception.orderId,
-      };
-      await this.updateStocks(receptionProductData);
-    }
-
-    const entity = await this.repository.findOneBy({ id: reception.id });
-    if (entity.status == OrderStatusEnum.closed) {
+      // Puis mettre à jour le statut de la commande
+      await this.recalculerOrderStatus(reception);
+      await this.applyStockUpdate(reception, manager);
       const authUser = this.request[REQUEST_AUTH_USER_KEY] as AuthUser;
-      entity.closedById = authUser?.id;
-      entity.closedAt = new Date();
-      await this.repository.update(options, entity);
-    }
+      reception.closedById = authUser?.id;
+      reception.closedAt = new Date();
+      await manager.save(Reception, reception);
+    });
   }
 
   async existClosedRecordByOrderId(orderId: string): Promise<any> {
@@ -418,5 +419,62 @@ export class ReceptionService extends AbstractService<Reception> {
         0,
       ) || 0;
     return totalRepAMOUNT + totalAddAMOUNT;
+  }
+
+  async getReceptionWithRelations(options: any) {
+    return await this.readOneRecord({
+      relations: {
+        receptionToProducts: { product: true },
+        order: { orderToProducts: true },
+        receptionToAdditionalCosts: true,
+      },
+      where: { id: options.id, branchId: options.branchId },
+    });
+  }
+
+  async otherClosedReceptions(reception) {
+    return await this.readListRecord({
+      where: {
+        orderId: reception.orderId,
+        status: Equal(OrderStatusEnum.closed),
+        id: Not(reception.id),
+      },
+      relations: {
+        receptionToProducts: { product: true },
+      },
+    });
+  }
+
+  private validateReceptedQuantities(reception, otherClosedReceptions) {
+    const order = reception.order;
+
+    const totalReceived = this.calculateTotalReceived(otherClosedReceptions);
+
+    // ⚠️ Ajout des quantités de la réception en cours de validation
+    for (const rtp of reception.receptionToProducts) {
+      const alreadyReceived = totalReceived[rtp.productId] || 0;
+      const ordered =
+        order.orderToProducts.find(
+          (o) => o.productId === rtp.productId && o.sku === rtp.sku,
+        )?.quantity || 0;
+
+      const newTotal = alreadyReceived + rtp.quantity;
+      if (newTotal > ordered) {
+        throw new BadRequestException([
+          `Tu ne peux pas valider cette réception : le produit ${rtp.product?.displayName ?? ''}-${rtp.product?.sku ?? ''} dépasserait la quantité commandée (${newTotal}/${ordered}).`,
+        ]);
+      }
+    }
+  }
+
+  private async applyStockUpdate(reception: any, manager?: any) {
+    for (const receptionToProduct of reception.receptionToProducts) {
+      const receptionProductData = {
+        ...receptionToProduct,
+        destinationBranchId: reception.branchId,
+        sellingId: reception.sellingId,
+      };
+      await this.updateStocks(receptionProductData, manager);
+    }
   }
 }

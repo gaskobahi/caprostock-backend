@@ -27,6 +27,7 @@ import { SellingService } from './selling.service';
 import { Product } from 'src/core/entities/product/product.entity';
 import { REQUEST_AUTH_USER_KEY } from 'src/modules/auth/definitions/constants';
 import { AuthUser } from 'src/core/entities/session/auth-user.entity';
+import { RunInTransactionService } from '../transaction/runInTransaction.service';
 
 @Injectable()
 export class DeliveryService extends AbstractService<Delivery> {
@@ -35,6 +36,7 @@ export class DeliveryService extends AbstractService<Delivery> {
   constructor(
     @InjectRepository(Delivery)
     private _repository: Repository<Delivery>,
+
     protected paginatedService: PaginatedService<Delivery>,
     @Inject(forwardRef(() => SellingService))
     private sellingService: SellingService,
@@ -42,6 +44,7 @@ export class DeliveryService extends AbstractService<Delivery> {
     private readonly branchVariantToProductService: BranchVariantToProductService,
     private readonly productService: ProductService,
     private readonly variantToProductService: VariantToProductService,
+    private readonly runInTransactionService: RunInTransactionService,
 
     @Inject(REQUEST) protected request: any,
   ) {
@@ -196,8 +199,7 @@ export class DeliveryService extends AbstractService<Delivery> {
     });
   };
 
-  async updateStocks(deliveryProductData: any): Promise<void> {
-    //try {
+  async updateStocks(deliveryProductData: any, manager?: any): Promise<void> {
     const prd = await this.productService.getDetails(
       deliveryProductData.productId,
     );
@@ -208,42 +210,50 @@ export class DeliveryService extends AbstractService<Delivery> {
     }
 
     //→ Vérifie le stock avant d'autoriser une livraison.
-    //await this.checkStockBeforeDelivery(prd, deliveryProductData);
 
     const sellingData = await this.getDetailBySellingId(
       deliveryProductData.sellingId,
     );
-    //update item product cost
-
     if (sellingData && sellingData.sellingToProducts) {
       await this.updateProductCost(
         sellingData.sellingToProducts,
         deliveryProductData,
+        manager,
       );
     }
 
     //update product stock
     if (prd.hasVariant) {
-      await this.updateVariantStock(prd.variantToProducts, deliveryProductData);
+      await this.updateVariantStock(
+        prd.variantToProducts,
+        deliveryProductData,
+        manager,
+      );
     } else {
       if (!prd.isBundle) {
         await this.updateProductStock(
           prd.branchToProducts,
           deliveryProductData,
+          manager,
         );
       } else {
         // Mise à jour du stock pour les bundles
         await this.updateProductStock(
           prd.branchToProducts,
           deliveryProductData,
+          manager,
         );
         for (const nestedBundleItem of prd.bundleToProducts ?? []) {
           const updatedStock =
             nestedBundleItem.quantity * deliveryProductData.quantity;
-          await this.updateChildStock(nestedBundleItem, {
-            ...deliveryProductData,
-            quantity: updatedStock,
-          });
+          await this.updateChildStock(
+            nestedBundleItem,
+            {
+              ...deliveryProductData,
+              quantity: updatedStock,
+            },
+            manager,
+          );
         }
       }
     }
@@ -297,7 +307,11 @@ export class DeliveryService extends AbstractService<Delivery> {
     }*/
   }
 
-  private async updateVariantStock(variants: any[], dto: any): Promise<void> {
+  private async updateVariantStock(
+    variants: any[],
+    dto: any,
+    manager?: any,
+  ): Promise<void> {
     const vp = variants.find((el: { sku: any }) => el.sku === dto.sku);
 
     if (!vp) return;
@@ -308,48 +322,26 @@ export class DeliveryService extends AbstractService<Delivery> {
     );
 
     if (srcProductBranch) {
-      await this.branchVariantToProductService.updateRecord(
-        { sku: srcProductBranch.sku, branchId: dto.destinationBranchId },
-        { inStock: srcProductBranch.inStock - dto.quantity },
-      );
-    }
-  }
-
-  /*private async updateChildStock(
-    bundleItem: any,
-    deliveryProductData: any,
-  ): Promise<void> {
-    const childProduct = await this.productService.getDetails(
-      bundleItem.bundleId,
-    );
-
-    //→ Vérifie le stock avant d'autoriser une livraison.
-    // await this.checkStockBeforeDelivery(childProduct, deliveryProductData);
-    // Si l'enfant est aussi un bundle, on le traite récursivement
-    await this.updateProductStock(childProduct.branchToProducts, {
-      ...deliveryProductData,
-      productId: bundleItem.bundleId,
-    });
-
-    // Calculate the stock update based on bundle quantity
-    const updatedStock = bundleItem.quantity * deliveryProductData.quantity;
-
-    // If the child product is itself a bundle, recursively update its children
-    if (childProduct.isBundle) {
-      for (const nestedBundleItem of childProduct.bundleToProducts ?? []) {
-        console.log('122iiiiiii');
-        await this.updateChildStock(nestedBundleItem, {
-          ...deliveryProductData,
-          quantity: updatedStock,
-        });
-        console.log('222iiiiiii');
+      if (manager) {
+        await manager
+          .getRepository(this.branchVariantToProductService.entity)
+          .update(
+            { sku: srcProductBranch.sku, branchId: dto.destinationBranchId },
+            { inStock: srcProductBranch.inStock - dto.quantity },
+          );
+      } else {
+        await this.branchVariantToProductService.updateRecord(
+          { sku: srcProductBranch.sku, branchId: dto.destinationBranchId },
+          { inStock: srcProductBranch.inStock - dto.quantity },
+        );
       }
     }
-  }*/
+  }
 
   private async updateChildStock(
     bundleItem: any,
     deliveryProductData: any,
+    manager,
   ): Promise<void> {
     try {
       if (!bundleItem?.bundleId || !deliveryProductData?.quantity) {
@@ -366,10 +358,14 @@ export class DeliveryService extends AbstractService<Delivery> {
       }
 
       // Mise à jour du stock pour les produits associés
-      await this.updateProductStock(childProduct.branchToProducts, {
-        ...deliveryProductData,
-        productId: bundleItem.bundleId,
-      });
+      await this.updateProductStock(
+        childProduct.branchToProducts,
+        {
+          ...deliveryProductData,
+          productId: bundleItem.bundleId,
+        },
+        manager,
+      );
 
       // Mise à jour du stock en fonction de la quantité du bundle
       const updatedStock = bundleItem.quantity * deliveryProductData.quantity;
@@ -380,10 +376,14 @@ export class DeliveryService extends AbstractService<Delivery> {
         Array.isArray(childProduct.bundleToProducts)
       ) {
         for (const nestedBundleItem of childProduct.bundleToProducts) {
-          await this.updateChildStock(nestedBundleItem, {
-            ...deliveryProductData,
-            quantity: updatedStock,
-          });
+          await this.updateChildStock(
+            nestedBundleItem,
+            {
+              ...deliveryProductData,
+              quantity: updatedStock,
+            },
+            manager,
+          );
         }
       }
     } catch (error) {
@@ -535,6 +535,7 @@ export class DeliveryService extends AbstractService<Delivery> {
   private async updateProductStock(
     branchToProducts: any[], // Assurez-vous que c'est bien un tableau
     dto: any,
+    manager?: any,
   ): Promise<void> {
     try {
       if (!Array.isArray(branchToProducts) || branchToProducts.length === 0) {
@@ -564,16 +565,26 @@ export class DeliveryService extends AbstractService<Delivery> {
       console.log(
         `📦 Mise à jour du stock pour produit ${dto.productId} à la branche ${dto.destinationBranchId}`,
       );
+      // 🔁 Utilise manager si dispo
 
-      // Mise à jour du stock
-      await this.branchToProductService.updateRecord(
-        {
-          productId: dto.productId,
-          branchId: dto.destinationBranchId,
-        },
-        { inStock: currentBranchStock.inStock - dto.quantity },
-      );
-
+      if (manager) {
+        await manager.getRepository(this.branchToProductService.entity).update(
+          {
+            productId: dto.productId,
+            branchId: dto.destinationBranchId,
+          },
+          { inStock: currentBranchStock.inStock - dto.quantity },
+        );
+      } else {
+        // Mise à jour du stock
+        await this.branchToProductService.updateRecord(
+          {
+            productId: dto.productId,
+            branchId: dto.destinationBranchId,
+          },
+          { inStock: currentBranchStock.inStock - dto.quantity },
+        );
+      }
       console.log(
         `✅ Stock mis à jour avec succès : Nouveau stock = ${currentBranchStock.inStock - dto.quantity}`,
       );
@@ -619,6 +630,7 @@ export class DeliveryService extends AbstractService<Delivery> {
   private async updateProductCost(
     arrayToProducts: any[],
     deliveryProductData: any,
+    manager?: any,
   ): Promise<void> {
     try {
       // 🔹 Vérification des entrées
@@ -639,25 +651,44 @@ export class DeliveryService extends AbstractService<Delivery> {
 
           try {
             if (oproduct?.variantId) {
-              await this.variantToProductService.updateRecord(
-                {
-                  id: oproduct.variantId,
-                  productId: oproduct.productId,
-                  sku: oproduct.sku,
-                },
-                { cost: oproduct.cost },
-              );
-              console.log(
-                `✅ Coût mis à jour pour la variante ID: ${oproduct.variantId}`,
-              );
+              if (manager) {
+                await manager
+                  .getRepository(this.variantToProductService.entity)
+                  .update(
+                    {
+                      id: oproduct.variantId,
+                      productId: oproduct.productId,
+                      sku: oproduct.sku,
+                    },
+                    { cost: oproduct.cost },
+                  );
+              } else {
+                await this.variantToProductService.updateRecord(
+                  {
+                    id: oproduct.variantId,
+                    productId: oproduct.productId,
+                    sku: oproduct.sku,
+                  },
+                  { cost: oproduct.cost },
+                );
+                console.log(
+                  `✅ Coût mis à jour pour la variante ID: ${oproduct.variantId}`,
+                );
+              }
             } else {
-              await this.productService.updateRecord(
-                { id: oproduct.productId },
-                { cost: oproduct.cost },
-              );
-              console.log(
-                `✅ Coût mis à jour pour le produit ID: ${oproduct.productId}`,
-              );
+              if (manager) {
+                await manager
+                  .getRepository(this.productService.entity)
+                  .update({ id: oproduct.productId }, { cost: oproduct.cost });
+              } else {
+                await this.productService.updateRecord(
+                  { id: oproduct.productId },
+                  { cost: oproduct.cost },
+                );
+                console.log(
+                  `✅ Coût mis à jour pour le produit ID: ${oproduct.productId}`,
+                );
+              }
             }
           } catch (error) {
             console.error(
@@ -903,69 +934,30 @@ export class DeliveryService extends AbstractService<Delivery> {
       ]);
     }
 
-    const selling = delivery.selling;
-
-    const otherClosedDeliverys = await this.readListRecord({
-      where: {
-        sellingId: selling.id,
-        status: Equal(SellingStatusEnum.closed),
-        id: Not(delivery.id),
-      },
-      relations: {
-        deliveryToProducts: { product: true },
-      },
-    });
-
-    const totalDelivered = this.calculateTotalDelivered(otherClosedDeliverys);
-
-    // ⚠️ Ajout des quantités de la réception en cours de validation
-    for (const rtp of delivery.deliveryToProducts) {
-      const alreadyDelivered = totalDelivered[rtp.productId] || 0;
-      const sellinged =
-        selling.sellingToProducts.find((o) => o.productId === rtp.productId)
-          ?.quantity || 0;
-
-      const totalDeliveredIncludingCurrent = alreadyDelivered + rtp.quantity;
-      if (totalDeliveredIncludingCurrent > sellinged) {
-        throw new BadRequestException([
-          `Tu ne peux pas valider cette livraison : le produit ${rtp.product?.displayName ?? ''}-${rtp.product?.sku ?? ''} dépasserait la quantité commandée (${totalDeliveredIncludingCurrent}/${sellinged}).`,
-        ]);
-      }
-    }
-    // 1. Vérification des stocks et données avant toute modification
-    for (const deliveryToProduct of delivery.deliveryToProducts) {
-      const deliveryProductData = {
-        ...deliveryToProduct,
-        destinationBranchId: delivery.branchId,
-        sellingId: delivery.sellingId,
-      };
-
-      await this.checkStocks(deliveryProductData); // Vérifie que le stock est suffisant
-    }
-    // Si tout est OK → on valide la réception
-    delivery.status = SellingStatusEnum.closed;
-    await this.repository.save(delivery);
-
-    // Puis mettre à jour le statut de la commande
-    await this.recalculerSellingStatus(delivery);
-
-    for (const deliveryToProduct of delivery.deliveryToProducts) {
-      const deliveryProductData = {
-        ...deliveryToProduct,
-        destinationBranchId: delivery.branchId,
-        sellingId: delivery.sellingId,
-      };
-      await this.updateStocks(deliveryProductData);
-    }
-
-    // 4. Mise à jour des stocks uniquement après validation complète
-    const entity = await this.repository.findOneBy({ id: delivery.id });
-    if (entity.status == SellingStatusEnum.closed) {
+    const otherClosedDeliveries = await this.getOtherClosedDeliveries(delivery);
+    this.validateDeliveredQuantities(delivery, otherClosedDeliveries);
+    await this.ensureSufficientStocks(delivery);
+    await this.runInTransactionService.runInTransaction(async (manager) => {
+      console.log('Transaction OK uiuiui');
+      // Si tout est OK → on valide la réception
+      delivery.status = SellingStatusEnum.closed;
+      await manager.save(Delivery, delivery);
+      // Puis mettre à jour le statut de la commande
+      await this.recalculerSellingStatus(delivery);
+      await this.applyStockUpdate(delivery, manager);
+      /*for (const deliveryToProduct of delivery.deliveryToProducts) {
+        const deliveryProductData = {
+          ...deliveryToProduct,
+          destinationBranchId: delivery.branchId,
+          sellingId: delivery.sellingId,
+        };
+        await this.updateStocks(deliveryProductData);
+      }*/
       const authUser = this.request[REQUEST_AUTH_USER_KEY] as AuthUser;
-      entity.closedById = authUser?.id;
-      entity.closedAt = new Date();
-      await this.repository.update(options, entity);
-    }
+      delivery.closedById = authUser?.id;
+      delivery.closedAt = new Date();
+      await manager.save(Delivery, delivery);
+    });
   }
 
   async existClosedRecordBySellingId(sellingId: string): Promise<any> {
@@ -986,5 +978,61 @@ export class DeliveryService extends AbstractService<Delivery> {
       },
       where: { id: options.id, branchId: options.branchId },
     });
+  }
+
+  async getOtherClosedDeliveries(delivery) {
+    return await this.readListRecord({
+      where: {
+        sellingId: delivery.sellingId,
+        status: Equal(SellingStatusEnum.closed),
+        id: Not(delivery.id),
+      },
+      relations: {
+        deliveryToProducts: { product: true },
+      },
+    });
+  }
+
+  private validateDeliveredQuantities(delivery, otherClosedDeliveries) {
+    const selling = delivery.selling;
+    const totalDelivered = this.calculateTotalDelivered(otherClosedDeliveries);
+
+    // ⚠️ Ajout des quantités de la réception en cours de validation
+    for (const rtp of delivery.deliveryToProducts) {
+      const alreadyDelivered = totalDelivered[rtp.productId] || 0;
+      const sellinged =
+        selling.sellingToProducts.find((o) => o.productId === rtp.productId)
+          ?.quantity || 0;
+
+      const totalDeliveredIncludingCurrent = alreadyDelivered + rtp.quantity;
+      if (totalDeliveredIncludingCurrent > sellinged) {
+        throw new BadRequestException([
+          `Tu ne peux pas valider cette livraison : le produit ${rtp.product?.displayName ?? ''}-${rtp.product?.sku ?? ''} dépasserait la quantité commandée (${totalDeliveredIncludingCurrent}/${sellinged}).`,
+        ]);
+      }
+    }
+    return true;
+  }
+
+  private async ensureSufficientStocks(delivery) {
+    // 1. Vérification des stocks et données avant toute modification
+    for (const deliveryToProduct of delivery.deliveryToProducts) {
+      const deliveryProductData = {
+        ...deliveryToProduct,
+        destinationBranchId: delivery.branchId,
+        sellingId: delivery.sellingId,
+      };
+      await this.checkStocks(deliveryProductData); // Vérifie que le stock est suffisant
+    }
+  }
+  private async applyStockUpdate(delivery, manager) {
+    for (const deliveryToProduct of delivery.deliveryToProducts) {
+      const deliveryProductData = {
+        ...deliveryToProduct,
+        destinationBranchId: delivery.branchId,
+        sellingId: delivery.sellingId,
+      };
+      await this.updateStocks(deliveryProductData, manager);
+    }
   }
 }

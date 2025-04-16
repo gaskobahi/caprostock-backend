@@ -9,6 +9,7 @@ import { VariantToProduct } from 'src/core/entities/product/variant-to-product.e
 @Injectable()
 export class VariantToProductService extends AbstractService<VariantToProduct> {
   public NOT_FOUND_MESSAGE = `Branch variant non trouvé dans la succursale`;
+  public readonly entity = VariantToProduct;
 
   constructor(
     @InjectRepository(VariantToProduct)

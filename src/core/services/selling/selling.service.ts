@@ -473,9 +473,9 @@ export class SellingService extends AbstractService<Selling> {
       await this.deliveryService.existClosedRecordBySellingId(selling.id);
 
     if (closedDeliverys) {
-      throw new BadRequestException(
+      throw new BadRequestException([
         "Impossible d'annuler cette demande car elle contient déjà des livraisons validées.",
-      );
+      ]);
     }
 
     const deliverys = selling.deliverys;
@@ -486,7 +486,7 @@ export class SellingService extends AbstractService<Selling> {
         {
           ...optionsWhere,
           id: delivery?.id,
-          status: SellingStatusEnum.pending,
+          //status: SellingStatusEnum.pending,
         },
         { status: SellingStatusEnum.canceled },
       );

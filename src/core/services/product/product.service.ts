@@ -37,7 +37,7 @@ import { TaxToProductService } from './tax-to-product.service';
 @Injectable()
 export class ProductService extends AbstractService<Product> {
   public NOT_FOUND_MESSAGE = `Produit non trouvé`;
-
+  public readonly entity = Product
   constructor(
     @InjectRepository(Product)
     private _repository: Repository<Product>,
@@ -424,7 +424,6 @@ export class ProductService extends AbstractService<Product> {
           const branchToProducts = item.branchToProducts.filter(
             (e: any) => e.isAvailable == true,
           );
-          console.log('branchToProducts202225', branchToProducts);
           if (branchToProducts.length > 0) {
             const newItem = {
               id: item.id,

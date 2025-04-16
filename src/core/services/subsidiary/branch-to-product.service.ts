@@ -9,6 +9,7 @@ import { REQUEST } from '@nestjs/core';
 @Injectable()
 export class BranchToProductService extends AbstractService<BranchToProduct> {
   public NOT_FOUND_MESSAGE = `Produit non trouvé dans la succursale`;
+  public readonly entity = BranchToProduct;
 
   constructor(
     @InjectRepository(BranchToProduct)
