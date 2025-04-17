@@ -40,6 +40,7 @@ export enum AbilitySubjectEnum {
   Delivery = 'Delivery',
   Reason = 'Reason',
   OpenTicket = 'OpenTicket',
+  StockMovement = 'StockMovement',
 }
 
 export enum AbilityActionEnum {
@@ -151,6 +152,17 @@ export enum SellingStatusEnum {
   canceled = 'canceled',
 }
 
+export enum StockMovementTypeEnum {
+  input = 'input',
+  output = 'output',
+}
+
+export enum StockMovementSourceEnum {
+  delivery = 'delivery',
+  reception = 'reception',
+  stockAdjustement = 'stockAdjustement',
+}
+
 export enum CorderStatusEnum {
   draft = 'draft',
   pending = 'pending',
@@ -180,6 +192,15 @@ export enum DefaultReasonTypeEnum {
   loss = 'loss',
   inventoryCount = 'inventoryCount',
   damage = 'damage',
+}
+
+export enum ReasonTypeEnum {
+  delivery = 'sortie pour livraison',
+  reception = 'entree pour completer le stock',
+  ajustementReceiveItem = 'Ajustement positif pour completer le stock',
+  ajustementInventoryCount = 'Ajustement par inventaire de stock',
+  ajustementDamage = 'Ajustement negatif pour reduit le stock. Article endommagé',
+  ajustementLoss = 'Ajustement negatif pour reduit le stock. Article perdu',
 }
 
 export enum DefaultTransferOrderTypeEnum {

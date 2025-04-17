@@ -19,7 +19,12 @@ import {
 import { AbstractService } from '../abstract.service';
 import { CreateReceptionDto } from 'src/core/dto/stockmanagement/create-reception.dto';
 import { OrderService } from './order.service';
-import { OrderStatusEnum } from 'src/core/definitions/enums';
+import {
+  OrderStatusEnum,
+  ReasonTypeEnum,
+  StockMovementSourceEnum,
+  StockMovementTypeEnum,
+} from 'src/core/definitions/enums';
 import { BranchVariantToProductService } from '../subsidiary/branch-variant-to-product.service';
 import { BranchToProductService } from '../subsidiary/branch-to-product.service';
 import { ProductService } from '../product/product.service';
@@ -27,6 +32,7 @@ import { VariantToProductService } from '../subsidiary/variant-to-product.servic
 import { REQUEST_AUTH_USER_KEY } from 'src/modules/auth/definitions/constants';
 import { AuthUser } from 'src/core/entities/session/auth-user.entity';
 import { RunInTransactionService } from '../transaction/runInTransaction.service';
+import { StockMovementService } from '../stockMovement/stockMovement.service';
 
 @Injectable()
 export class ReceptionService extends AbstractService<Reception> {
@@ -44,6 +50,7 @@ export class ReceptionService extends AbstractService<Reception> {
     private readonly productService: ProductService,
     private readonly variantToProductService: VariantToProductService,
     private readonly runInTransactionService: RunInTransactionService,
+    private readonly stockMovementService: StockMovementService,
 
     @Inject(REQUEST) protected request: any,
   ) {
@@ -145,9 +152,52 @@ export class ReceptionService extends AbstractService<Reception> {
       await this.updateVariantStock(
         prd.variantToProducts,
         receptionProductData,
+        manager,
       );
     } else {
-      await this.updateProductStock(prd.branchToProducts, receptionProductData);
+      await this.updateProductStock(
+        prd.branchToProducts,
+        receptionProductData,
+        manager,
+      );
+    }
+  }
+
+  async updateStockMovements(
+    receptionProductData: any,
+    manager?: any,
+  ): Promise<void> {
+    if (manager) {
+      await manager.getRepository(this.stockMovementService.entity).save({
+        productId: receptionProductData.productId,
+        quantity: receptionProductData.quantity,
+        type: StockMovementTypeEnum.input,
+        source: StockMovementSourceEnum.reception,
+        branchId: receptionProductData.destinationBranchId,
+        sku: receptionProductData.sku,
+        reference: receptionProductData.reference,
+        sourceId: receptionProductData.sourceId,
+        cost: receptionProductData.cost,
+        reason: ReasonTypeEnum.reception,
+        totalCost: receptionProductData.quantity * receptionProductData.cost,
+        createdById: receptionProductData.createdById,
+      });
+    } else {
+      // Journaliser le mouvement
+      await this.stockMovementService.createRecord({
+        productId: receptionProductData.productId,
+        quantity: receptionProductData.quantity,
+        type: StockMovementTypeEnum.input,
+        source: StockMovementSourceEnum.reception,
+        branchId: receptionProductData.destinationBranchId,
+        sku: receptionProductData.sku,
+        reference: receptionProductData.reference,
+        sourceId: receptionProductData.sourceId,
+        cost: receptionProductData.cost,
+        reason: ReasonTypeEnum.reception,
+        totalCost: receptionProductData.quantity * receptionProductData.cost,
+        isManual: false,
+      });
     }
   }
 
@@ -389,6 +439,8 @@ export class ReceptionService extends AbstractService<Reception> {
       // Puis mettre à jour le statut de la commande
       await this.recalculerOrderStatus(reception);
       await this.applyStockUpdate(reception, manager);
+      await this.applyStockMouvementUpdate(reception, manager);
+
       const authUser = this.request[REQUEST_AUTH_USER_KEY] as AuthUser;
       reception.closedById = authUser?.id;
       reception.closedAt = new Date();
@@ -475,6 +527,21 @@ export class ReceptionService extends AbstractService<Reception> {
         sellingId: reception.sellingId,
       };
       await this.updateStocks(receptionProductData, manager);
+    }
+  }
+
+  private async applyStockMouvementUpdate(reception: any, manager?: any) {
+    const authUser = this.request[REQUEST_AUTH_USER_KEY] as AuthUser;
+    reception.closedById = authUser?.id;
+    for (const receptionToProduct of reception.receptionToProducts) {
+      const receptionProductData = {
+        ...receptionToProduct,
+        destinationBranchId: reception.branchId,
+        reference: reception.reference,
+        sourceId: reception.orderId,
+        createdById: authUser?.id,
+      };
+      await this.updateStockMovements(receptionProductData, manager);
     }
   }
 }

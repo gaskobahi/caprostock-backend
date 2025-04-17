@@ -26,86 +26,77 @@ import { ApiAuthJwtHeader } from 'src/modules/auth/decorators/api-auth-jwt-heade
 import { ApiRequestIssuerHeader } from 'src/modules/auth/decorators/api-request-issuer-header.decorator';
 import { CurrentUser } from 'src/modules/auth/decorators/current-user.decorator';
 import { AuthUser } from '../../entities/session/auth-user.entity';
-import { StockAdjustment } from 'src/core/entities/stockmanagement/stockadjustment.entity';
-import { CreateStockAdjustmentDto } from 'src/core/dto/stockmanagement/create-stock-adjustment.dto';
-import { UpdateStockAdjustmentDto } from 'src/core/dto/stockmanagement/update-stock-adjustment.dto';
-import { StockAdjustmentService } from 'src/core/services/stockmanagement/stock-adjustment.service';
-import {
-  AbilityActionEnum,
-  AbilitySubjectEnum,
-} from 'src/core/definitions/enums';
+import { AbilityActionEnum, AbilitySubjectEnum } from '../../definitions/enums';
+import { UpdateStockMovementDto } from 'src/core/dto/stockMovement/update-stockMovement.dto';
+import { StockMovement } from 'src/core/entities/stockmovement/stockmovement.entity';
+import { CreateStockMovementDto } from 'src/core/dto/stockMovement/create-stockMovement.dto';
+import { StockMovementService } from 'src/core/services/stockMovement/stockMovement.service';
 
 @ApiAuthJwtHeader()
 @ApiRequestIssuerHeader()
 @CustomApiErrorResponse()
-@ApiTags('stockAdjustment')
-@Controller('stockadjustment')
-export class StockAdjustmentController {
-  constructor(private service: StockAdjustmentService) {}
+@ApiTags('stockmovement')
+@Controller('stockmovement')
+export class StockMovementController {
+  constructor(private service: StockMovementService) {}
 
   /**
-   * Get paginated stockAdjustment list
+   * Get paginated stockmovement list
    */
   @ApiSearchQueryFilter()
-  @CustomApiPaginatedResponse(StockAdjustment)
+  @CustomApiPaginatedResponse(StockMovement)
   @Get()
   async findPaginated(
     @CurrentUser() authUser: AuthUser,
     @Query() query?: any,
-  ): Promise<Paginated<StockAdjustment>> {
+  ): Promise<Paginated<StockMovement>> {
     // Permission check
     await authUser?.throwUnlessCan(
       AbilityActionEnum.read,
-      AbilitySubjectEnum.Inventory,
+      AbilitySubjectEnum.StockMovement,
     );
 
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
       query as ApiSearchParamOptions,
       {
-        textFilterFields: ['reference'],
+        textFilterFields: ['displayName'],
       },
     );
+
     return this.service.readPaginatedListRecord(options);
   }
 
   /**
-   * Get stockAdjustment by id
+   * Get stockmovement by id
    */
   @ApiSearchOneQueryFilter()
-  @Get(':stockadjustmentId')
+  @Get(':stockmovementId')
   async findOne(
-    @CurrentUser() authUser: AuthUser,
-    @Param('stockadjustmentId', ParseUUIDPipe) id: string,
+    @Param('stockmovementId', ParseUUIDPipe) id: string,
     @Query() query?: any,
-  ): Promise<StockAdjustment> {
+  ): Promise<StockMovement> {
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
       query as ApiSearchOneParamOptions,
     );
 
-    const stockAdjustment = this.service.readOneRecord({
+    return this.service.readOneRecord({
       ...options,
       where: { ...options?.where, id: id ?? '' },
     });
-    // Permission check
-    await authUser?.throwUnlessCan(
-      AbilityActionEnum.read,
-      AbilitySubjectEnum.Inventory,
-    );
-    return stockAdjustment;
   }
 
   /**
-   * Create stockAdjustment
+   * Create stockmovement
    */
   @ApiSearchOneQueryFilter()
   @Post()
   async create(
-    @Body() dto: CreateStockAdjustmentDto,
+    @Body() dto: CreateStockMovementDto,
     @Query() query?: any,
-  ): Promise<StockAdjustment> {
-    const stockAdjustment = await this.service.createRecord(dto);
+  ): Promise<StockMovement> {
+    const stockmovement = await this.service.createRecord(dto);
 
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
@@ -114,24 +105,21 @@ export class StockAdjustmentController {
 
     return this.service.readOneRecord({
       ...options,
-      where: { ...options?.where, id: stockAdjustment?.id },
+      where: { ...options?.where, id: stockmovement.id },
     });
   }
 
   /**
-   * Update stockAdjustment
+   * Update stockmovement
    */
   @ApiSearchOneQueryFilter()
-  @Patch(':stockadjustmentId')
+  @Patch(':stockmovementId')
   async update(
-    @Param('stockAdjustmentId', ParseUUIDPipe) id: string,
-    @Body() dto: UpdateStockAdjustmentDto,
+    @Param('stockmovementId', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateStockMovementDto,
     @Query() query?: any,
-  ): Promise<StockAdjustment> {
-    const stockAdjustment = await this.service.updateRecord(
-      { id: id ?? '' },
-      dto,
-    );
+  ): Promise<StockMovement> {
+    const stockmovement = await this.service.updateRecord({ id: id ?? '' }, dto);
 
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
@@ -140,16 +128,16 @@ export class StockAdjustmentController {
 
     return this.service.readOneRecord({
       ...options,
-      where: { ...options?.where, id: stockAdjustment.id ?? '' },
+      where: { ...options?.where, id: stockmovement.id ?? '' },
     });
   }
 
   /**
-   * Remove stockAdjustment
+   * Remove stockmovement
    */
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Delete(':stockadjustmentId')
-  async remove(@Param('stockAdjustmentId', ParseUUIDPipe) id: string) {
+  @Delete(':stockmovementId')
+  async remove(@Param('stockmovementId', ParseUUIDPipe) id: string) {
     await this.service.deleteRecord({ id: id ?? '' });
     return;
   }

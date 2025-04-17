@@ -39,4 +39,5 @@ export class CreateProductToStockAdjustmentDto extends PickType(
   @IsOptional()
   @IsString()
   variantId: string;
+  source: any;
 }

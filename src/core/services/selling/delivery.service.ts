@@ -22,12 +22,18 @@ import { ProductService } from '../product/product.service';
 import { VariantToProductService } from '../subsidiary/variant-to-product.service';
 import { Delivery } from 'src/core/entities/selling/delivery.entity';
 import { CreateDeliveryDto } from 'src/core/dto/selling/create-delivery.dto';
-import { SellingStatusEnum } from 'src/core/definitions/enums';
+import {
+  ReasonTypeEnum,
+  SellingStatusEnum,
+  StockMovementSourceEnum,
+  StockMovementTypeEnum,
+} from 'src/core/definitions/enums';
 import { SellingService } from './selling.service';
 import { Product } from 'src/core/entities/product/product.entity';
 import { REQUEST_AUTH_USER_KEY } from 'src/modules/auth/definitions/constants';
 import { AuthUser } from 'src/core/entities/session/auth-user.entity';
 import { RunInTransactionService } from '../transaction/runInTransaction.service';
+import { StockMovementService } from '../stockMovement/stockMovement.service';
 
 @Injectable()
 export class DeliveryService extends AbstractService<Delivery> {
@@ -45,6 +51,7 @@ export class DeliveryService extends AbstractService<Delivery> {
     private readonly productService: ProductService,
     private readonly variantToProductService: VariantToProductService,
     private readonly runInTransactionService: RunInTransactionService,
+    private readonly stockMovementService: StockMovementService,
 
     @Inject(REQUEST) protected request: any,
   ) {
@@ -945,14 +952,7 @@ export class DeliveryService extends AbstractService<Delivery> {
       // Puis mettre à jour le statut de la commande
       await this.recalculerSellingStatus(delivery);
       await this.applyStockUpdate(delivery, manager);
-      /*for (const deliveryToProduct of delivery.deliveryToProducts) {
-        const deliveryProductData = {
-          ...deliveryToProduct,
-          destinationBranchId: delivery.branchId,
-          sellingId: delivery.sellingId,
-        };
-        await this.updateStocks(deliveryProductData);
-      }*/
+      await this.applyStockMouvementUpdate(delivery, manager);
       const authUser = this.request[REQUEST_AUTH_USER_KEY] as AuthUser;
       delivery.closedById = authUser?.id;
       delivery.closedAt = new Date();
@@ -1033,6 +1033,59 @@ export class DeliveryService extends AbstractService<Delivery> {
         sellingId: delivery.sellingId,
       };
       await this.updateStocks(deliveryProductData, manager);
+    }
+  }
+
+  async updateStockMovements(
+    deliveryProductData: any,
+    manager?: any,
+  ): Promise<void> {
+    if (manager) {
+      await manager.getRepository(this.stockMovementService.entity).save({
+        productId: deliveryProductData.productId,
+        quantity: -deliveryProductData.quantity,
+        type: StockMovementTypeEnum.output,
+        source: StockMovementSourceEnum.delivery,
+        branchId: deliveryProductData.destinationBranchId,
+        sku: deliveryProductData.sku,
+        reference: deliveryProductData.reference,
+        sourceId: deliveryProductData.sourceId,
+        cost: deliveryProductData.cost,
+        reason: ReasonTypeEnum.delivery,
+        totalCost: deliveryProductData.quantity * deliveryProductData.cost,
+        createdById: deliveryProductData.createdById,
+      });
+    } else {
+      // Journaliser le mouvement
+      await this.stockMovementService.createRecord({
+        productId: deliveryProductData.productId,
+        quantity: -deliveryProductData.quantity,
+        type: StockMovementTypeEnum.input,
+        source: StockMovementSourceEnum.delivery,
+        branchId: deliveryProductData.destinationBranchId,
+        sku: deliveryProductData.sku,
+        reference: deliveryProductData.reference,
+        sourceId: deliveryProductData.sourceId,
+        cost: deliveryProductData.cost,
+        reason: ReasonTypeEnum.delivery,
+        totalCost: deliveryProductData.quantity * deliveryProductData.cost,
+        isManual: false,
+      });
+    }
+  }
+
+  private async applyStockMouvementUpdate(delivery: any, manager?: any) {
+    const authUser = this.request[REQUEST_AUTH_USER_KEY] as AuthUser;
+    delivery.closedById = authUser?.id;
+    for (const deliveryToProduct of delivery.deliveryToProducts) {
+      const deliveryProductData = {
+        ...deliveryToProduct,
+        destinationBranchId: delivery.branchId,
+        reference: delivery.reference,
+        sourceId: delivery.sellingId,
+        createdById: authUser?.id,
+      };
+      await this.updateStockMovements(deliveryProductData, manager);
     }
   }
 }

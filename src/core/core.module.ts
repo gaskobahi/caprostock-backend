@@ -149,6 +149,9 @@ import { EquipmentType } from './entities/setting/equipment-type.entity';
 import { EquipmentTypeService } from './services/setting/equipment-type.service';
 import { EquipmentTypeController } from './controllers/setting/equipment-type.controller';
 import { RunInTransactionService } from './services/transaction/runInTransaction.service';
+import { StockMovementController } from './controllers/stockMovement/stockMovement.controller';
+import { StockMovementService } from './services/stockMovement/stockMovement.service';
+import { StockMovement } from './entities/stockmovement/stockmovement.entity';
 
 @Module({
   imports: [
@@ -234,6 +237,8 @@ import { RunInTransactionService } from './services/transaction/runInTransaction
 
       ProductionToProduct,
       Production,
+
+      StockMovement,
     ]),
   ],
   controllers: [
@@ -274,6 +279,8 @@ import { RunInTransactionService } from './services/transaction/runInTransaction
 
     EquipmentController,
     EquipmentTypeController,
+
+    StockMovementController,
 
     FileController,
   ],
@@ -338,6 +345,8 @@ import { RunInTransactionService } from './services/transaction/runInTransaction
     ProductionService,
     ProductionSubscriber,
 
+    StockMovementService,
+
     ConfigService,
   ],
   exports: [
@@ -346,6 +355,7 @@ import { RunInTransactionService } from './services/transaction/runInTransaction
     AuthUserService,
     AuthLogService,
     RunInTransactionService,
+    StockMovementService,
   ],
 })
 export class CoreModule implements OnApplicationBootstrap {
