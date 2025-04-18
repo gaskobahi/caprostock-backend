@@ -17,7 +17,6 @@ import { CreateTransfertOrderDto } from 'src/core/dto/stockmanagement/create-tra
 import { UpdateTransfertOrderDto } from 'src/core/dto/stockmanagement/update-transfert-order.dto';
 import { BranchToProductService } from '../subsidiary/branch-to-product.service';
 import { BranchVariantToProductService } from '../subsidiary/branch-variant-to-product.service';
-import { ReasonService } from './reason.service';
 import { DefaultTransferOrderTypeEnum } from 'src/core/definitions/enums';
 import { ProductService } from '../product/product.service';
 
@@ -64,15 +63,21 @@ export class TransfertOrderService extends AbstractService<TransfertOrder> {
     if (dto.action == DefaultTransferOrderTypeEnum.transfered) {
       dto.status = DefaultTransferOrderTypeEnum.transfered;
     }
+    //verifier si la surccusale source est differente de la surcussale destinatiion
+    this.validateDistinctBranches(dto);
+    //verifier le stock du produit source et product destination
+    this.validateSourcesBrancchInstock(dto);
+
     const result = await super.createRecord({ ...dto });
 
     if (result) {
       if (dto.action == DefaultTransferOrderTypeEnum.transfered) {
         //update product stock
-        await this.handleProductTransfers(dto);
+        await this.updateStock(dto);
       }
     }
     return result;
+    
   }
 
   async updateRecord(
@@ -87,7 +92,7 @@ export class TransfertOrderService extends AbstractService<TransfertOrder> {
     });
     if (result) {
       if (dto.action == DefaultTransferOrderTypeEnum.transfered) {
-        await this.handleProductTransfers(dto);
+        await this.updateStock(dto);
       }
     }
     return result;
@@ -157,10 +162,10 @@ export class TransfertOrderService extends AbstractService<TransfertOrder> {
                 productId: productId,
                 quantity: quantity,
                 srcInStock:
-                  parseInt(srcbranchVariants.inStock.toString()) -
+                  parseInt(srcbranchVariants?.inStock.toString()) -
                   parseInt(quantity.toString()),
                 dstInStock:
-                  parseInt(dstbranchVariants.inStock.toString()) +
+                  parseInt(dstbranchVariants?.inStock.toString()) +
                   parseInt(quantity.toString()),
                 variantId: vp.id,
                 hasVariant: item.hasVariant,
@@ -182,10 +187,10 @@ export class TransfertOrderService extends AbstractService<TransfertOrder> {
               quantity: quantity,
               hasVariant: item.hasVariant,
               srcInStock:
-                parseInt(srcbranchProducts.inStock.toString()) -
+                parseInt(srcbranchProducts?.inStock.toString()) -
                 parseInt(quantity.toString()),
               dstInStock:
-                parseInt(dstbranchProducts.inStock.toString()) +
+                parseInt(dstbranchProducts?.inStock.toString()) +
                 parseInt(quantity.toString()),
               displayName: `${item.displayName}`,
               sku: sku,
@@ -220,16 +225,8 @@ export class TransfertOrderService extends AbstractService<TransfertOrder> {
     return result;
   }
 
-  async updateStock(dto: CreateTransfertOrderDto) {
+  /*async updateStock(dto: CreateTransfertOrderDto) {
     for (const ps of dto.productToTransfertOrders) {
-      //find product by Id
-      /*const prd = await this.productService.readOneRecord({
-        relations: {
-          variantToProducts: { branchVariantToProducts: true },
-          branchToProducts: true,
-        },
-        where: { id: ps.productId },
-      });*/
       const prd = await this.productService.getDetails(ps.productId);
 
       if (prd.hasVariant) {
@@ -284,19 +281,11 @@ export class TransfertOrderService extends AbstractService<TransfertOrder> {
         );
       }
     }
-  }
+  }*/
 
-  private async handleProductTransfers(dto: any): Promise<void> {
+  private async updateStock(dto: any): Promise<void> {
     for (const ps of dto.productToTransfertOrders) {
-      /*const prd = await this.productService.readOneRecord({
-        relations: {
-          variantToProducts: { branchVariantToProducts: true },
-          branchToProducts: true,
-        },
-        where: { id: ps.productId },
-      });*/
       const prd = await this.productService.getDetails(ps.productId);
-
       if (prd.hasVariant) {
         await this.updateVariantStock(prd.variantToProducts, ps, dto);
       } else {
@@ -349,6 +338,24 @@ export class TransfertOrderService extends AbstractService<TransfertOrder> {
         { productId: ps.productId, branchId: dto.destinationBranchId },
         { inStock: dstProductBranch.inStock + ps.quantity },
       );
+    }
+  }
+
+  private validateDistinctBranches(dto: CreateTransfertOrderDto): void {
+    if (dto.sourceBranchId === dto.destinationBranchId) {
+      throw new BadRequestException([
+        `La succursale source et destination doivent être différentes.`,
+      ]);
+    }
+  }
+
+  private validateSourcesBrancchInstock(dto: CreateTransfertOrderDto): void {
+    for (const item of dto.productToTransfertOrders) {
+      if (item.srcInStock <= 0 || item.srcInStock < item.quantity) {
+        throw new BadRequestException([
+          `Le stock source doit être supérieur au stock de destination pour le produit ${item.sku}`,
+        ]);
+      }
     }
   }
 }
