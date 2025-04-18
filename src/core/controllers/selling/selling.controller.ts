@@ -16,7 +16,6 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseEnumPipe,
   ParseUUIDPipe,
   Patch,
   Post,
@@ -30,14 +29,12 @@ import { CurrentUser } from 'src/modules/auth/decorators/current-user.decorator'
 import {
   AbilityActionEnum,
   AbilitySubjectEnum,
-  SellingStatusEnum,
 } from '../../definitions/enums';
 import { AuthUser } from '../../entities/session/auth-user.entity';
 import { SellingService } from 'src/core/services/selling/selling.service';
 import { Selling } from 'src/core/entities/selling/selling.entity';
 import { UpdateSellingDto } from 'src/core/dto/selling/update-selling.dto';
 import { CreateSellingDto } from 'src/core/dto/selling/create-selling.dto';
-import { ValidateSellingDto } from 'src/core/dto/selling/validate-selling.dto';
 
 @ApiAuthJwtHeader()
 @ApiRequestIssuerHeader()

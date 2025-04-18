@@ -1,5 +1,10 @@
 import { PaginatedService } from '@app/typeorm';
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
@@ -20,9 +25,15 @@ import { UpdateInventoryCountDto } from 'src/core/dto/stockmanagement/update-inv
 import {
   InventoryCountStatusEnum,
   InventoryCountTypeEnum,
+  ReasonTypeEnum,
+  StockMovementSourceEnum,
+  StockMovementTypeEnum,
 } from 'src/core/definitions/enums';
 import { ProductService } from '../product/product.service';
 import { UpdateInventoryCountSaveDto } from 'src/core/dto/stockmanagement/update-inventory-count-save.dto';
+import { RunInTransactionService } from '../transaction/runInTransaction.service';
+import { StockMovementService } from '../stockMovement/stockMovement.service';
+import { ProductToInventoryCount } from 'src/core/entities/stockmanagement/product-to-inventoryCount.entity';
 
 @Injectable()
 export class InventoryCountService extends AbstractService<InventoryCount> {
@@ -35,6 +46,8 @@ export class InventoryCountService extends AbstractService<InventoryCount> {
     private readonly branchToProductService: BranchToProductService,
     private readonly branchVariantToProductService: BranchVariantToProductService,
     private readonly productService: ProductService,
+    private readonly runInTransactionService: RunInTransactionService,
+    private readonly stockMovementService: StockMovementService,
 
     protected paginatedService: PaginatedService<InventoryCount>,
     @Inject(REQUEST) protected request: any,
@@ -51,7 +64,6 @@ export class InventoryCountService extends AbstractService<InventoryCount> {
     page: number = 1,
     perPage: number = 25,
   ) {
-    console.log('dfsfsf',options)
     return await this.readPaginatedListRecord(options);
   }
   /*async readPaginatedListRecord(
@@ -81,9 +93,9 @@ export class InventoryCountService extends AbstractService<InventoryCount> {
         !dto.productToInventoryCounts ||
         dto.productToInventoryCounts.length == 0
       ) {
-        throw new BadRequestException(
+        throw new BadRequestException([
           'productToInventoryCounts ne peux pas être vide pour le type partial',
-        );
+        ]);
       }
     } else {
       const options = {
@@ -171,72 +183,258 @@ export class InventoryCountService extends AbstractService<InventoryCount> {
     return result;
   }
 
-  async updateRecordCountSave(
-    optionsWhere: FindOptionsWhere<InventoryCount>,
+  /*async updateRecordCountSave(
+    optionsWhere: FindOptionsWhere<any>,
     dto: UpdateInventoryCountSaveDto,
-  ) {
+  ): Promise<InventoryCount> {
     const previousIC = await this.repository.findOneBy(optionsWhere);
 
     if (previousIC.status == InventoryCountStatusEnum.completed) {
       throw new BadRequestException(
-        'Impossible de modifier le statut déja complèté',
+        'Impossible de modifier le statut déjà complété',
       );
     }
-    if (dto.action == InventoryCountStatusEnum.inProgress) {
+
+    if (dto.action === InventoryCountStatusEnum.inProgress) {
       dto.status = InventoryCountStatusEnum.inProgress;
     }
-    if (dto.action == InventoryCountStatusEnum.completed) {
+    if (dto.action === InventoryCountStatusEnum.completed) {
       dto.status = InventoryCountStatusEnum.completed;
     }
-    for (const el of dto.productToInventoryCounts) {
-      const pprd = await this.productService.getDetails(el.productId);
-      pprd.sku = el.sku;
-      console.log('lolo', el.sku);
 
-      //recuperer les details de produit dans leur leur surccusales
-      const detailProduct = await this.getDetailProductFromBranch(pprd, dto);
-      if (el?.counted != 0) {
-        el.difference = (el?.counted || 0) - (el.inStock || 0);
-      }
-      el.differenceCost = (el?.difference || 0) * (detailProduct.price || 0);
+    dto.productToInventoryCounts = dto.productToInventoryCounts
+      .filter((dt) => dt.difference != 0)
+      .map((dt) => ({ ...dt }));
+
+    if (!dto.productToInventoryCounts.length) {
+      throw new NotFoundException(['Rien à modifier']);
     }
-    const result = await super.updateRecord(optionsWhere, {
-      ...dto,
-    });
 
-    if (result) {
-      if (dto.action == InventoryCountStatusEnum.completed) {
-        for (const pi of dto.productToInventoryCounts) {
-          const prd = await this.productService.getDetails(pi.productId);
-          if (pi.counted > 0) {
-            if (prd.hasVariant) {
-              const vp = prd.variantToProducts.find((el) => el.sku == pi.sku);
+    return await this.runInTransactionService.runInTransaction(
+      async (manager) => {
+        const { productToInventoryCounts, ...restDto } = dto;
+        const toUpdate = await manager.preload(InventoryCount, {
+          id: optionsWhere.id as string,
+          ...restDto,
+        });
 
-              await this.branchVariantToProductService.updateRecord(
+        if (!toUpdate) {
+          throw new NotFoundException('InventoryCount introuvable');
+        }
+
+        const updatedInventoryCount = await manager.save(toUpdate);
+
+        if (updatedInventoryCount?.id) {
+          await manager.delete(ProductToInventoryCount, {
+            inventoryCountId: updatedInventoryCount.id,
+          });
+
+          for (const prod of productToInventoryCounts) {
+            await manager.save(ProductToInventoryCount, {
+              ...prod,
+              inventoryCountId: updatedInventoryCount.id,
+            });
+          }
+        }
+
+        if (dto.action === InventoryCountStatusEnum.completed) {
+          const ddto = {
+            ...dto,
+            sourceId: updatedInventoryCount.id,
+            reference: updatedInventoryCount.reference,
+          };
+          await this.applyStockUpdate(dto, manager);
+          await this.applyStockMouvementUpdate(ddto, manager);
+        }
+
+        return updatedInventoryCount;
+      },
+    );
+  }*/
+
+  async updateRecordCountSave(
+    optionsWhere: FindOptionsWhere<any>,
+    dto: UpdateInventoryCountSaveDto,
+  ): Promise<InventoryCount> {
+    const previousIC = await this.repository.findOneBy(optionsWhere);
+
+    if (previousIC.status === InventoryCountStatusEnum.completed) {
+      throw new BadRequestException([
+        'Impossible de modifier le statut déjà complété',
+      ]);
+    }
+
+    if (dto.action === InventoryCountStatusEnum.inProgress) {
+      dto.status = InventoryCountStatusEnum.inProgress;
+    } else if (dto.action === InventoryCountStatusEnum.completed) {
+      dto.status = InventoryCountStatusEnum.completed;
+    }
+
+    dto.productToInventoryCounts = dto.productToInventoryCounts
+      .filter((dt) => dt.difference !== 0)
+      .map((dt) => ({ ...dt }));
+
+    if (
+      !dto.productToInventoryCounts ||
+      dto.productToInventoryCounts.length === 0
+    ) {
+      throw new BadRequestException(['Aucun produit à compter fourni']);
+    }
+
+    return await this.runInTransactionService.runInTransaction(
+      async (manager) => {
+        const { productToInventoryCounts, ...restDto } = dto;
+        const toUpdate = await manager.preload(InventoryCount, {
+          id: optionsWhere.id as string,
+          ...restDto,
+        });
+
+        if (!toUpdate) {
+          throw new NotFoundException(['InventoryCount introuvable']);
+        }
+
+        const updatedInventoryCount = await manager.save(toUpdate);
+
+        if (updatedInventoryCount?.id) {
+          await manager.delete(ProductToInventoryCount, {
+            inventoryCountId: updatedInventoryCount.id,
+          });
+
+          for (const prod of productToInventoryCounts) {
+            await manager.save(ProductToInventoryCount, {
+              ...prod,
+              inventoryCountId: updatedInventoryCount.id,
+            });
+          }
+        }
+
+        if (dto.action === InventoryCountStatusEnum.completed) {
+          const stockDto = {
+            ...dto,
+            sourceId: updatedInventoryCount.id,
+            reference: updatedInventoryCount.reference,
+          };
+          await this.applyStockUpdate(dto, manager);
+          await this.applyStockMouvementUpdate(stockDto, manager);
+        }
+
+        return updatedInventoryCount;
+      },
+    );
+  }
+  private async applyStockUpdate(dto: any, manager?: any) {
+    for (const pi of dto.productToInventoryCounts) {
+      const prd = await this.productService.getDetails(pi.productId);
+      if (pi.counted > 0) {
+        if (prd.hasVariant) {
+          if (manager) {
+            const vp = prd.variantToProducts.find((el) => el.sku == pi.sku);
+            await manager
+              .getRepository(this.branchVariantToProductService.entity)
+              .update(
                 {
                   variantId: vp.id,
                   branchId: dto.branchId,
                 },
                 { inStock: pi.counted },
               );
-            } else {
-              //update branch for product
-              await this.branchToProductService.updateRecord(
+          } else {
+            const vp = prd.variantToProducts.find((el) => el.sku == pi.sku);
+
+            await this.branchVariantToProductService.updateRecord(
+              {
+                variantId: vp.id,
+                branchId: dto.branchId,
+              },
+              { inStock: pi.counted },
+            );
+          }
+        } else {
+          if (manager) {
+            await manager
+              .getRepository(this.branchToProductService.entity)
+              .update(
                 {
                   productId: pi.productId,
                   branchId: dto.branchId,
                 },
                 { inStock: pi.counted },
               );
-            }
+          } else {
+            //update branch for product
+            await this.branchToProductService.updateRecord(
+              {
+                productId: pi.productId,
+                branchId: dto.branchId,
+              },
+              { inStock: pi.counted },
+            );
           }
         }
       }
     }
-
-    return result;
   }
 
+  private async applyStockMouvementUpdate(inventoryCount: any, manager?: any) {
+    const authUser = this.request[REQUEST_AUTH_USER_KEY] as AuthUser;
+    for (const productToInventoryCount of inventoryCount.productToInventoryCounts) {
+      const productToInventoryCountData = {
+        ...productToInventoryCount,
+        destinationBranchId: inventoryCount.branchId,
+        reference: inventoryCount.reference,
+        sourceId: inventoryCount.sourceId,
+        createdById: authUser?.id,
+      };
+      await this.updateStockMovements(productToInventoryCountData, manager);
+    }
+  }
+
+  async updateStockMovements(
+    inventoryCountProductData: any,
+    manager?: any,
+  ): Promise<void> {
+    if (manager) {
+      await manager.getRepository(this.stockMovementService.entity).save({
+        productId: inventoryCountProductData.productId,
+        quantity: inventoryCountProductData.difference,
+        type:
+          inventoryCountProductData.counted > inventoryCountProductData.inStock
+            ? StockMovementTypeEnum.input
+            : StockMovementTypeEnum.output,
+        source: StockMovementSourceEnum.inventoryCount,
+        branchId: inventoryCountProductData.destinationBranchId,
+        sku: inventoryCountProductData.sku,
+        reference: inventoryCountProductData.reference,
+        sourceId: inventoryCountProductData.sourceId,
+        cost: inventoryCountProductData.cost,
+        reason: ReasonTypeEnum.ajustementInventoryCount,
+        isManual: true,
+        totalCost:
+          inventoryCountProductData.difference * inventoryCountProductData.cost,
+        createdById: inventoryCountProductData.createdById,
+      });
+    } else {
+      // Journaliser le mouvement
+      await this.stockMovementService.createRecord({
+        productId: inventoryCountProductData.productId,
+        quantity: inventoryCountProductData.difference,
+        type:
+          inventoryCountProductData.counted > inventoryCountProductData.inStock
+            ? StockMovementTypeEnum.input
+            : StockMovementTypeEnum.output,
+        source: StockMovementSourceEnum.inventoryCount,
+        branchId: inventoryCountProductData.destinationBranchId,
+        sku: inventoryCountProductData.sku,
+        reference: inventoryCountProductData.reference,
+        sourceId: inventoryCountProductData.sourceId,
+        cost: inventoryCountProductData.cost,
+        reason: ReasonTypeEnum.ajustementInventoryCount,
+        isManual: true,
+        totalCost:
+          inventoryCountProductData.difference * inventoryCountProductData.cost,
+      });
+    }
+  }
   async readPaginatedListRecordForComposite(
     options?: FindManyOptions<any>,
     page?: number,
@@ -265,7 +463,7 @@ export class InventoryCountService extends AbstractService<InventoryCount> {
   async readOneRecord(options?: FindOneOptions<InventoryCount>) {
     const entity = await this.repository.findOne(options);
     if (!entity) {
-      throw new BadRequestException(this.NOT_FOUND_MESSAGE);
+      throw new BadRequestException([this.NOT_FOUND_MESSAGE]);
     }
 
     const { branchId } = entity;

@@ -63,14 +63,6 @@ export class SellingService extends AbstractService<Selling> {
     page: number = 1,
     perPage: number = 25,
   ) {
-    /*console.log("perPage",options)
-    // Paginate using provided options, page, and perPage
-    const response = await this.paginatedService.paginate(
-      this.repository,
-      page,
-      perPage,
-      options,
-    );*/
     const response = await this.readPaginatedListRecord(options);
 
     // Retrieve detailed records for each item in the paginated response

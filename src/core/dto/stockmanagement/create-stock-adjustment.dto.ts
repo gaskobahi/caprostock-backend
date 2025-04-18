@@ -14,6 +14,7 @@ import { ProductToStockAdjustment } from 'src/core/entities/stockmanagement/prod
 export class CreateStockAdjustmentDto extends PickType(StockAdjustment, [
   'reasonId',
   'branchId',
+  'date',
 ] as const) {
   @IsOptional()
   @IsString()

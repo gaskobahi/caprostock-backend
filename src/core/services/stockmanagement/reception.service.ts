@@ -538,7 +538,7 @@ export class ReceptionService extends AbstractService<Reception> {
         ...receptionToProduct,
         destinationBranchId: reception.branchId,
         reference: reception.reference,
-        sourceId: reception.orderId,
+        sourceId: reception.id,
         createdById: authUser?.id,
       };
       await this.updateStockMovements(receptionProductData, manager);

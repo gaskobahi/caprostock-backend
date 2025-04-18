@@ -1082,7 +1082,7 @@ export class DeliveryService extends AbstractService<Delivery> {
         ...deliveryToProduct,
         destinationBranchId: delivery.branchId,
         reference: delivery.reference,
-        sourceId: delivery.sellingId,
+        sourceId: delivery.id,
         createdById: authUser?.id,
       };
       await this.updateStockMovements(deliveryProductData, manager);

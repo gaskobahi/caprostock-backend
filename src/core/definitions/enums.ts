@@ -161,6 +161,7 @@ export enum StockMovementSourceEnum {
   delivery = 'delivery',
   reception = 'reception',
   stockAdjustement = 'stockAdjustement',
+  inventoryCount = 'inventoryCount',
 }
 
 export enum CorderStatusEnum {

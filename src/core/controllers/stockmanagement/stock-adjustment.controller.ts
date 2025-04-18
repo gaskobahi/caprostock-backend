@@ -34,6 +34,7 @@ import {
   AbilityActionEnum,
   AbilitySubjectEnum,
 } from 'src/core/definitions/enums';
+import { merge } from 'lodash';
 
 @ApiAuthJwtHeader()
 @ApiRequestIssuerHeader()
@@ -58,7 +59,6 @@ export class StockAdjustmentController {
       AbilityActionEnum.read,
       AbilitySubjectEnum.Inventory,
     );
-
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
       query as ApiSearchParamOptions,
@@ -66,7 +66,13 @@ export class StockAdjustmentController {
         textFilterFields: ['reference'],
       },
     );
-    return this.service.readPaginatedListRecord(options);
+
+    // Apply auth user branch filter
+    options.where = merge(
+      options?.where,
+      await this.service.getFilterByAuthUserBranch(),
+    );
+    return this.service.myreadPaginatedListRecord(options);
   }
 
   /**

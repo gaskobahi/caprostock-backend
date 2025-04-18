@@ -18,6 +18,7 @@ import { HistoryToInventoryCount } from 'src/core/entities/stockmanagement/histo
 export class CreateInventoryCountDto extends PickType(InventoryCount, [
   'branchId',
   'type',
+  'date',
 ] as const) {
   @IsOptional()
   @ApiProperty({ required: false })

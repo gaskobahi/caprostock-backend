@@ -153,12 +153,6 @@ export class StockAdjustmentService extends AbstractService<StockAdjustment> {
 
       await this.applyStockMouvementUpdate(mstockAdjustment, manager);
 
-      //const stockAdjustment = await super.createRecord({ ...dto });
-
-      /*if (stockAdjustment) {
-        await this.updateStockAdjustments(dto);
-      }*/
-
       return stockAdjustment as any;
     });
   }
@@ -173,21 +167,6 @@ export class StockAdjustmentService extends AbstractService<StockAdjustment> {
 
     return result;
   }
-
-  /* async getFilterByAuthUserBranch(): Promise<
-    FindOptionsWhere<StockAdjustment>
-  > {
-    const authUser = await super.checkSessionBranch();
-    if (!(await authUser.can('manage', 'all'))) {
-      return {
-        branchToStockAdjustments: {
-          branchId: authUser.targetBranchId,
-        },
-      };
-    }
-
-    return {};
-  }*/
 
   async readPaginatedListRecordForComposite(
     options?: FindManyOptions<any>,
@@ -249,7 +228,7 @@ export class StockAdjustmentService extends AbstractService<StockAdjustment> {
         case DefaultReasonTypeEnum.loss:
         case DefaultReasonTypeEnum.damage:
           if (el.inStock < el.quantity || el.inStock == 0) {
-            throw new BadRequestException('Impossible de reduit le stock');
+            throw new BadRequestException(['Impossible de reduit le stock']);
           }
           el.afterQuantity = el.inStock - el.quantity;
           break;
@@ -260,7 +239,7 @@ export class StockAdjustmentService extends AbstractService<StockAdjustment> {
           el.afterQuantity = el.quantity;
           break;
         default:
-          throw new BadRequestException('Invalid reason type');
+          throw new BadRequestException(['Invalid reason type']);
       }
     }
   }
@@ -333,7 +312,6 @@ export class StockAdjustmentService extends AbstractService<StockAdjustment> {
             el.sourceId = stockAdjustment.id;
             el.createdById = authUser?.id;
             break;
-            break;
 
           default:
             // Si aucun type ne matche, tu peux log ou lever une erreur si nécessaire
@@ -347,19 +325,25 @@ export class StockAdjustmentService extends AbstractService<StockAdjustment> {
     return adjustedMovements;
   }
 
-  private async updateStockAdjustments(
-    dto: CreateStockAdjustmentDto,
-    manager?: any,
-  ): Promise<void> {
-    for (const ps of dto.productToStockAdjustments) {
-      const prd = await this.productService.getDetails(ps.productId);
+  async myreadPaginatedListRecord(
+    options?: FindManyOptions<StockAdjustment>,
+    page: number = 1,
+    perPage: number = 25,
+  ) {
+    return await this.readPaginatedListRecord(options);
+  }
 
-      if (prd.hasVariant) {
-        await this.updateVariantStock(ps, prd, dto.branchId, manager);
-      } else {
-        await this.updateProductStock(ps, dto.branchId, manager);
-      }
+  async getFilterByAuthUserBranch(): Promise<
+    FindOptionsWhere<StockAdjustment>
+  > {
+    const authUser = await super.checkSessionBranch();
+    if (!(await authUser.can('manage', 'all'))) {
+      return {
+        branchId: authUser.targetBranchId,
+      };
     }
+
+    return {};
   }
 
   private async updateVariantStock(

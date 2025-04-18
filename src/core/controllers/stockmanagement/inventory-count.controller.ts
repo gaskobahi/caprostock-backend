@@ -59,7 +59,6 @@ export class InventoryCountController {
       AbilityActionEnum.read,
       AbilitySubjectEnum.Inventory,
     );
-    console.log('zaazazdsdsd',query)
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
       query as ApiSearchParamOptions,
@@ -130,10 +129,7 @@ export class InventoryCountController {
     @Body() dto: UpdateInventoryCountSaveDto,
     @Query() query?: any,
   ): Promise<InventoryCount> {
-    const inventoryCount = await this.service.updateRecordCountSave(
-      { id: id ?? '' },
-      dto,
-    );
+    await this.service.updateRecordCountSave({ id: id ?? '' }, dto);
     const options = buildFilterFromApiSearchParams(
       this.service.repository,
       query as ApiSearchOneParamOptions,
@@ -141,7 +137,7 @@ export class InventoryCountController {
 
     return this.service.readOneRecord({
       ...options,
-      where: { ...options?.where, id: inventoryCount.id ?? '' },
+      where: { ...options?.where, id: id ?? '' },
     });
   }
 
