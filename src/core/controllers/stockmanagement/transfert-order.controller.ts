@@ -33,6 +33,7 @@ import {
   AbilityActionEnum,
   AbilitySubjectEnum,
 } from 'src/core/definitions/enums';
+import { merge } from 'lodash';
 
 @ApiAuthJwtHeader()
 @ApiRequestIssuerHeader()
@@ -64,6 +65,12 @@ export class TransfertOrderController {
       {
         textFilterFields: ['reference'],
       },
+    );
+
+    // Apply auth user branch filter
+    options.where = merge(
+      options?.where,
+      await this.service.getFilterByAuthUserBranch(),
     );
 
     return this.service.readPaginatedListRecord(options);
@@ -141,7 +148,7 @@ export class TransfertOrderController {
 
     return this.service.readOneRecord({
       ...options,
-      where: { ...options?.where, id: transfertOrder.id ?? '' },
+      where: { ...options?.where, id: id ?? '' },
     });
   }
 

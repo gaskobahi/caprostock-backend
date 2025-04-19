@@ -1,8 +1,14 @@
 import { PaginatedService } from '@app/typeorm';
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
+  EntityManager,
   FindManyOptions,
   FindOneOptions,
   FindOptionsWhere,
@@ -17,8 +23,16 @@ import { CreateTransfertOrderDto } from 'src/core/dto/stockmanagement/create-tra
 import { UpdateTransfertOrderDto } from 'src/core/dto/stockmanagement/update-transfert-order.dto';
 import { BranchToProductService } from '../subsidiary/branch-to-product.service';
 import { BranchVariantToProductService } from '../subsidiary/branch-variant-to-product.service';
-import { DefaultTransferOrderTypeEnum } from 'src/core/definitions/enums';
+import {
+  DefaultTransferOrderTypeEnum,
+  ReasonTypeEnum,
+  StockMovementSourceEnum,
+  StockMovementTypeEnum,
+} from 'src/core/definitions/enums';
 import { ProductService } from '../product/product.service';
+import { RunInTransactionService } from '../transaction/runInTransaction.service';
+import { StockMovementService } from '../stockMovement/stockMovement.service';
+import { ProductToTransfertOrder } from 'src/core/entities/stockmanagement/product-to-transfertorder.entity';
 
 @Injectable()
 export class TransfertOrderService extends AbstractService<TransfertOrder> {
@@ -31,6 +45,8 @@ export class TransfertOrderService extends AbstractService<TransfertOrder> {
     private readonly branchToProductService: BranchToProductService,
     private readonly branchVariantToProductService: BranchVariantToProductService,
     private readonly productService: ProductService,
+    private readonly runInTransactionService: RunInTransactionService,
+    private readonly stockMovementService: StockMovementService,
 
     protected paginatedService: PaginatedService<TransfertOrder>,
     @Inject(REQUEST) protected request: any,
@@ -42,18 +58,13 @@ export class TransfertOrderService extends AbstractService<TransfertOrder> {
     return this._repository;
   }
 
-  async readPaginatedListRecord(
+  async myreadPaginatedListRecord(
     options?: FindManyOptions<TransfertOrder>,
     page: number = 1,
     perPage: number = 25,
   ) {
     // Paginate using provided options, page, and perPage
-    const response = await this.paginatedService.paginate(
-      this.repository,
-      page,
-      perPage,
-      options,
-    );
+    const response = await this.readPaginatedListRecord(options);
 
     // Update response data with processed items and return
     return response;
@@ -66,36 +77,74 @@ export class TransfertOrderService extends AbstractService<TransfertOrder> {
     //verifier si la surccusale source est differente de la surcussale destinatiion
     this.validateDistinctBranches(dto);
     //verifier le stock du produit source et product destination
-    this.validateSourcesBrancchInstock(dto);
+    //this.validateSourcesBrancchInstock(dto);
+    await this.ckeckStock(dto);
 
-    const result = await super.createRecord({ ...dto });
+    return await this.runInTransactionService.runInTransaction(
+      async (manager) => {
+        const transfertOrder = await manager.save(TransfertOrder, dto);
+        // const result = await super.createRecord({ ...dto });
 
-    if (result) {
-      if (dto.action == DefaultTransferOrderTypeEnum.transfered) {
-        //update product stock
-        await this.updateStock(dto);
-      }
-    }
-    return result;
-    
+        if (transfertOrder) {
+          if (dto.action == DefaultTransferOrderTypeEnum.transfered) {
+            //update product stock
+            await this.handleTransferCompletion(dto as any, manager);
+          }
+        }
+        return transfertOrder;
+      },
+    );
   }
 
   async updateRecord(
     optionsWhere: FindOptionsWhere<TransfertOrder>,
     dto: UpdateTransfertOrderDto,
-  ) {
+  ): Promise<any> {
     if (dto.action == DefaultTransferOrderTypeEnum.transfered) {
       dto.status = DefaultTransferOrderTypeEnum.transfered;
     }
-    const result = await super.updateRecord(optionsWhere, {
-      ...dto,
-    });
-    if (result) {
-      if (dto.action == DefaultTransferOrderTypeEnum.transfered) {
-        await this.updateStock(dto);
-      }
-    }
-    return result;
+
+    return await this.runInTransactionService.runInTransaction(
+      async (manager) => {
+        const { productToTransfertOrders, ...restDto } = dto;
+        const toUpdate = await manager.preload(TransfertOrder, {
+          id: optionsWhere.id as string,
+          ...restDto,
+        });
+
+        if (!toUpdate) {
+          throw new NotFoundException(['TransfertOrder introuvable']);
+        }
+
+        if (
+          !productToTransfertOrders ||
+          productToTransfertOrders.length === 0
+        ) {
+          throw new BadRequestException('Aucun produit à transférer');
+        }
+        const updatedTransfertOrder = await manager.save(toUpdate);
+
+        if (updatedTransfertOrder?.id) {
+          await manager.delete(ProductToTransfertOrder, {
+            transfertOrderId: updatedTransfertOrder.id,
+          });
+
+          for (const prod of productToTransfertOrders) {
+            await manager.save(ProductToTransfertOrder, {
+              ...prod,
+              transfertOrderId: updatedTransfertOrder.id,
+            });
+          }
+        }
+
+        if (updatedTransfertOrder) {
+          if (dto.action == DefaultTransferOrderTypeEnum.transfered) {
+            await this.handleTransferCompletion(dto, manager);
+          }
+        }
+        return updatedTransfertOrder;
+      },
+    );
   }
 
   /* async getFilterByAuthUserBranch(): Promise<
@@ -283,18 +332,23 @@ export class TransfertOrderService extends AbstractService<TransfertOrder> {
     }
   }*/
 
-  private async updateStock(dto: any): Promise<void> {
+  private async updateStock(dto: any, manager?: any): Promise<void> {
     for (const ps of dto.productToTransfertOrders) {
       const prd = await this.productService.getDetails(ps.productId);
       if (prd.hasVariant) {
-        await this.updateVariantStock(prd.variantToProducts, ps, dto);
+        await this.updateVariantStock(prd.variantToProducts, ps, dto, manager);
       } else {
-        await this.updateProductStock(prd.branchToProducts, ps, dto);
+        await this.updateProductStock(prd.branchToProducts, ps, dto, manager);
       }
     }
   }
 
-  private async updateVariantStock(variants, ps, dto): Promise<void> {
+  private async updateVariantStock(
+    variants,
+    ps,
+    dto,
+    manager?: any,
+  ): Promise<void> {
     const vp = variants.find((el) => el.sku === ps.sku);
 
     if (!vp) return;
@@ -307,18 +361,38 @@ export class TransfertOrderService extends AbstractService<TransfertOrder> {
     );
 
     if (srcProductBranch && dstProductBranch) {
-      await this.branchVariantToProductService.updateRecord(
-        { sku: vp.sku, branchId: dto.sourceBranchId },
-        { inStock: srcProductBranch.inStock - ps.quantity },
-      );
-      await this.branchVariantToProductService.updateRecord(
-        { sku: vp.sku, branchId: dto.destinationBranchId },
-        { inStock: dstProductBranch.inStock + ps.quantity },
-      );
+      if (manager) {
+        await manager
+          .getRepository(this.branchVariantToProductService.entity)
+          .update(
+            { sku: vp.sku, branchId: dto.sourceBranchId },
+            { inStock: srcProductBranch.inStock - ps.quantity },
+          );
+        await manager
+          .getRepository(this.branchVariantToProductService.entity)
+          .update(
+            { sku: vp.sku, branchId: dto.destinationBranchId },
+            { inStock: dstProductBranch.inStock + ps.quantity },
+          );
+      } else {
+        await this.branchVariantToProductService.updateRecord(
+          { sku: vp.sku, branchId: dto.sourceBranchId },
+          { inStock: srcProductBranch.inStock - ps.quantity },
+        );
+        await this.branchVariantToProductService.updateRecord(
+          { sku: vp.sku, branchId: dto.destinationBranchId },
+          { inStock: dstProductBranch.inStock + ps.quantity },
+        );
+      }
     }
   }
 
-  private async updateProductStock(branchToProducts, ps, dto): Promise<void> {
+  private async updateProductStock(
+    branchToProducts,
+    ps,
+    dto,
+    manager?: any,
+  ): Promise<void> {
     const srcProductBranch = branchToProducts.find(
       (el) =>
         el.productId === ps.productId && el.branchId === dto.sourceBranchId,
@@ -330,14 +404,29 @@ export class TransfertOrderService extends AbstractService<TransfertOrder> {
     );
 
     if (srcProductBranch && dstProductBranch) {
-      await this.branchToProductService.updateRecord(
-        { productId: ps.productId, branchId: dto.sourceBranchId },
-        { inStock: srcProductBranch.inStock - ps.quantity },
-      );
-      await this.branchToProductService.updateRecord(
-        { productId: ps.productId, branchId: dto.destinationBranchId },
-        { inStock: dstProductBranch.inStock + ps.quantity },
-      );
+      if (manager) {
+        await manager
+          .getRepository(this.branchToProductService.entity)
+          .update(
+            { productId: ps.productId, branchId: dto.sourceBranchId },
+            { inStock: srcProductBranch.inStock - ps.quantity },
+          );
+        await manager
+          .getRepository(this.branchToProductService.entity)
+          .update(
+            { productId: ps.productId, branchId: dto.destinationBranchId },
+            { inStock: dstProductBranch.inStock + ps.quantity },
+          );
+      } else {
+        await this.branchToProductService.updateRecord(
+          { productId: ps.productId, branchId: dto.sourceBranchId },
+          { inStock: srcProductBranch.inStock - ps.quantity },
+        );
+        await this.branchToProductService.updateRecord(
+          { productId: ps.productId, branchId: dto.destinationBranchId },
+          { inStock: dstProductBranch.inStock + ps.quantity },
+        );
+      }
     }
   }
 
@@ -348,7 +437,121 @@ export class TransfertOrderService extends AbstractService<TransfertOrder> {
       ]);
     }
   }
+  private async applyStockMouvementUpdate(transfertOrder: any, manager?: any) {
+    const authUser = this.request[REQUEST_AUTH_USER_KEY] as AuthUser;
+    const { productToTransfertOrders } = transfertOrder;
+    for (const productTotransfertOrder of productToTransfertOrders) {
+      let produit: any;
 
+      const prd = await this.productService.getDetails(
+        productTotransfertOrder.productId,
+      );
+      if (!prd) {
+        throw new NotFoundException('Produit introuvable');
+      }
+      if (prd.hasVariant) {
+        const variant = prd?.variantToProducts.find(
+          (v) => v.sku === productTotransfertOrder.sku,
+        );
+        produit = variant.branchVariantToProducts.find(
+          (bv) =>
+            bv.sku === productTotransfertOrder.sku &&
+            bv.branchId === transfertOrder.sourceBranchId,
+        );
+      } else {
+        produit = prd?.branchToProducts.find(
+          (v) =>
+            v.productId === productTotransfertOrder.productId &&
+            v.branchId == transfertOrder.sourceBranchId,
+        );
+      }
+
+      const productTotransfertOrdersData = {
+        ...productTotransfertOrder,
+        sourceBranchId: transfertOrder.sourceBranchId,
+        destinationBranchId: transfertOrder.destinationBranchId,
+        reference: transfertOrder.reference,
+        sourceId: transfertOrder.id,
+        createdById: authUser?.id,
+        cost: produit.price,
+      };
+      await this.updateStockMovements(productTotransfertOrdersData, manager);
+    }
+  }
+
+  async updateStockMovements(
+    transfertOrderProductData: any,
+    manager?: any,
+  ): Promise<void> {
+    if (manager) {
+      await manager.getRepository(this.stockMovementService.entity).save({
+        productId: transfertOrderProductData.productId,
+        quantity: -transfertOrderProductData.quantity,
+        type: StockMovementTypeEnum.output,
+        source: StockMovementSourceEnum.transfertOrder,
+        branchId: transfertOrderProductData.sourceBranchId,
+        sku: transfertOrderProductData.sku,
+        reference: transfertOrderProductData.reference,
+        sourceId: transfertOrderProductData.sourceId,
+        cost: transfertOrderProductData.cost,
+        reason: ReasonTypeEnum.transfertOrder,
+        isManual: true,
+        totalCost:
+          -transfertOrderProductData.quantity * transfertOrderProductData.cost,
+        createdById: transfertOrderProductData.createdById,
+      });
+      await manager.getRepository(this.stockMovementService.entity).save({
+        productId: transfertOrderProductData.productId,
+        quantity: transfertOrderProductData.quantity,
+        type: StockMovementTypeEnum.input,
+        source: StockMovementSourceEnum.transfertOrder,
+        branchId: transfertOrderProductData.destinationBranchId,
+        sku: transfertOrderProductData.sku,
+        reference: transfertOrderProductData.reference,
+        sourceId: transfertOrderProductData.sourceId,
+        cost: transfertOrderProductData.cost,
+        reason: ReasonTypeEnum.transfertOrder,
+        isManual: true,
+        totalCost:
+          transfertOrderProductData.quantity * transfertOrderProductData.cost,
+        createdById: transfertOrderProductData.createdById,
+      });
+    } else {
+      // Journaliser le mouvement
+      await this.stockMovementService.createRecord({
+        productId: transfertOrderProductData.productId,
+        quantity: -transfertOrderProductData.quantity,
+        type: StockMovementTypeEnum.output,
+        source: StockMovementSourceEnum.transfertOrder,
+        branchId: transfertOrderProductData.sourceBranchId,
+        sku: transfertOrderProductData.sku,
+        reference: transfertOrderProductData.reference,
+        sourceId: transfertOrderProductData.sourceId,
+        cost: transfertOrderProductData.cost,
+        reason: ReasonTypeEnum.transfertOrder,
+        isManual: true,
+        totalCost:
+          -transfertOrderProductData.quantity * transfertOrderProductData.cost,
+        //createdById: transfertOrderProductData.createdById,
+      });
+      await this.stockMovementService.createRecord({
+        productId: transfertOrderProductData.productId,
+        quantity: transfertOrderProductData.quantity,
+        type: StockMovementTypeEnum.input,
+        source: StockMovementSourceEnum.transfertOrder,
+        branchId: transfertOrderProductData.destinationBranchId,
+        sku: transfertOrderProductData.sku,
+        reference: transfertOrderProductData.reference,
+        sourceId: transfertOrderProductData.sourceId,
+        cost: transfertOrderProductData.cost,
+        reason: ReasonTypeEnum.transfertOrder,
+        isManual: true,
+        totalCost:
+          transfertOrderProductData.quantity * transfertOrderProductData.cost,
+        //createdById: transfertOrderProductData.createdById,
+      });
+    }
+  }
   private validateSourcesBrancchInstock(dto: CreateTransfertOrderDto): void {
     for (const item of dto.productToTransfertOrders) {
       if (item.srcInStock <= 0 || item.srcInStock < item.quantity) {
@@ -357,5 +560,61 @@ export class TransfertOrderService extends AbstractService<TransfertOrder> {
         ]);
       }
     }
+  }
+
+  private async ckeckStock(dto: any) {
+    // Étape 1 : Vérification préalable du stock source
+    for (const ps of dto.productToTransfertOrders) {
+      const prd = await this.productService.getDetails(ps.productId);
+
+      if (prd.hasVariant) {
+        const variant = prd?.variantToProducts.find((v) => v.sku === ps.sku);
+        const srcStock =
+          variant.branchVariantToProducts.find(
+            (b) => b.branchId === dto.sourceBranchId && b.sku === variant.sku,
+          )?.inStock ?? 0;
+
+        if (srcStock < ps.quantity) {
+          throw new BadRequestException([
+            `Stock insuffisant pour la variante ${variant.name}-${variant.sku} (disponible: ${srcStock}, requis: ${ps.quantity})`,
+          ]);
+        }
+      } else {
+        const srcStock =
+          prd.branchToProducts.find(
+            (v) =>
+              v.productId === ps.productId && v.branchId === dto.sourceBranchId,
+          )?.inStock ?? 0;
+        //if (branchProduct.branchId === dto.sourceBranchId) {
+        // const srcStock = branchProduct.inStock ?? 0;
+
+        if (srcStock < ps.quantity) {
+          throw new BadRequestException([
+            `Stock insuffisant pour le produit ${prd.displayName}-${prd.sku}  (disponible: ${srcStock}, requis: ${ps.quantity})`,
+          ]);
+          //}
+        }
+      }
+    }
+  }
+
+  private async handleTransferCompletion(
+    dto: UpdateTransfertOrderDto,
+    manager: EntityManager,
+  ) {
+    await this.ckeckStock(dto);
+    await this.updateStock(dto, manager);
+    await this.applyStockMouvementUpdate(dto, manager);
+  }
+
+  async getFilterByAuthUserBranch(): Promise<FindOptionsWhere<TransfertOrder>> {
+    const authUser = await super.checkSessionBranch();
+    if (!(await authUser.can('manage', 'all'))) {
+      return {
+        sourceBranchId: authUser.targetBranchId,
+      };
+    }
+
+    return {};
   }
 }

@@ -54,6 +54,7 @@ export class StockAdjustmentController {
     @CurrentUser() authUser: AuthUser,
     @Query() query?: any,
   ): Promise<Paginated<StockAdjustment>> {
+
     // Permission check
     await authUser?.throwUnlessCan(
       AbilityActionEnum.read,
@@ -66,13 +67,14 @@ export class StockAdjustmentController {
         textFilterFields: ['reference'],
       },
     );
+    console.log('rerrrrrr', options);
 
     // Apply auth user branch filter
     options.where = merge(
       options?.where,
       await this.service.getFilterByAuthUserBranch(),
     );
-    return this.service.myreadPaginatedListRecord(options);
+    return this.service.readPaginatedListRecord(options);
   }
 
   /**

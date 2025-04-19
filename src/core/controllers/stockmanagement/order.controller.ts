@@ -26,10 +26,7 @@ import { merge } from 'lodash';
 import { ApiAuthJwtHeader } from 'src/modules/auth/decorators/api-auth-jwt-header.decorator';
 import { ApiRequestIssuerHeader } from 'src/modules/auth/decorators/api-request-issuer-header.decorator';
 import { CurrentUser } from 'src/modules/auth/decorators/current-user.decorator';
-import {
-  AbilityActionEnum,
-  AbilitySubjectEnum,
-} from '../../definitions/enums';
+import { AbilityActionEnum, AbilitySubjectEnum } from '../../definitions/enums';
 import { AuthUser } from '../../entities/session/auth-user.entity';
 //import { OrderService } from '../../services/supply/order.service';
 import { CreateOrderDto } from '../../dto/stockmanagement/create-order.dto';
@@ -72,7 +69,7 @@ export class OrderController {
       await this.service.getFilterByAuthUserBranch(),
     );
 
-    return await this.service.myreadPaginatedListRecord(options);
+    return await this.service.readPaginatedListRecord(options);
   }
 
   @ApiSearchOneQueryFilter()

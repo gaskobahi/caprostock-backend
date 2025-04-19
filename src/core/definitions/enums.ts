@@ -162,6 +162,7 @@ export enum StockMovementSourceEnum {
   reception = 'reception',
   stockAdjustement = 'stockAdjustement',
   inventoryCount = 'inventoryCount',
+  transfertOrder = 'transfertOrder',
 }
 
 export enum CorderStatusEnum {
@@ -202,6 +203,8 @@ export enum ReasonTypeEnum {
   ajustementInventoryCount = 'Ajustement par inventaire de stock',
   ajustementDamage = 'Ajustement negatif pour reduit le stock. Article endommagé',
   ajustementLoss = 'Ajustement negatif pour reduit le stock. Article perdu',
+  inventoryCount = 'Inventaire de stock',
+  transfertOrder = 'Transfert de stock',
 }
 
 export enum DefaultTransferOrderTypeEnum {
