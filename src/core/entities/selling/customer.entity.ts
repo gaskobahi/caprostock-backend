@@ -1,4 +1,11 @@
-import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  Unique,
+} from 'typeorm';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PersonCoreEntity } from '../base/person.core.entity';
 import { IsNumber, IsOptional, IsUUID } from 'class-validator';
@@ -60,7 +67,7 @@ export class Customer extends PersonCoreEntity {
   pointBalance: number;
 
   @ApiProperty({ required: false, type: () => [Selling] })
-  @OneToMany(() => Selling, (selling) => selling.customer, { cascade: true })
+  @OneToMany(() => Selling, (selling) => selling.customer /*{ cascade: true }*/)
   sellings: Selling[];
 
   @ApiProperty({ required: false, type: () => [Delivery] })

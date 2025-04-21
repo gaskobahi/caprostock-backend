@@ -110,6 +110,19 @@ export class Delivery extends CoreEntity {
   @DeleteDateColumn({ name: 'canceled_at', nullable: true })
   canceledAt: Date;
 
+  @ApiProperty({
+    description: 'for generate delivery',
+    required: false,
+  })
+  @IsUUID()
+  @IsOptional()
+  @Column({
+    name: 'selling_id',
+    type: 'uuid',
+    nullable: true,
+  })
+  sellingId: string;
+
   @IsUUID()
   @IsNotEmpty()
   @Column({ name: 'branch_id', type: 'uuid', nullable: false })
@@ -123,11 +136,6 @@ export class Delivery extends CoreEntity {
   })
   @JoinColumn({ name: 'branch_id' })
   branch: Branch;
-
-  @IsUUID()
-  @IsNotEmpty()
-  @Column({ name: 'selling_id', type: 'uuid', nullable: false })
-  sellingId: string;
 
   @ApiProperty({ required: false, type: () => Selling })
   @ManyToOne(() => Selling, (selling) => selling.deliverys, {
@@ -153,7 +161,7 @@ export class Delivery extends CoreEntity {
   @ManyToOne(() => Customer, (transporter) => transporter.deliverys, {
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE',
-    orphanedRowAction: 'delete',
+    //orphanedRowAction: 'delete',
   })
   @JoinColumn({ name: 'transporter_id' })
   transporter: Customer;

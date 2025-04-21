@@ -4,6 +4,7 @@ import { IsOptional, IsString } from 'class-validator';
 
 export class CreateCustomerDto extends PickType(Customer, [
   'firstName',
+  'lastName',
   'email',
   'address',
   'description',

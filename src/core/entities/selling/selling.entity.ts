@@ -93,7 +93,9 @@ export class Selling extends CoreEntity {
   @ManyToOne(() => Customer, (customer) => customer.sellings, {
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE',
-    orphanedRowAction: 'delete',
+    //orphanedRowAction: 'delete',
+    cascade: true,
+
   })
   @JoinColumn({ name: 'customer_id' })
   customer: Customer;

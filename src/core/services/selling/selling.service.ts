@@ -19,11 +19,9 @@ import { SellingStatusEnum } from '../../definitions/enums';
 import { AbstractService } from '../abstract.service';
 import { REQUEST_AUTH_USER_KEY } from 'src/modules/auth/definitions/constants';
 import { AuthUser } from 'src/core/entities/session/auth-user.entity';
-import { LockedException } from '@app/nestjs';
 import { UpdateSellingDto } from 'src/core/dto/selling/update-selling.dto';
 import { CreateSellingDto } from 'src/core/dto/selling/create-selling.dto';
 import { Selling } from 'src/core/entities/selling/selling.entity';
-import { ValidateSellingDto } from 'src/core/dto/selling/validate-selling.dto';
 import { SellingToProduct } from 'src/core/entities/selling/selling-to-product.entity';
 import { DeliveryService } from './delivery.service';
 
@@ -82,7 +80,6 @@ export class SellingService extends AbstractService<Selling> {
 
   async createRecord(dto: DeepPartial<CreateSellingDto>): Promise<Selling> {
     const authUser = await super.checkSessionBranch();
-
     switch (dto?.action) {
       case SellingStatusEnum.draft:
         dto.status = SellingStatusEnum.draft;
@@ -105,7 +102,6 @@ export class SellingService extends AbstractService<Selling> {
         },
       );
     }
-
     return await super.createRecord({
       ...dto,
       branchId: authUser.targetBranchId,

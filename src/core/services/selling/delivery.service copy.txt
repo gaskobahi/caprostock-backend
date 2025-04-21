@@ -156,7 +156,7 @@ export class DeliveryService extends AbstractService<Delivery> {
     }
   }*/
 
-  /*async createRecord(dto: DeepPartial<CreateDeliveryDto>): Promise<Delivery> {
+  async createRecord(dto: DeepPartial<CreateDeliveryDto>): Promise<Delivery> {
     const authUser = await super.checkSessionBranch();
     let delivery: Delivery;
     if (dto.reference) {
@@ -168,14 +168,6 @@ export class DeliveryService extends AbstractService<Delivery> {
           message: `La référence "${dto.reference}" de la réception est déjà utilisée`,
         },
       );
-    }
-
-    if (!dto.sellingId) {
-      if (!dto.transporterId) {
-        throw new BadRequestException(['Demandeur non trouvé']);
-      }
-      const generatedSelling = await this.generateSellings(dto, authUser);
-      dto.sellingId = generatedSelling.id;
     }
 
     try {
@@ -197,67 +189,6 @@ export class DeliveryService extends AbstractService<Delivery> {
       throw new BadRequestException(
         `Impossible de créer la livraison : ${error.message}`,
       );
-    }
-  }*/
-
-  async createRecord(dto: DeepPartial<CreateDeliveryDto>): Promise<Delivery> {
-    console.log('vvvvvvvbbfffff85555555', dto);
-
-    const authUser = await super.checkSessionBranch();
-    let generatedSelling;
-    try {
-      if (dto.reference) {
-        await isUniqueConstraint(
-          'reference',
-          Delivery,
-          { reference: dto.reference },
-          {
-            message: `La référence "${dto.reference}" de la réception est déjà utilisée`,
-          },
-        );
-      }
-
-      if (!dto.sellingId) {
-        if (!dto.transporter) {
-          throw new BadRequestException([
-            'Receptionniste requis pour créer une vente',
-          ]);
-        }
-
-        generatedSelling = await this.generateSellings(dto);
-
-        dto.sellingId = generatedSelling.id;
-        dto.transporter = { id: generatedSelling?.customerId };
-        if (generatedSelling?.sellingToAdditionalCosts?.length > 0) {
-          dto.deliveryToAdditionalCosts =
-            generatedSelling.sellingToAdditionalCosts.map(
-              (item: { id: any; amount: any }) => ({
-                sellingToAdditionalCostId: item.id,
-                amount: item.amount,
-              }),
-            );
-        }
-      }
-
-      const sellingDetails = await this.sellingService.getDetails(
-        dto.sellingId,
-      );
-      if (!sellingDetails) {
-        throw new BadRequestException(['Commande introuvable']);
-      }
-
-      const delivery = await super.createRecord({
-        ...dto,
-        branchId: authUser.targetBranchId,
-      });
-      return delivery;
-    } catch (error) {
-      if (generatedSelling?.id) {
-        await this.sellingService.deleteRecord({ id: generatedSelling?.id });
-      }
-      throw new BadRequestException([
-        `Impossible de créer la livraison : ${error.message}`,
-      ]);
     }
   }
 
@@ -471,6 +402,56 @@ export class DeliveryService extends AbstractService<Delivery> {
       });
     }
   }
+
+  /*private async updateChildCheckStock(
+    bundleChildItem: any,
+    deliveryProductData: any,
+  ): Promise<void> {
+    try {
+      // Récupération des détails du produit enfant (bundle ou produit simple)
+      const childProduct = await this.productService.getDetails(
+        bundleChildItem.bundleId,
+      );
+
+      if (!childProduct) {
+        throw new BadRequestException({
+          message: `Produit enfant (ID: ${bundleChildItem.id} NAME: ${bundleChildItem.displayName}) introuvable.`,
+        });
+      }
+
+      // 🔹 Vérification du stock du produit enfant avant mise à jour
+      await this.checkStockBeforeDelivery(childProduct, {
+        ...deliveryProductData,
+        productId: bundleChildItem.id,
+      });
+
+      console.log('✅ Stock vérifié pour:', childProduct.displayName);
+
+      // 🔹 Calcul de la quantité totale nécessaire en fonction du bundle
+      const updatedStock =
+        bundleChildItem.quantity * deliveryProductData.quantity;
+
+      // 🔹 Si le produit enfant est aussi un bundle, traitement récursif de ses sous-produits
+      if (childProduct.isBundle) {
+        for (const nestedBundleItem of childProduct.bundleToProducts ?? []) {
+          await this.updateChildCheckStock(nestedBundleItem, {
+            ...deliveryProductData,
+            quantity: updatedStock,
+          });
+        }
+      }
+
+      // ✅ Ajout d'un return explicite en cas de succès
+      return;
+    } catch (error) {
+      console.error('❌ Erreur dans updateChildCheckStock:', error.message);
+      throw new BadRequestException({
+        message: error.message,
+        //'Erreur lors de la vérification du stock des produits enfants.',
+        details: error.response || error.message,
+      });
+    }
+  }*/
 
   private async updateChildCheckStock(
     bundleChildItem: any,
@@ -733,6 +714,29 @@ export class DeliveryService extends AbstractService<Delivery> {
     }
   }
 
+  // → Vérifie le stock avant d'autoriser une livraison.
+  /* private async checkStockBeforeDelivery(
+    product: any,
+    deliveryProductData: any,
+  ): Promise<void> {
+    // 🔹 Vérification du stock pour la branche actuelle
+    const currentBranchStock = this.productService.getBranchStock(
+      product,
+      deliveryProductData,
+    );
+
+    console.log('🛑 Vérification du stock pour', product.displayName);
+    console.log('📦 Stock actuel:', currentBranchStock);
+    console.log('📥 Quantité demandée:', deliveryProductData.quantity);
+
+    if (currentBranchStock < deliveryProductData.quantity) {
+      throw new BadRequestException(`Stock insuffisant pour le produit "${product.displayName}" (SKU: ${product.sku}) 
+        dans la branche ${deliveryProductData.destinationBranchId}. 
+        ➝ Stock actuel: ${currentBranchStock} 
+        ➝ Quantité demandée: ${deliveryProductData.quantity} 
+        🔹 Problème possible: ${this.analyzeStockIssue(product, currentBranchStock)}`);
+    }
+  }*/
   private async checkStockBeforeDelivery(
     product: any,
     deliveryProductData: any,
@@ -871,7 +875,7 @@ export class DeliveryService extends AbstractService<Delivery> {
       0,
     );
     const totalAddAMOUNT =
-      entity.deliveryToAdditionalCosts?.reduce(
+      entity.deliveryToProducts?.reduce(
         (acc, { amount = 0 }) => acc + amount,
         0,
       ) || 0;
@@ -1086,19 +1090,87 @@ export class DeliveryService extends AbstractService<Delivery> {
     }
   }
 
-  private async generateSellings(dto: any): Promise<any> {
-    const ddto: any = {
-      customer: dto.transporter,
-      plannedFor: dto.date ?? new Date(),
-      destinationBranchId: dto.destinationBranchId,
-      status: SellingStatusEnum.pending,
-      action: SellingStatusEnum.pending,
-      sellingToProducts: dto.deliveryToProducts as any,
-      sellingToAdditionalCosts: dto.sellingToAdditionalCosts,
-      description: 'DEMANDE GENREREE',
-    };
-    const selling = await this.sellingService.createRecord(ddto);
-    const sellingDetails = await this.sellingService.getDetails(selling.id);
-    return sellingDetails;
+  private async generateSellings(dto: CreateSellingDto) {
+    console.log('aaaaaaaaaaaa', dto);
+    return this.sellingService.createRecord(dto);
+    /* const selling = await this.repository.findOne({
+       where: optionsWhere,
+       relations: { sellingToProducts: { product: true } },
+     });
+     if (!sale) return;
+ 
+     for (const saleToProduct of sale.saleToProducts ?? []) {
+       if (saleToProduct.product?.isBundle) continue;
+ 
+       if (saleToProduct.hasOrder) {
+         await this.orderService.createRecord({
+           title: `Commande produit #${sale.reference}`,
+           source: OrderSourceEnum.supplier,
+           sourceSupplierId: saleToProduct.orderSupplierId,
+           date: new Date(),
+           saleId: sale.id,
+           saleToProductId: saleToProduct.id,
+           orderToProducts: [
+             {
+               price: saleToProduct.price,
+               productId: saleToProduct.productId,
+               quantity: saleToProduct.quantity,
+             },
+           ],
+         });
+       }
+     }*/
   }
+
+  /*async createDeliveryWithOptionalSelling(dt: any): Promise<Delivery> {
+     return await this.dataSource.transaction(async (manager) => {
+       let selling: Selling;
+   
+       if (!dt.sellingId) {
+         // Vérifie que l'auto-création est autorisée
+         if (!dt.autoCreateSelling) {
+           throw new Error(
+             'Missing sellingId and autoCreateSelling is not enabled.',
+           );
+         }
+   
+         // Vérifie la présence des données minimales pour créer une vente
+         if (!dt.customerId) {
+           throw new Error(
+             'Cannot create Selling: missing customerId.',
+           );
+         }
+   
+         // Créer la vente automatiquement
+         selling = manager.create(Selling, {
+           customerId: dt.customerId,
+           date: new Date(),
+           // autres champs requis...
+         });
+   
+         selling = await manager.save(Selling, selling);
+         dt.sellingId = selling.id;
+       } else {
+         // Récupération de la vente existante
+         selling = await manager.findOne(Selling, {
+           where: { id: dt.sellingId },
+         });
+   
+         if (!selling) {
+           throw new NotFoundException(
+             `Selling with ID ${dt.sellingId} not found`,
+           );
+         }
+       }
+   
+       // Créer la livraison liée à la vente
+       const delivery = manager.create(Delivery, {
+         sellingId: dt.sellingId,
+         deliveryDate: dt.deliveryDate,
+         // autres champs requis...
+       });
+   
+       return await manager.save(Delivery, delivery);
+     });
+   }*/
 }

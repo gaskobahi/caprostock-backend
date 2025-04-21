@@ -1,11 +1,21 @@
-import { ApiProperty, ApiPropertyOptional, PickType } from '@nestjs/swagger';
+import {
+  ApiProperty,
+  ApiPropertyOptional,
+  OmitType,
+  PartialType,
+  PickType,
+} from '@nestjs/swagger';
 import {
   IsArray,
   IsDateString,
   IsNotEmpty,
+  IsNotEmptyObject,
   IsNumber,
+  IsObject,
   IsOptional,
   IsString,
+  IsUUID,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -13,12 +23,22 @@ import { SellingStatusEnum } from 'src/core/definitions/enums';
 import { Selling } from 'src/core/entities/selling/selling.entity';
 import { SellingToProduct } from 'src/core/entities/selling/selling-to-product.entity';
 import { SellingToAdditionalCost } from 'src/core/entities/selling/selling-to-addtionnal-cost.entity';
+import { CreateCustomerDto } from './create-customer.dto';
 
+export class SellingCustomerDto extends PartialType(
+  OmitType(CreateCustomerDto, [] as const),
+) {
+  @IsNotEmpty()
+  @IsUUID()
+  @ValidateIf((p: CreateCustomerDto) => !p.firstName && !p.lastName)
+  @ApiPropertyOptional()
+  id: string;
+}
 export class CreateSellingDto extends PickType(Selling, [
   'reference',
   'date',
   'description',
-  'customerId',
+  //'customerId',
   'destinationBranchId',
 ] as const) {
   @IsOptional()
@@ -65,6 +85,13 @@ export class CreateSellingDto extends PickType(Selling, [
     description: `Cout additionel de la commande`,
   })
   sellingToAdditionalCosts: CreateSellingToAdditionalCostDto[];
+
+  @IsObject()
+  @IsNotEmptyObject()
+  @ValidateNested()
+  @Type(() => SellingCustomerDto)
+  @ApiProperty({ type: () => SellingCustomerDto })
+  customer: SellingCustomerDto;
 }
 
 export class CreateSellingToProductDto extends PickType(SellingToProduct, [

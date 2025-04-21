@@ -75,9 +75,39 @@ export class CustomerController {
    * Get customer by id
    */
   @ApiSearchOneQueryFilter()
-  @Get(':customerId')
-  async findOne(
-    @Param('customerId', ParseUUIDPipe) id: string,
+  @Get('getunique')
+  async getUnique(@Query() query: Record<string, any>): Promise<any> {
+    // Liste des champs autorisés pour la recherche
+    const allowedFields = ['firstName', 'lastName', 'phoneNumber', 'email'];
+    const filters: Record<string, string> = {};
+    for (const field of allowedFields) {
+      const value = query[field];
+      if (
+        typeof value === 'string' &&
+        value.trim() !== '' &&
+        value.trim() !== 'null' &&
+        value.trim() !== null
+      ) {
+        filters[field] = value.trim();
+      }
+    }
+
+    const options = buildFilterFromApiSearchParams(
+      this.service.repository,
+      query as ApiSearchOneParamOptions,
+    );
+    return await this.service.readOneRecord({
+      ...options,
+      where: {
+        ...options?.where,
+        ...filters,
+      },
+    });
+  }
+  @ApiSearchOneQueryFilter()
+  @Get(':customer')
+  async findOneByCustomer(
+    @Param('customer', ParseUUIDPipe) id: string,
     @Query() query?: any,
   ): Promise<Customer> {
     const options = buildFilterFromApiSearchParams(
@@ -90,7 +120,6 @@ export class CustomerController {
       where: { ...options?.where, id: id ?? '' },
     });
   }
-
   /**
    * Create customer
    */
