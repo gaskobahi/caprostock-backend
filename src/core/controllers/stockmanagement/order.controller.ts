@@ -69,7 +69,7 @@ export class OrderController {
       await this.service.getFilterByAuthUserBranch(),
     );
 
-    return await this.service.readPaginatedListRecord(options);
+    return await this.service.myreadPaginatedListRecord(options);
   }
 
   @ApiSearchOneQueryFilter()

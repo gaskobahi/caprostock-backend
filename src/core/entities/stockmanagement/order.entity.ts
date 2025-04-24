@@ -94,7 +94,8 @@ export class Order extends CoreEntity {
   @ManyToOne(() => Supplier, (supplier) => supplier.orders, {
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE',
-    orphanedRowAction: 'delete',
+    //orphanedRowAction: 'delete',
+    cascade: true,
   })
   @JoinColumn({ name: 'supplier_id' })
   supplier: Supplier;

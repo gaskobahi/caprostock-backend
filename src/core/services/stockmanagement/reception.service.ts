@@ -74,23 +74,41 @@ export class ReceptionService extends AbstractService<Reception> {
 
   async createRecord(dto: DeepPartial<CreateReceptionDto>): Promise<Reception> {
     const authUser = await super.checkSessionBranch();
-
-    if (dto.reference) {
-      await isUniqueConstraint(
-        'reference',
-        Reception,
-        { reference: dto.reference },
-        {
-          message: `La référence "${dto.reference}" de la réception est déjà utilisée`,
-        },
-      );
-    }
-
-    let response: Reception;
-
+    let generatedOrder;
     try {
+      if (dto.reference) {
+        await isUniqueConstraint(
+          'reference',
+          Reception,
+          { reference: dto.reference },
+          {
+            message: `La référence "${dto.reference}" de la réception est déjà utilisée`,
+          },
+        );
+      }
+      if (!dto.orderId) {
+        if (!dto.supplier) {
+          throw new BadRequestException([
+            'Fournisseur requis pour créer une reception',
+          ]);
+        }
+
+        generatedOrder = await this.generateOrders(dto);
+        dto.orderId = generatedOrder.id;
+        dto.supplier = { id: generatedOrder?.supplierId };
+        dto.orderSourceId = generatedOrder.id;
+        if (generatedOrder?.orderToAdditionalCosts?.length > 0) {
+          dto.receptionToAdditionalCosts =
+            generatedOrder.orderToAdditionalCosts.map(
+              (item: { id: any; amount: any }) => ({
+                orderToAdditionalCostId: item.id,
+                amount: item.amount,
+              }),
+            );
+        }
+      }
       // Création de la réception
-      response = await super.createRecord({
+      const response = await super.createRecord({
         ...dto,
         branchId: authUser.targetBranchId,
       });
@@ -102,8 +120,8 @@ export class ReceptionService extends AbstractService<Reception> {
       return response;
     } catch (error) {
       // En cas d'erreur, suppression de la réception créée
-      if (response?.id) {
-        await this.deleteRecord({ id: response.id });
+      if (generatedOrder?.id) {
+        await this.deleteRecord({ id: generatedOrder.id });
       }
       // Journaliser l'erreur et la relancer
       throw new BadRequestException([
@@ -543,5 +561,22 @@ export class ReceptionService extends AbstractService<Reception> {
       };
       await this.updateStockMovements(receptionProductData, manager);
     }
+  }
+
+  private async generateOrders(dto: any): Promise<any> {
+    const ddto: any = {
+      supplier: dto.supplier,
+      reference: dto.orderReference ?? '',
+      plannedFor: dto.date ?? new Date(),
+      destinationBranchId: dto.destinationBranchId,
+      status: OrderStatusEnum.pending,
+      action: OrderStatusEnum.pending,
+      orderToProducts: dto.receptionToProducts as any,
+      orderToAdditionalCosts: dto.orderToAdditionalCosts,
+      description: 'COMMANDE GENREREE',
+    };
+    const order = await this.orderService.createRecord(ddto);
+    const orderDetails = await this.orderService.getDetails(order.id);
+    return orderDetails;
   }
 }

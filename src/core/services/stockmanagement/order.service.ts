@@ -14,6 +14,8 @@ import {
   FindManyOptions,
   FindOneOptions,
   FindOptionsWhere,
+  In,
+  Not,
   Repository,
 } from 'typeorm';
 import { CreateOrderDto } from '../../dto/stockmanagement/create-order.dto';
@@ -61,13 +63,6 @@ export class OrderService extends AbstractService<Order> {
     page: number = 1,
     perPage: number = 25,
   ) {
-    // Paginate using provided options, page, and perPage
-    /*const response = await this.paginatedService.paginate(
-      this.repository,
-      page,
-      perPage,
-      options,
-    );*/
     const response = await this.readPaginatedListRecord(options);
 
     // Retrieve detailed records for each item in the paginated response
@@ -264,9 +259,9 @@ export class OrderService extends AbstractService<Order> {
       entity?.orderToProducts,
       //entity?.reception?.receptionToProducts,
     );
+    console.log('uiiiiiiiiiiii', entity);
     return entity;
   }
-  
 
   sumQuantitiesReceptionBySKU = (
     receptions: any[],
@@ -450,6 +445,7 @@ export class OrderService extends AbstractService<Order> {
 
   async cancelRecord(optionsWhere: FindOptionsWhere<Order>) {
     // Récupérer la commande
+    console.log('202555454545', optionsWhere);
     const order = await this.readOneRecord({
       where: optionsWhere,
       relations: {
@@ -482,8 +478,19 @@ export class OrderService extends AbstractService<Order> {
 
     // Annuler toutes les réceptions en pending (si tu veux les conserver comme trace logique, change juste le statut)
     for (const reception of receptions ?? []) {
+      if (reception?.status === OrderStatusEnum.canceled) {
+        continue;
+      }
+      if (reception?.status === OrderStatusEnum.closed) {
+        continue;
+      }
+
       await this.receptionService.updateRecord(
-        { ...optionsWhere, id: reception?.id, status: OrderStatusEnum.pending },
+        {
+          ...optionsWhere,
+          id: reception?.id,
+          //status: Not(In([OrderStatusEnum.closed, OrderStatusEnum.canceled])),
+        },
         { status: OrderStatusEnum.canceled },
       );
     }
@@ -493,9 +500,9 @@ export class OrderService extends AbstractService<Order> {
       status: OrderStatusEnum.canceled,
     });
 
-    /*return {
+    return {
       success: true,
       message: `Commande ${order.reference} annulée avec succès.`,
-    };*/
+    };
   }
 }

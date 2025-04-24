@@ -117,6 +117,11 @@ export class Reception extends CoreEntity {
 
   @IsUUID()
   @IsNotEmpty()
+  @Column({ name: 'order_source_id', type: 'uuid', nullable: true })
+  orderSourceId: string;
+
+  @IsUUID()
+  @IsNotEmpty()
   @Column({ name: 'order_id', type: 'uuid', nullable: false })
   orderId: string;
 

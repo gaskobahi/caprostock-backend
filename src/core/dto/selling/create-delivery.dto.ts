@@ -42,9 +42,19 @@ export class CreateDeliveryDto extends PickType(Delivery, [
   @IsString()
   @ApiPropertyOptional({ description: `sellingId optional si vente direct` })
   sellingId?: string;
-  //@IsOptional()
-  //@IsString()
-  //@ApiPropertyOptional({ description: `sellingId optional si vente direct` })
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({
+    description: `permet de savoir si vente qui a genere la commande direct`,
+  })
+  sellingSourceId?: string;
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({
+    description: `transporterId optional si vente direct`,
+  })
   transporterId?: string;
   @IsOptional()
   @IsString()

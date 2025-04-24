@@ -95,10 +95,10 @@ export class Selling extends CoreEntity {
     onDelete: 'CASCADE',
     //orphanedRowAction: 'delete',
     cascade: true,
-
   })
   @JoinColumn({ name: 'customer_id' })
   customer: Customer;
+
 
   @IsUUID()
   @IsNotEmpty()

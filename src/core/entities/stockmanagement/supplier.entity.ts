@@ -14,7 +14,7 @@ export class Supplier extends PersonCoreEntity {
 
   @ApiProperty({ required: false, type: () => [Order] })
   @OneToMany(() => Order, (order) => order.supplier, {
-    cascade: true,
+    //cascade: true,
   })
   orders: Order[];
   /**

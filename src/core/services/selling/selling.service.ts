@@ -470,6 +470,13 @@ export class SellingService extends AbstractService<Selling> {
 
     // Annuler toutes les réceptions en pending (si tu veux les conserver comme trace logique, change juste le statut)
     for (const delivery of deliverys ?? []) {
+      if (delivery?.status === SellingStatusEnum.canceled) {
+        continue;
+      }
+      if (delivery?.status === SellingStatusEnum.closed) {
+        continue;
+      }
+
       await this.deliveryService.updateRecord(
         {
           ...optionsWhere,

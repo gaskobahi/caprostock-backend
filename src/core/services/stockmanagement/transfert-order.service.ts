@@ -58,11 +58,7 @@ export class TransfertOrderService extends AbstractService<TransfertOrder> {
     return this._repository;
   }
 
-  async myreadPaginatedListRecord(
-    options?: FindManyOptions<TransfertOrder>,
-    page: number = 1,
-    perPage: number = 25,
-  ) {
+  async myreadPaginatedListRecord(options?: FindManyOptions<TransfertOrder>) {
     // Paginate using provided options, page, and perPage
     const response = await this.readPaginatedListRecord(options);
 
@@ -76,9 +72,10 @@ export class TransfertOrderService extends AbstractService<TransfertOrder> {
     }
     //verifier si la surccusale source est differente de la surcussale destinatiion
     this.validateDistinctBranches(dto);
+    await this.checkDestinationEligibilityProduct(dto);
     //verifier le stock du produit source et product destination
-    //this.validateSourcesBrancchInstock(dto);
-    await this.ckeckStock(dto);
+    this.validateSourcesBranchInstock(dto);
+    //await this.ckeckStock(dto);
 
     return await this.runInTransactionService.runInTransaction(
       async (manager) => {
@@ -552,7 +549,7 @@ export class TransfertOrderService extends AbstractService<TransfertOrder> {
       });
     }
   }
-  private validateSourcesBrancchInstock(dto: CreateTransfertOrderDto): void {
+  private validateSourcesBranchInstock(dto: any): void {
     for (const item of dto.productToTransfertOrders) {
       if (item.srcInStock <= 0 || item.srcInStock < item.quantity) {
         throw new BadRequestException([
@@ -594,6 +591,84 @@ export class TransfertOrderService extends AbstractService<TransfertOrder> {
           ]);
           //}
         }
+      }
+    }
+  }
+
+  /*private async ckeckDestinationEligibilityProduct(dto: any) {
+    for (const ps of dto.productToTransfertOrders) {
+      const prd = await this.productService.getDetails(ps.productId);
+
+      if (prd.hasVariant) {
+        const variant = prd?.variantToProducts.find((v) => v.sku === ps.sku);
+        const dstIsAvailability =
+          variant.branchVariantToProducts.find(
+            (b) =>
+              b.branchId === dto.destinationBranchId && b.sku === variant.sku,
+          )?.isAvailable ?? 0;
+        if (!dstIsAvailability) {
+          throw new BadRequestException([
+            ` ${variant.name}-${variant.sku} n'est pas activé dans la surccusale destinatiion`,
+          ]);
+        }
+      } else {
+        const dstIsAvailability = prd.branchToProducts.find(
+          (v) =>
+            v.productId === ps.productId &&
+            v.branchId === dto.destinationBranchId,
+        )?.isAvailable;
+        console.log('aaaaaaaaaa', dto, dstIsAvailability);
+        if (dstIsAvailability == false) {
+          throw new BadRequestException([
+            `${prd.displayName}-${prd.sku} n'est pas activé dans la surccusale destinatiion`,
+          ]);
+        }
+      }
+    }
+  }*/
+
+  private async checkDestinationEligibilityProduct(dto: any): Promise<void> {
+    for (const item of dto.productToTransfertOrders) {
+      // Récupère les détails du produit
+      const product = await this.productService.getDetails(item.productId);
+
+      let isAvailableInDestination = false;
+      let label = '';
+
+      if (product.hasVariant) {
+        // Cas produit à variantes
+        const variant = product.variantToProducts.find(
+          (v) => v.sku === item.sku,
+        );
+        if (!variant) {
+          throw new NotFoundException(
+            `Variant avec SKU "${item.sku}" introuvable pour le produit "${product.displayName}".`,
+          );
+        }
+
+        const branchVariant = variant.branchVariantToProducts.find(
+          (bv) =>
+            bv.branchId === dto.destinationBranchId && bv.sku === variant.sku,
+        );
+
+        isAvailableInDestination = branchVariant?.isAvailable ?? false;
+        label = `${variant.name}-${variant.sku}`;
+      } else {
+        // Cas produit simple
+        const branchProduct = product.branchToProducts.find(
+          (bp) =>
+            bp.productId === item.productId &&
+            bp.branchId === dto.destinationBranchId,
+        );
+
+        isAvailableInDestination = branchProduct?.isAvailable ?? false;
+        label = `${product.displayName}-${product.sku}`;
+      }
+
+      if (!isAvailableInDestination) {
+        throw new BadRequestException([
+          `${label} n'est pas activé(e) dans la succursale de destination.`,
+        ]);
       }
     }
   }

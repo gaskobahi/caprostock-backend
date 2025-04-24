@@ -125,6 +125,11 @@ export class Delivery extends CoreEntity {
 
   @IsUUID()
   @IsNotEmpty()
+  @Column({ name: 'selling_source_id', type: 'uuid', nullable: true })
+  sellingSourceId: string;
+
+  @IsUUID()
+  @IsNotEmpty()
   @Column({ name: 'branch_id', type: 'uuid', nullable: false })
   branchId: string;
 

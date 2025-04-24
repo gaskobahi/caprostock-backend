@@ -86,6 +86,37 @@ export class SupplierController {
     });
   }
 
+  @ApiSearchOneQueryFilter()
+  @Get('getunique')
+  async getUnique(@Query() query: Record<string, any>): Promise<any> {
+    // Liste des champs autorisés pour la recherche
+    const allowedFields = ['firstName', 'phoneNumber', 'email'];
+    const filters: Record<string, string> = {};
+    for (const field of allowedFields) {
+      const value = query[field];
+      if (
+        typeof value === 'string' &&
+        value.trim() !== '' &&
+        value.trim() !== 'null' &&
+        value.trim() !== null
+      ) {
+        filters[field] = value.trim();
+      }
+    }
+
+    const options = buildFilterFromApiSearchParams(
+      this.service.repository,
+      query as ApiSearchOneParamOptions,
+    );
+    return await this.service.readOneRecord({
+      ...options,
+      where: {
+        ...options?.where,
+        ...filters,
+      },
+    });
+  }
+
   /**
    * Create supplier
    */

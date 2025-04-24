@@ -34,7 +34,6 @@ import { REQUEST_AUTH_USER_KEY } from 'src/modules/auth/definitions/constants';
 import { AuthUser } from 'src/core/entities/session/auth-user.entity';
 import { RunInTransactionService } from '../transaction/runInTransaction.service';
 import { StockMovementService } from '../stockMovement/stockMovement.service';
-import { CreateSellingDto } from 'src/core/dto/selling/create-selling.dto';
 
 @Injectable()
 export class DeliveryService extends AbstractService<Delivery> {
@@ -74,135 +73,7 @@ export class DeliveryService extends AbstractService<Delivery> {
     return {};
   }
 
-  /*async createRecord(dto: DeepPartial<CreateDeliveryDto>): Promise<Delivery> {
-    //try {
-    const authUser = await super.checkSessionBranch();
-    let response: Delivery;
-    try {
-      // 🔹 Tentative de création de l'enregistrement
-      response = await super.createRecord({
-        ...dto,
-        branchId: authUser.targetBranchId,
-      });
-    } catch (error) {
-      console.error('❌ Erreur lors de la création de la livraison:', error);
-      // 🔴 Retourne une exception claire en cas d'échec
-      throw new BadRequestException(
-        `Échec de la création de la livraison ${error.message}`,
-      );
-    }
-
-    const sellingDetails = await this.sellingService.getDetails(dto.sellingId);
-    try {
-      for (const deliveryToProduct of dto.deliveryToProducts) {
-        const deliveryProductData = {
-          ...deliveryToProduct,
-          destinationBranchId: sellingDetails.destinationBranchId,
-          sellingId: dto.sellingId,
-        };
-        await this.checkStocks(deliveryProductData);
-      }
-
-      for (const deliveryToProduct of dto.deliveryToProducts) {
-        const deliveryProductData = {
-          ...deliveryToProduct,
-          destinationBranchId: sellingDetails.destinationBranchId,
-          sellingId: dto.sellingId,
-        };
-        await this.updateStocks(deliveryProductData);
-      }
-    } catch (error) {
-      if (response.reference) {
-        await this.deleteRecord({ reference: response.reference });
-        throw new BadRequestException(error);
-      }
-    }
-    //update selling status
-
-    if (sellingDetails) {
-      const isAllDelivery = this.sellingService.isAllDelivery(
-        sellingDetails?.sellingToProducts,
-      );
-      if (isAllDelivery) {
-        //update selling status
-        await this.sellingService.updateRecord(
-          { id: sellingDetails.id },
-          {
-            status: SellingStatusEnum.closed,
-          },
-        );
-      } else {
-        await this.sellingService.updateRecord(
-          { id: sellingDetails.id },
-          { status: SellingStatusEnum.partialdelivered },
-        );
-      }
-    }
-
-    return response;
-    /*} catch (error) {
-      console.error(
-        '❌ Erreur lors de la mise à jour du stock, annulation...',
-        error,
-      );
-
-      // 5️⃣ Suppression manuelle de la livraison si une erreur survient
-      if (createResponse.reference) {
-        await this.deleteRecord({ reference: createResponse.reference });
-      }
-      throw new BadRequestException(
-        'La livraison a été annulée car une mise à jour du stock a échoué.',
-      );
-    }
-  }*/
-
-  /*async createRecord(dto: DeepPartial<CreateDeliveryDto>): Promise<Delivery> {
-    const authUser = await super.checkSessionBranch();
-    let delivery: Delivery;
-    if (dto.reference) {
-      await isUniqueConstraint(
-        'reference',
-        Delivery,
-        { reference: dto.reference },
-        {
-          message: `La référence "${dto.reference}" de la réception est déjà utilisée`,
-        },
-      );
-    }
-
-    if (!dto.sellingId) {
-      if (!dto.transporterId) {
-        throw new BadRequestException(['Demandeur non trouvé']);
-      }
-      const generatedSelling = await this.generateSellings(dto, authUser);
-      dto.sellingId = generatedSelling.id;
-    }
-
-    try {
-      // Récupération des détails de la commande
-      const sellingDetails = await this.sellingService.getDetails(
-        dto.sellingId,
-      );
-      if (!sellingDetails)
-        throw new BadRequestException(['Commande introuvable']);
-      // 🔹 Création de la livraison
-      const delivery = await super.createRecord({
-        ...dto,
-        branchId: authUser.targetBranchId,
-      });
-      return delivery;
-    } catch (error) {
-      // En cas d'erreur, suppression de la réception créée
-      if (delivery?.id) await this.deleteRecord({ id: delivery?.id });
-      throw new BadRequestException(
-        `Impossible de créer la livraison : ${error.message}`,
-      );
-    }
-  }*/
-
   async createRecord(dto: DeepPartial<CreateDeliveryDto>): Promise<Delivery> {
-    console.log('vvvvvvvbbfffff85555555', dto);
-
     const authUser = await super.checkSessionBranch();
     let generatedSelling;
     try {
@@ -228,6 +99,7 @@ export class DeliveryService extends AbstractService<Delivery> {
 
         dto.sellingId = generatedSelling.id;
         dto.transporter = { id: generatedSelling?.customerId };
+        dto.sellingSourceId = generatedSelling.id;
         if (generatedSelling?.sellingToAdditionalCosts?.length > 0) {
           dto.deliveryToAdditionalCosts =
             generatedSelling.sellingToAdditionalCosts.map(
@@ -347,10 +219,10 @@ export class DeliveryService extends AbstractService<Delivery> {
           `Produit ${deliveryProductData.productId} introuvable.`,
         ]);
       }
-
       // 🔹 Vérifier le stock du produit principal
       await this.checkStockBeforeDelivery(productDetails, deliveryProductData);
       // Calculate the stock update based on bundle quantity
+      console.log('nnnnnnnnnn');
 
       // 🔹 Vérifier les stocks des produits du bundle s'il s'agit d'un bundle
       if (productDetails.isBundle) {

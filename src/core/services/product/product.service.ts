@@ -37,7 +37,7 @@ import { TaxToProductService } from './tax-to-product.service';
 @Injectable()
 export class ProductService extends AbstractService<Product> {
   public NOT_FOUND_MESSAGE = `Produit non trouvé`;
-  public readonly entity = Product
+  public readonly entity = Product;
   constructor(
     @InjectRepository(Product)
     private _repository: Repository<Product>,
@@ -63,7 +63,7 @@ export class ProductService extends AbstractService<Product> {
   ) {
     const baseUrl = await this.configService.get('APP_BASE_URL'); // Get base URL from config
     // Paginate using provided options, page, and perPage
-    const response = await this.paginatedService.paginate(
+    const products = await this.paginatedService.paginate(
       this.repository,
       page,
       perPage,
@@ -72,7 +72,7 @@ export class ProductService extends AbstractService<Product> {
 
     // Process each item in the paginated data asynchronously
     await Promise.all(
-      response?.data.map(async (r) => {
+      products?.data.map(async (r) => {
         const dt: any = r;
         dt.avgprice = await this.getAveragePriceByBranch(dt.branchToProducts);
         // Calculate margin for each item
@@ -140,7 +140,7 @@ export class ProductService extends AbstractService<Product> {
       }),
     );
     // Update response data with processed items and return
-    return response;
+    return products;
   }
 
   async createRecord(ddto: any, file?: any): Promise<Product> {
@@ -362,6 +362,7 @@ export class ProductService extends AbstractService<Product> {
     perPage?: number,
   ) {
     const products = await this.readPaginatedListRecord(options, page, perPage);
+
     const newArray = this.generateNewProductVersion(products.data);
     const bundleProducts = await this.generateNewProductionProductVersion(
       products.data,
@@ -408,6 +409,9 @@ export class ProductService extends AbstractService<Product> {
                   variantId: vp.id,
                   hasVariant: item.hasVariant,
                   isBundle: false,
+                  isUseProduction: false,
+                  categoryName: item?.category.displayName,
+                  categoryId: item?.categoryId,
                   barreCode: vp.barreCode,
                   displayName: `${item.displayName}(${vp.name})`,
                   price: vp.price,
@@ -424,6 +428,7 @@ export class ProductService extends AbstractService<Product> {
           const branchToProducts = item.branchToProducts.filter(
             (e: any) => e.isAvailable == true,
           );
+
           if (branchToProducts.length > 0) {
             const newItem = {
               id: item.id,
@@ -433,7 +438,10 @@ export class ProductService extends AbstractService<Product> {
               price: item.price,
               cost: item.cost,
               sku: item.sku,
-              isBundle: false,
+              isBundle: item.isUseProduction,
+              isUseProduction: item.isUseProduction,
+              categoryName: item?.category.displayName,
+              categoryId: item?.categoryId,
               hasVariant: item.hasVariant,
               variantId: null,
               branchToProducts: branchToProducts,

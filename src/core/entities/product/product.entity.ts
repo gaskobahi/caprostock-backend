@@ -55,6 +55,7 @@ export class Product extends CoreEntity {
   @Column({ name: 'display_name' })
   displayName: string;
 
+
   @IsOptional()
   @IsBoolean()
   @ApiProperty({
