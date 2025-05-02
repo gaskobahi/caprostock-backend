@@ -32,8 +32,6 @@ import { DeliveryService } from 'src/core/services/selling/delivery.service';
 import { Delivery } from 'src/core/entities/selling/delivery.entity';
 import { CreateDeliveryDto } from 'src/core/dto/selling/create-delivery.dto';
 import { UpdateDeliveryDto } from 'src/core/dto/selling/update-delivery.dto';
-import { FindOptionsWhere } from 'typeorm';
-import { Selling } from 'src/core/entities/selling/selling.entity';
 
 @ApiAuthJwtHeader()
 @ApiRequestIssuerHeader()
@@ -169,6 +167,7 @@ export class DeliveryController {
   @ApiSearchOneQueryFilter()
   @Post()
   async create(
+    @CurrentUser() authUser: AuthUser,
     @Body() dto: CreateDeliveryDto,
     @Query() query?: any,
   ): Promise<Delivery> {

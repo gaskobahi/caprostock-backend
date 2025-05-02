@@ -101,7 +101,7 @@ export class InventoryCountService extends AbstractService<InventoryCount> {
       const options = {
         relations: {
           branchToProducts: true,
-          bundleToProducts: true,
+          bundleToProducts: { bundle: true, product: true },
           variantToProducts: { branchVariantToProducts: true },
           options: true,
         },
@@ -121,9 +121,9 @@ export class InventoryCountService extends AbstractService<InventoryCount> {
         !dto?.productToInventoryCounts ||
         dto?.productToInventoryCounts.length == 0
       ) {
-        throw new BadRequestException(
+        throw new BadRequestException([
           `Aucun produit respectant les criteres de l'inventaire de stock trouvé`,
-        );
+        ]);
       }
     }
     dto.productToInventoryCounts.forEach((dt) => {

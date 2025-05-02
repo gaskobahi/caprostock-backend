@@ -284,6 +284,7 @@ export class CreateProductDto extends PickType(Product, [
     description: `Liste des taxes du produit`,
   })
   taxToProducts: CreateTaxToProductDto[];
+  dto: Promise<any[]>;
 }
 
 export class CreateProductOptionDto extends PickType(ProductOption, [
@@ -352,8 +353,11 @@ export class CreateBranchToProductDto extends PickType(BranchToProduct, [
 }
 
 export class CreateBundleToProductDto extends PickType(BundleToProduct, [
+  'sku',
   'bundleId',
   'quantity',
+  'isBundle',
+  'isVariant',
   'cost',
 ] as const) {}
 

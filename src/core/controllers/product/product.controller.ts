@@ -158,12 +158,11 @@ export class ProductController {
       },
     );
 
-    // Apply auth user branch filter
+    //Apply auth user branch filter
     /*options.where = merge(
       options?.where,
       await this.service.getFilterByAuthUserBranch(),
     );*/
-
     return this.service.readPaginatedListRecordForSelling(options, 1, 10000);
   }
 
@@ -360,7 +359,6 @@ export class ProductController {
       await this.service.getFilterByAuthUserBranch(),
     );
 
-    console.log('test10', options);
     return this.service.readOneRecord({
       ...options,
       where: { ...options?.where, id: product.id },
@@ -386,6 +384,7 @@ export class ProductController {
     @UploadedFile() file?: any,
   ): Promise<Product> {
     // Apply auth user branch filter
+    console.log('azazaezerr20222', dto);
     const filter = await this.service.getFilterByAuthUserBranch();
     const product = await this.service.updateRecord(
       { ...filter, id: id ?? '' },

@@ -192,7 +192,6 @@ export class DeliveryService extends AbstractService<Delivery> {
           deliveryProductData,
           manager,
         );
-
         for (const nestedBundleItem of prd.bundleToProducts ?? []) {
           const updatedStock =
             nestedBundleItem.quantity * deliveryProductData.quantity;
@@ -200,99 +199,53 @@ export class DeliveryService extends AbstractService<Delivery> {
             nestedBundleItem,
             {
               ...deliveryProductData,
-              sku: nestedBundleItem.isVariant
-                ? nestedBundleItem.sku
-                : deliveryProductData.sku,
               quantity: updatedStock,
-              sourceId: deliveryProductData.destinationBranchId,
-              reference: deliveryProductData.reference,
             },
             manager,
           );
-          //movement child
-          let _nestedBundleItem: any = await this.productService.getDetails(
-            nestedBundleItem.bundleId,
-          );
-          if (!_nestedBundleItem.isBundle) {
-            _nestedBundleItem =
-              await this.productService.generateNewProductSingleNotBundleVersion(
-                _nestedBundleItem,
-                deliveryProductData.destinationBranchId,
-              );
-          } else {
-            _nestedBundleItem =
-              await this.productService.generateNewProductBundleVersion(
-                _nestedBundleItem,
-                deliveryProductData.destinationBranchId,
-              );
-          }
-          if (
-            !deliveryProductData.bundleId &&
-            (deliveryProductData.depth || 0) < 2
-          ) {
-            await this.updateStockMovements(
-              {
-                ...nestedBundleItem,
-                sku: _nestedBundleItem.sku,
-                quantity: updatedStock,
-                cost: _nestedBundleItem.price,
-                productId: _nestedBundleItem.id,
-                sourceId: deliveryProductData.id,
-                branchId: deliveryProductData.destinationBranchId,
-                reference: deliveryProductData.reference,
-              },
-              manager,
-            );
-          }
         }
       }
     }
   }
 
   async checkStocks(deliveryProductData: any): Promise<void> {
-    //try {
-    const productDetails = await this.productService.getDetails(
-      deliveryProductData.productId,
-    );
+    try {
+      const productDetails = await this.productService.getDetails(
+        deliveryProductData.productId,
+      );
 
-    if (!productDetails) {
-      throw new BadRequestException([
-        `Produit ${deliveryProductData.productId} introuvable.`,
-      ]);
-    }
-    // 🔹 Vérifier le stock du produit principal
-    await this.checkStockBeforeDelivery(productDetails, deliveryProductData);
-    // Calculate the stock update based on bundle quantity
-
-    // 🔹 Vérifier les stocks des produits du bundle s'il s'agit d'un bundle
-    if (productDetails.isBundle) {
-      for (const nestedBundleItem of productDetails.bundleToProducts ?? []) {
-        const updatedStock =
-          nestedBundleItem.quantity * deliveryProductData.quantity;
-        await this.updateChildCheckStock(nestedBundleItem, {
-          ...deliveryProductData,
-          sku: nestedBundleItem.isVariant
-            ? nestedBundleItem.sku
-            : deliveryProductData.sku,
-          quantity: updatedStock,
-        });
-        /*} catch (error) {
-          console.error('❌ loto2:', productDetails);
-          console.error('❌ loto22:', nestedBundleItem);
-          console.error('❌ Stock insuffisant dans le bundle:', error);
-
-          throw new BadRequestException([
-            `'📦 Stock insuffisant pour le bundle ${nestedBundleItem.bundle.displayName}Stock actuel: ${nestedBundleItem?.quantity} | 📥 Quantité demandée: ${deliveryProductData.quantity}.' `,
-          ]);
-          //stockErrors.push(error.response || error.message);
-        }*/
+      if (!productDetails) {
+        throw new BadRequestException([
+          `Produit ${deliveryProductData.productId} introuvable.`,
+        ]);
       }
-    }
-    /* } catch (error) {
+      // 🔹 Vérifier le stock du produit principal
+      await this.checkStockBeforeDelivery(productDetails, deliveryProductData);
+      // Calculate the stock update based on bundle quantity
+      console.log('nnnnnnnnnn');
+
+      // 🔹 Vérifier les stocks des produits du bundle s'il s'agit d'un bundle
+      if (productDetails.isBundle) {
+        for (const nestedBundleItem of productDetails.bundleToProducts ?? []) {
+          const updatedStock =
+            nestedBundleItem.quantity * deliveryProductData.quantity;
+          try {
+            await this.updateChildCheckStock(nestedBundleItem, {
+              ...deliveryProductData,
+              quantity: updatedStock,
+            });
+          } catch (error) {
+            console.error('❌ Stock insuffisant dans le bundle:', error);
+            throw new BadRequestException({ errors: error });
+            //stockErrors.push(error.response || error.message);
+          }
+        }
+      }
+    } catch (error) {
       console.error('❌ Stock insuffisant:', error);
-      //throw new BadRequestException([error]);
+      throw new BadRequestException(error);
       //stockErrors.push(error.response || error.message);
-    }*/
+    }
 
     // 🔴 Si au moins un produit (ou un élément d’un bundle) a un stock insuffisant, on annule la livraison
     /*if (stockErrors.length > 0) {
@@ -334,28 +287,25 @@ export class DeliveryService extends AbstractService<Delivery> {
     }
   }
 
-  /* private async updateChildStock2(
+  private async updateChildStock(
     bundleItem: any,
     deliveryProductData: any,
-    manager?: any,
+    manager,
   ): Promise<void> {
-    if (!bundleItem?.bundleId || !deliveryProductData?.quantity) {
-      throw new BadRequestException([
-        'Données invalides pour la mise à jour du stock.',
-      ]);
-    }
+    try {
+      if (!bundleItem?.bundleId || !deliveryProductData?.quantity) {
+        throw new Error('Données invalides pour la mise à jour du stock.');
+      }
 
-    const childProduct = await this.productService.getDetails(
-      bundleItem.bundleId,
-    );
-    // Vérifie que le produit enfant existe
-    if (!childProduct) {
-      throw new BadRequestException([
-        `Produit enfant introuvable: ${bundleItem.bundleId}`,
-      ]);
-    }
+      const childProduct = await this.productService.getDetails(
+        bundleItem.bundleId,
+      );
 
-    if (!bundleItem.isVariant) {
+      // Vérifie que le produit enfant existe
+      if (!childProduct) {
+        throw new Error(`Produit enfant introuvable: ${bundleItem.bundleId}`);
+      }
+
       // Mise à jour du stock pour les produits associés
       await this.updateProductStock(
         childProduct.branchToProducts,
@@ -365,226 +315,100 @@ export class DeliveryService extends AbstractService<Delivery> {
         },
         manager,
       );
-    } else {
-      await this.updateVariantStock(
-        childProduct.variantToProducts,
-        {
-          ...deliveryProductData,
-          productId: bundleItem.bundleId,
-        },
-        manager,
-      );
-    }
-    // Mise à jour du stock en fonction de la quantité du bundle
-    const updatedStock = bundleItem.quantity * deliveryProductData.quantity;
 
-    // Si l'enfant est un bundle, mise à jour récursive
-    if (childProduct.isBundle && Array.isArray(childProduct.bundleToProducts)) {
-      for (const nestedBundleItem of childProduct.bundleToProducts) {
-        await this.updateChildStock(
-          nestedBundleItem,
-          {
-            ...deliveryProductData,
-            sku: nestedBundleItem.isVariant
-              ? nestedBundleItem.sku
-              : deliveryProductData.sku,
-            quantity: updatedStock,
-          },
-          manager,
-        );
+      // Mise à jour du stock en fonction de la quantité du bundle
+      const updatedStock = bundleItem.quantity * deliveryProductData.quantity;
+
+      // Si l'enfant est un bundle, mise à jour récursive
+      if (
+        childProduct.isBundle &&
+        Array.isArray(childProduct.bundleToProducts)
+      ) {
+        for (const nestedBundleItem of childProduct.bundleToProducts) {
+          await this.updateChildStock(
+            nestedBundleItem,
+            {
+              ...deliveryProductData,
+              quantity: updatedStock,
+            },
+            manager,
+          );
+        }
       }
-    }
-  }*/
-
-  /*private async updateChildStock(
-    bundleItem: any,
-    deliveryProductData: any,
-    manager?: any,
-  ): Promise<void> {
-    const depth = deliveryProductData.depth ?? 0;
-
-    // ✅ Bloque toute récursivité au-delà de 2 niveaux
-    if (depth >= 2) return;
-
-    // ✅ Validation des données
-    if (!bundleItem?.bundleId || !deliveryProductData?.quantity) {
-      throw new BadRequestException([
-        'Données invalides pour la mise à jour du stock.',
-      ]);
-    }
-
-    const childProduct = await this.productService.getDetails(
-      bundleItem.bundleId,
-    );
-    if (!childProduct) {
-      throw new BadRequestException([
-        `Produit enfant introuvable: ${bundleItem.bundleId}`,
-      ]);
-    }
-
-    const updatedQuantity = bundleItem.quantity * deliveryProductData.quantity;
-
-    // ✅ Construction des données pour le produit enfant
-    const updatedData = {
-      ...deliveryProductData,
-      productId: bundleItem.bundleId,
-      sku: bundleItem.isVariant ? bundleItem.sku : deliveryProductData.sku,
-      quantity: updatedQuantity,
-      depth: depth + 1,
-    };
-
-    // ✅ Mise à jour du stock selon qu’il s’agit d’une variante ou non
-    if (bundleItem.isVariant) {
-      await this.updateVariantStock(
-        childProduct.variantToProducts,
-        updatedData,
-        manager,
-      );
-    } else {
-      await this.updateProductStock(
-        childProduct.branchToProducts,
-        updatedData,
-        manager,
-      );
-    }
-
-    // ✅ Si le produit enfant est aussi un bundle, on continue la mise à jour (dans la limite de profondeur)
-    if (childProduct.isBundle && Array.isArray(childProduct.bundleToProducts)) {
-      for (const nestedItem of childProduct.bundleToProducts) {
-        await this.updateChildStock(nestedItem, updatedData, manager);
-      }
-    }
-  }*/
-
-  private async updateChildStock(
-    bundleItem: any,
-    deliveryProductData: any,
-    manager?: any,
-  ): Promise<void> {
-    const depth = deliveryProductData.depth ?? 0;
-
-    // ✅ Bloque toute récursivité au-delà de 2 niveaux
-    if (depth >= 2) return;
-
-    // ✅ Validation des données
-    if (!bundleItem?.bundleId || !deliveryProductData?.quantity) {
-      throw new BadRequestException([
-        'Données invalides pour la mise à jour du stock.',
-      ]);
-    }
-
-    const childProduct = await this.productService.getDetails(
-      bundleItem.bundleId,
-    );
-    if (!childProduct) {
-      throw new BadRequestException([
-        `Produit enfant introuvable: ${bundleItem.bundleId}`,
-      ]);
-    }
-    // ✅ Construction des données pour le produit enfant
-    const updatedData = {
-      ...deliveryProductData,
-      productId: bundleItem.bundleId,
-      sku: bundleItem.isVariant ? bundleItem.sku : deliveryProductData.sku,
-      quantity: deliveryProductData.quantity,
-      depth: depth + 1,
-    };
-
-    // ✅ Mise à jour du stock selon qu’il s’agit d’une variante ou non
-    if (bundleItem.isVariant) {
-      await this.updateVariantStock(
-        childProduct.variantToProducts,
-        updatedData,
-        manager,
-      );
-    } else {
-      await this.updateProductStock(
-        childProduct.branchToProducts,
-        updatedData,
-        manager,
-      );
-    }
-
-    // ✅ Si le produit enfant est aussi un bundle, on continue la mise à jour (dans la limite de profondeur)
-    if (childProduct.isBundle && Array.isArray(childProduct.bundleToProducts)) {
-      for (const nestedItem of childProduct.bundleToProducts) {
-        await this.updateChildStock(nestedItem, updatedData, manager);
-      }
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour du stock enfant:', error);
+      throw new BadRequestException({
+        message: 'Erreur lors de la mise à jour du stock enfant:',
+        details: error.response || error.message,
+      });
     }
   }
 
   private async updateChildCheckStock(
     bundleChildItem: any,
     deliveryProductData: any,
-  ): Promise<any> {
-    //try {
-    // 🔹 Vérification des entrées
-    if (!bundleChildItem?.bundleId || !deliveryProductData?.quantity) {
-      throw new BadRequestException({
-        message: 'Données invalides pour updateChildCheckStock',
-        details: { bundleChildItem, deliveryProductData },
-      });
-    }
-    console.log('c', bundleChildItem);
-
-    // 🔹 Récupération des détails du produit enfant
-    const childProduct = await this.productService.getDetails(
-      bundleChildItem.bundleId,
-    );
-    console.log('nestedBundleItem2025', childProduct);
-
-    if (!childProduct) {
-      throw new BadRequestException([
-        `Produit enfant introuvable (ID: ${bundleChildItem.id}, NAME: ${bundleChildItem.displayName},  SKU: ${bundleChildItem.sku}).`,
-      ]);
-    }
-
-    console.log('rerererer89898', deliveryProductData);
-    console.log('rerererer4000', childProduct);
-
-    // 🔹 Vérification du stock avant mise à jour
-    await this.checkStockBeforeDelivery(childProduct, {
-      ...deliveryProductData,
-      productId: bundleChildItem.id,
-    });
-
-    console.log(
-      `✅ Stock vérifié pour: ${childProduct.displayName} (ID: ${childProduct.id})`,
-    );
-
-    // 🔹 Calcul de la quantité totale requise
-    const updatedStock =
-      bundleChildItem.quantity * deliveryProductData.quantity;
-
-    // 🔹 Vérifier si l’enfant est un bundle et a des sous-produits
-    if (
-      childProduct.isBundle &&
-      Array.isArray(childProduct.bundleToProducts) &&
-      childProduct.bundleToProducts.length > 0
-    ) {
-      for (const nestedBundleItem of childProduct.bundleToProducts) {
-        await this.updateChildCheckStock(nestedBundleItem, {
-          ...deliveryProductData,
-          sku: nestedBundleItem.isVariant
-            ? nestedBundleItem.sku
-            : deliveryProductData.sku,
-          quantity: updatedStock,
+  ): Promise<void> {
+    try {
+      // 🔹 Vérification des entrées
+      if (!bundleChildItem?.bundleId || !deliveryProductData?.quantity) {
+        throw new BadRequestException({
+          message: 'Données invalides pour updateChildCheckStock',
+          details: { bundleChildItem, deliveryProductData },
         });
       }
-    }
 
-    return;
-    /* } catch (error) {
+      // 🔹 Récupération des détails du produit enfant
+      const childProduct = await this.productService.getDetails(
+        bundleChildItem.bundleId,
+      );
+
+      if (!childProduct) {
+        throw new BadRequestException({
+          message: `Produit enfant introuvable (ID: ${bundleChildItem.id}, NAME: ${bundleChildItem.displayName}).`,
+        });
+      }
+
+      // 🔹 Vérification du stock avant mise à jour
+      await this.checkStockBeforeDelivery(childProduct, {
+        ...deliveryProductData,
+        productId: bundleChildItem.id,
+      });
+
+      console.log(
+        `✅ Stock vérifié pour: ${childProduct.displayName} (ID: ${childProduct.id})`,
+      );
+
+      // 🔹 Calcul de la quantité totale requise
+      const updatedStock =
+        bundleChildItem.quantity * deliveryProductData.quantity;
+
+      // 🔹 Vérifier si l’enfant est un bundle et a des sous-produits
+      if (
+        childProduct.isBundle &&
+        Array.isArray(childProduct.bundleToProducts) &&
+        childProduct.bundleToProducts.length > 0
+      ) {
+        for (const nestedBundleItem of childProduct.bundleToProducts) {
+          await this.updateChildCheckStock(nestedBundleItem, {
+            ...deliveryProductData,
+            quantity: updatedStock,
+          });
+        }
+      }
+
+      return;
+    } catch (error) {
       console.error(
         `❌ Erreur dans updateChildCheckStock (Produit ID: ${bundleChildItem?.id || 'N/A'})`,
         error.message,
       );
 
-      throw new BadRequestException([
-        'Erreur lors de la vérification du stock des produits enfants.',
-        error.response || error.message,
-      ]);
-    }*/
+      throw new BadRequestException({
+        message:
+          'Erreur lors de la vérification du stock des produits enfants.',
+        details: error.response || error.message,
+      });
+    }
   }
 
   /*private async updateProductStock(
@@ -612,32 +436,29 @@ export class DeliveryService extends AbstractService<Delivery> {
     dto: any,
     manager?: any,
   ): Promise<void> {
-    //let _currentBranchStock: any;
     try {
       if (!Array.isArray(branchToProducts) || branchToProducts.length === 0) {
-        throw new BadRequestException([
-          `Données invalides : surcusale non défini ou pas activé`,
-        ]);
+        throw new Error(
+          `Données invalides : branchToProducts est vide ou non défini`,
+        );
       }
 
       if (!dto?.productId || !dto?.destinationBranchId || !dto?.quantity) {
-        throw new BadRequestException([
+        throw new Error(
           `Données invalides : Vérifiez productId, destinationBranchId et quantity`,
-        ]);
+        );
       }
 
-      const currentBranchStock =
-        branchToProducts &&
-        branchToProducts.find(
-          (el: { productId: any; branchId: any }) =>
-            el.productId === dto.productId &&
-            el.branchId === dto.destinationBranchId,
-        );
-      //_currentBranchStock = currentBranchStock.inStock;
+      const currentBranchStock = branchToProducts.find(
+        (el: { productId: any; branchId: any }) =>
+          el.productId === dto.productId &&
+          el.branchId === dto.destinationBranchId,
+      );
+
       if (!currentBranchStock) {
-        throw new BadRequestException([
+        throw new Error(
           `Stock introuvable pour le produit ${dto.productId} à la branche ${dto.destinationBranchId}`,
-        ]);
+        );
       }
 
       console.log(
@@ -667,13 +488,10 @@ export class DeliveryService extends AbstractService<Delivery> {
         `✅ Stock mis à jour avec succès : Nouveau stock = ${currentBranchStock.inStock - dto.quantity}`,
       );
     } catch (error) {
-      //console.log('reeerr', currentBranchStock);
-      console.error(`❌ Erreur dans updateProductStock :`, error);
-      throw new BadRequestException(error);
-      /*throw new BadRequestException([
-        //`Erreur lors de la mise à jour du stock :  ${error.message} `,
-        `📦 Stock insuffisant pour le produit "${dto.product.displayName}" (SKU: ${dto.product.sku}) Stock actuel: ${_currentBranchStock} | 📥 QQuantité demandée: ${dto.quantity}.`,
-      ]);*/
+      console.error(`❌ Erreur dans updateProductStock :`, error.message);
+      throw new Error(
+        `Erreur lors de la mise à jour du stock : ${error.message}`,
+      );
     }
   }
 
@@ -790,63 +608,64 @@ export class DeliveryService extends AbstractService<Delivery> {
   private async checkStockBeforeDelivery(
     product: any,
     deliveryProductData: any,
-  ): Promise<any> {
-    //try {
-    // 🔹 Vérification des entrées
-    if (!product || !product.displayName || !product.sku) {
-      throw new BadRequestException(
-        'Données du produit invalides ou incomplètes.',
+  ): Promise<void> {
+    try {
+      // 🔹 Vérification des entrées
+      if (!product || !product.displayName || !product.sku) {
+        throw new BadRequestException(
+          'Données du produit invalides ou incomplètes.',
+        );
+      }
+
+      if (
+        !deliveryProductData?.destinationBranchId ||
+        deliveryProductData?.quantity == null
+      ) {
+        throw new BadRequestException(
+          'Données de livraison invalides ou incomplètes.',
+        );
+      }
+
+      // 🔹 Récupération du stock actuel
+      const currentBranchStock = this.productService.getBranchStock(
+        product,
+        deliveryProductData,
       );
-    }
 
-    if (
-      !deliveryProductData?.destinationBranchId ||
-      deliveryProductData?.quantity == null
-    ) {
-      throw new BadRequestException(
-        'Données de livraison invalides ou incomplètes.',
+      if (currentBranchStock == null) {
+        throw new BadRequestException(
+          `Impossible de récupérer le stock du produit "${product.displayName}" (SKU: ${product.sku}).`,
+        );
+      }
+
+      console.log(
+        `🛑 Vérification du stock pour ${product.displayName} (SKU: ${product.sku})`,
       );
-    }
-    // 🔹 Récupération du stock actuel
-    const currentBranchStock = this.productService.getBranchStock(
-      product,
-      deliveryProductData,
-    );
-
-    if (currentBranchStock == null) {
-      throw new BadRequestException(
-        `Impossible de récupérer le stock du produit "${product.displayName}" (SKU: ${product.sku}).`,
+      console.log(
+        `📦 Stock actuel: ${currentBranchStock} | 📥 Quantité demandée: ${deliveryProductData.quantity}`,
       );
-    }
 
-    console.log(
-      `🛑 Vérification du stock pour ${product.displayName} (SKU: ${product.sku})`,
-    );
-    console.log(
-      `📦 Stock actuel: ${currentBranchStock} | 📥 Quantité demandée: ${deliveryProductData.quantity}`,
-    );
+      // 🔹 Vérification de la disponibilité du stock
+      if (currentBranchStock < deliveryProductData.quantity) {
+        throw new BadRequestException({
+          message: `📦 Stock insuffisant pour le produit "${product.displayName}" 
+          (SKU: ${product.sku}) Stock actuel: ${currentBranchStock} | 
+          📥 Quantité demandée: ${deliveryProductData.quantity}.`,
+          details: {
+            stockActuel: currentBranchStock,
+            quantiteDemandee: deliveryProductData.quantity,
+            analyse: this.analyzeStockIssue(product, currentBranchStock),
+          },
+        });
+      }
 
-    // 🔹 Vérification de la disponibilité du stock
-    if (currentBranchStock < deliveryProductData.quantity) {
-      throw new BadRequestException(
-        [
-          `📦 Stocks insuffisant pour le produit "${product.displayName}" (SKU: ${product.sku}) Stock actuel: ${currentBranchStock} | 📥 Quantité demandée: ${deliveryProductData.quantity}.`,
-        ],
-        /*{
-              stockActuel: currentBranchStock,
-              quantiteDemandee: deliveryProductData.quantity,
-              analyse: this.analyzeStockIssue(product, currentBranchStock),
-            },*/
+      console.log(
+        `✅ Stock suffisant pour ${product.displayName} (SKU: ${product.sku})`,
       );
-    }
-
-    console.log(
-      `✅ Stock suffisant pour ${product.displayName} (SKU: ${product.sku})`,
-    );
-    /* } catch (error) {
+    } catch (error) {
       console.error('❌ Erreur dans checkStockBeforeDelivery:', error.message);
       throw error;
-    }*/
+    }
   }
 
   private analyzeStockIssue(product: Product, currentStock: number): string {
@@ -1002,7 +821,7 @@ export class DeliveryService extends AbstractService<Delivery> {
       // Puis mettre à jour le statut de la commande
       await this.recalculerSellingStatus(delivery);
       await this.applyStockUpdate(delivery, manager);
-      // update bundle await this.applyStockMouvementUpdate(delivery, manager);
+      await this.applyStockMouvementUpdate(delivery, manager);
       const authUser = this.request[REQUEST_AUTH_USER_KEY] as AuthUser;
       delivery.closedById = authUser?.id;
       delivery.closedAt = new Date();
@@ -1043,10 +862,7 @@ export class DeliveryService extends AbstractService<Delivery> {
     });
   }
 
-  private validateDeliveredQuantities(
-    delivery: { selling: any; deliveryToProducts: any },
-    otherClosedDeliveries: Delivery[],
-  ) {
+  private validateDeliveredQuantities(delivery, otherClosedDeliveries) {
     const selling = delivery.selling;
     const totalDelivered = this.calculateTotalDelivered(otherClosedDeliveries);
 
@@ -1084,7 +900,6 @@ export class DeliveryService extends AbstractService<Delivery> {
         ...deliveryToProduct,
         destinationBranchId: delivery.branchId,
         sellingId: delivery.sellingId,
-        reference: delivery.reference,
       };
       await this.updateStocks(deliveryProductData, manager);
     }
@@ -1139,7 +954,6 @@ export class DeliveryService extends AbstractService<Delivery> {
         sourceId: delivery.id,
         createdById: authUser?.id,
       };
-
       await this.updateStockMovements(deliveryProductData, manager);
     }
   }

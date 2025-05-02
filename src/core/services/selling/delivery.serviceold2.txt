@@ -192,7 +192,6 @@ export class DeliveryService extends AbstractService<Delivery> {
           deliveryProductData,
           manager,
         );
-
         for (const nestedBundleItem of prd.bundleToProducts ?? []) {
           const updatedStock =
             nestedBundleItem.quantity * deliveryProductData.quantity;
@@ -200,9 +199,6 @@ export class DeliveryService extends AbstractService<Delivery> {
             nestedBundleItem,
             {
               ...deliveryProductData,
-              sku: nestedBundleItem.isVariant
-                ? nestedBundleItem.sku
-                : deliveryProductData.sku,
               quantity: updatedStock,
               sourceId: deliveryProductData.destinationBranchId,
               reference: deliveryProductData.reference,
@@ -226,10 +222,7 @@ export class DeliveryService extends AbstractService<Delivery> {
                 deliveryProductData.destinationBranchId,
               );
           }
-          if (
-            !deliveryProductData.bundleId &&
-            (deliveryProductData.depth || 0) < 2
-          ) {
+          if (!deliveryProductData.bundleId) {
             await this.updateStockMovements(
               {
                 ...nestedBundleItem,
@@ -269,11 +262,9 @@ export class DeliveryService extends AbstractService<Delivery> {
       for (const nestedBundleItem of productDetails.bundleToProducts ?? []) {
         const updatedStock =
           nestedBundleItem.quantity * deliveryProductData.quantity;
+        //try {
         await this.updateChildCheckStock(nestedBundleItem, {
           ...deliveryProductData,
-          sku: nestedBundleItem.isVariant
-            ? nestedBundleItem.sku
-            : deliveryProductData.sku,
           quantity: updatedStock,
         });
         /*} catch (error) {
@@ -334,11 +325,13 @@ export class DeliveryService extends AbstractService<Delivery> {
     }
   }
 
-  /* private async updateChildStock2(
+  private async updateChildStock(
     bundleItem: any,
     deliveryProductData: any,
     manager?: any,
   ): Promise<void> {
+    //let currentProduct: any;
+    //try {
     if (!bundleItem?.bundleId || !deliveryProductData?.quantity) {
       throw new BadRequestException([
         'Données invalides pour la mise à jour du stock.',
@@ -348,6 +341,7 @@ export class DeliveryService extends AbstractService<Delivery> {
     const childProduct = await this.productService.getDetails(
       bundleItem.bundleId,
     );
+    //currentProduct = childProduct;
     // Vérifie que le produit enfant existe
     if (!childProduct) {
       throw new BadRequestException([
@@ -355,162 +349,50 @@ export class DeliveryService extends AbstractService<Delivery> {
       ]);
     }
 
-    if (!bundleItem.isVariant) {
-      // Mise à jour du stock pour les produits associés
-      await this.updateProductStock(
-        childProduct.branchToProducts,
-        {
-          ...deliveryProductData,
-          productId: bundleItem.bundleId,
-        },
-        manager,
-      );
-    } else {
-      await this.updateVariantStock(
-        childProduct.variantToProducts,
-        {
-          ...deliveryProductData,
-          productId: bundleItem.bundleId,
-        },
-        manager,
-      );
-    }
+    // Mise à jour du stock pour les produits associés
+    await this.updateProductStock(
+      childProduct.branchToProducts,
+      {
+        ...deliveryProductData,
+        productId: bundleItem.bundleId,
+      },
+      manager,
+    );
+
     // Mise à jour du stock en fonction de la quantité du bundle
     const updatedStock = bundleItem.quantity * deliveryProductData.quantity;
 
     // Si l'enfant est un bundle, mise à jour récursive
     if (childProduct.isBundle && Array.isArray(childProduct.bundleToProducts)) {
       for (const nestedBundleItem of childProduct.bundleToProducts) {
+        //currentProduct = nestedBundleItem;
         await this.updateChildStock(
           nestedBundleItem,
           {
             ...deliveryProductData,
-            sku: nestedBundleItem.isVariant
-              ? nestedBundleItem.sku
-              : deliveryProductData.sku,
             quantity: updatedStock,
           },
           manager,
         );
       }
     }
-  }*/
-
-  /*private async updateChildStock(
-    bundleItem: any,
-    deliveryProductData: any,
-    manager?: any,
-  ): Promise<void> {
-    const depth = deliveryProductData.depth ?? 0;
-
-    // ✅ Bloque toute récursivité au-delà de 2 niveaux
-    if (depth >= 2) return;
-
-    // ✅ Validation des données
-    if (!bundleItem?.bundleId || !deliveryProductData?.quantity) {
-      throw new BadRequestException([
-        'Données invalides pour la mise à jour du stock.',
-      ]);
-    }
-
-    const childProduct = await this.productService.getDetails(
-      bundleItem.bundleId,
-    );
-    if (!childProduct) {
-      throw new BadRequestException([
-        `Produit enfant introuvable: ${bundleItem.bundleId}`,
-      ]);
-    }
-
-    const updatedQuantity = bundleItem.quantity * deliveryProductData.quantity;
-
-    // ✅ Construction des données pour le produit enfant
-    const updatedData = {
-      ...deliveryProductData,
-      productId: bundleItem.bundleId,
-      sku: bundleItem.isVariant ? bundleItem.sku : deliveryProductData.sku,
-      quantity: updatedQuantity,
-      depth: depth + 1,
-    };
-
-    // ✅ Mise à jour du stock selon qu’il s’agit d’une variante ou non
-    if (bundleItem.isVariant) {
-      await this.updateVariantStock(
-        childProduct.variantToProducts,
-        updatedData,
-        manager,
+    /*} catch (error) {
+      console.log('currentProduct252022', currentProduct);
+      const currentBranchStock = this.productService.getBranchStock(
+        currentProduct,
+        deliveryProductData,
       );
-    } else {
-      await this.updateProductStock(
-        childProduct.branchToProducts,
-        updatedData,
-        manager,
-      );
-    }
+      console.error('Erreur lors de la mise à jour du stock enfant:', error);*/
+    /*throw new BadRequestException({
+        message: `Erreur lors de la mise à jour du stock enfant, ${currentProduct.displayName}-${currentBranchStock} -${deliveryProductData?.quantity}`,
+        details: error.response || error.message,
+      });*/
+    // console.log('currentProduct252022865', currentProduct);
 
-    // ✅ Si le produit enfant est aussi un bundle, on continue la mise à jour (dans la limite de profondeur)
-    if (childProduct.isBundle && Array.isArray(childProduct.bundleToProducts)) {
-      for (const nestedItem of childProduct.bundleToProducts) {
-        await this.updateChildStock(nestedItem, updatedData, manager);
-      }
-    }
-  }*/
-
-  private async updateChildStock(
-    bundleItem: any,
-    deliveryProductData: any,
-    manager?: any,
-  ): Promise<void> {
-    const depth = deliveryProductData.depth ?? 0;
-
-    // ✅ Bloque toute récursivité au-delà de 2 niveaux
-    if (depth >= 2) return;
-
-    // ✅ Validation des données
-    if (!bundleItem?.bundleId || !deliveryProductData?.quantity) {
-      throw new BadRequestException([
-        'Données invalides pour la mise à jour du stock.',
-      ]);
-    }
-
-    const childProduct = await this.productService.getDetails(
-      bundleItem.bundleId,
-    );
-    if (!childProduct) {
-      throw new BadRequestException([
-        `Produit enfant introuvable: ${bundleItem.bundleId}`,
-      ]);
-    }
-    // ✅ Construction des données pour le produit enfant
-    const updatedData = {
-      ...deliveryProductData,
-      productId: bundleItem.bundleId,
-      sku: bundleItem.isVariant ? bundleItem.sku : deliveryProductData.sku,
-      quantity: deliveryProductData.quantity,
-      depth: depth + 1,
-    };
-
-    // ✅ Mise à jour du stock selon qu’il s’agit d’une variante ou non
-    if (bundleItem.isVariant) {
-      await this.updateVariantStock(
-        childProduct.variantToProducts,
-        updatedData,
-        manager,
-      );
-    } else {
-      await this.updateProductStock(
-        childProduct.branchToProducts,
-        updatedData,
-        manager,
-      );
-    }
-
-    // ✅ Si le produit enfant est aussi un bundle, on continue la mise à jour (dans la limite de profondeur)
-    if (childProduct.isBundle && Array.isArray(childProduct.bundleToProducts)) {
-      for (const nestedItem of childProduct.bundleToProducts) {
-        await this.updateChildStock(nestedItem, updatedData, manager);
-      }
-    }
+    /* throw new BadRequestException([
+        `📦 Stock insuffisant pour le produit "${currentProduct.displayName ?? currentProduct.product.displayName}" (SKU: ${currentProduct.sku ?? currentProduct.product.sku}) Stock actuel: ${currentBranchStock} | 📥 Quantité demandée: ${deliveryProductData.quantity}.`,
+      ]);*/
+    //}
   }
 
   private async updateChildCheckStock(
@@ -525,22 +407,17 @@ export class DeliveryService extends AbstractService<Delivery> {
         details: { bundleChildItem, deliveryProductData },
       });
     }
-    console.log('c', bundleChildItem);
 
     // 🔹 Récupération des détails du produit enfant
     const childProduct = await this.productService.getDetails(
       bundleChildItem.bundleId,
     );
-    console.log('nestedBundleItem2025', childProduct);
 
     if (!childProduct) {
       throw new BadRequestException([
-        `Produit enfant introuvable (ID: ${bundleChildItem.id}, NAME: ${bundleChildItem.displayName},  SKU: ${bundleChildItem.sku}).`,
+        `Produit enfant introuvable (ID: ${bundleChildItem.id}, NAME: ${bundleChildItem.displayName}).`,
       ]);
     }
-
-    console.log('rerererer89898', deliveryProductData);
-    console.log('rerererer4000', childProduct);
 
     // 🔹 Vérification du stock avant mise à jour
     await this.checkStockBeforeDelivery(childProduct, {
@@ -565,9 +442,6 @@ export class DeliveryService extends AbstractService<Delivery> {
       for (const nestedBundleItem of childProduct.bundleToProducts) {
         await this.updateChildCheckStock(nestedBundleItem, {
           ...deliveryProductData,
-          sku: nestedBundleItem.isVariant
-            ? nestedBundleItem.sku
-            : deliveryProductData.sku,
           quantity: updatedStock,
         });
       }
@@ -807,6 +681,7 @@ export class DeliveryService extends AbstractService<Delivery> {
         'Données de livraison invalides ou incomplètes.',
       );
     }
+
     // 🔹 Récupération du stock actuel
     const currentBranchStock = this.productService.getBranchStock(
       product,
@@ -1043,10 +918,7 @@ export class DeliveryService extends AbstractService<Delivery> {
     });
   }
 
-  private validateDeliveredQuantities(
-    delivery: { selling: any; deliveryToProducts: any },
-    otherClosedDeliveries: Delivery[],
-  ) {
+  private validateDeliveredQuantities(delivery, otherClosedDeliveries) {
     const selling = delivery.selling;
     const totalDelivered = this.calculateTotalDelivered(otherClosedDeliveries);
 

@@ -1,4 +1,12 @@
-import { IsInt, IsNotEmpty, IsString, IsUUID } from 'class-validator';
+import {
+  IsBoolean,
+  IsInt,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator';
 import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import { CoreEntity } from '../base/core.entity';
 import { ApiProperty } from '@nestjs/swagger';
@@ -25,6 +33,32 @@ export class BundleToProduct extends CoreEntity {
     default: 0,
   })
   cost: number;
+
+  @IsOptional()
+  @IsBoolean()
+  @ApiProperty({
+    required: false,
+    default: false,
+    description: `Pack de produits`,
+  })
+  @Column({ name: 'is_bundle', default: false })
+  isBundle: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  @ApiProperty({
+    required: false,
+    default: false,
+    description: `Variant de produits`,
+  })
+  @Column({ name: 'is_variant', default: false })
+  isVariant: boolean;
+
+  @IsNumber()
+  @IsOptional()
+  @ApiProperty({ description: `sku` })
+  @Column({ type: 'double precision', default: 0 })
+  sku: number;
 
   @IsUUID()
   @IsNotEmpty()

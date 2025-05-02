@@ -26,10 +26,7 @@ import { merge } from 'lodash';
 import { ApiAuthJwtHeader } from 'src/modules/auth/decorators/api-auth-jwt-header.decorator';
 import { ApiRequestIssuerHeader } from 'src/modules/auth/decorators/api-request-issuer-header.decorator';
 import { CurrentUser } from 'src/modules/auth/decorators/current-user.decorator';
-import {
-  AbilityActionEnum,
-  AbilitySubjectEnum,
-} from '../../definitions/enums';
+import { AbilityActionEnum, AbilitySubjectEnum } from '../../definitions/enums';
 import { AuthUser } from '../../entities/session/auth-user.entity';
 import { SellingService } from 'src/core/services/selling/selling.service';
 import { Selling } from 'src/core/entities/selling/selling.entity';

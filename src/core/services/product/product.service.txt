@@ -33,7 +33,6 @@ import { REQUEST_AUTH_USER_KEY } from 'src/modules/auth/definitions/constants';
 import { AuthUser } from 'src/core/entities/session/auth-user.entity';
 import { TaxService } from '../setting/tax.service';
 import { TaxToProductService } from './tax-to-product.service';
-import { VariantToProduct } from 'src/core/entities/product/variant-to-product.entity';
 
 @Injectable()
 export class ProductService extends AbstractService<Product> {
@@ -42,8 +41,6 @@ export class ProductService extends AbstractService<Product> {
   constructor(
     @InjectRepository(Product)
     private _repository: Repository<Product>,
-    @InjectRepository(VariantToProduct)
-    private readonly variantRepository: Repository<VariantToProduct>,
     private readonly configService: ConfigService,
     @Inject(forwardRef(() => TaxService))
     private readonly taxService: TaxService,
@@ -72,7 +69,6 @@ export class ProductService extends AbstractService<Product> {
       perPage,
       options,
     );
-    console.log('gffgflkkl',options)
 
     // Process each item in the paginated data asynchronously
     await Promise.all(
@@ -136,16 +132,14 @@ export class ProductService extends AbstractService<Product> {
             r.bundleToProducts.reduce((accumulator, currentObject) => {
               return accumulator + currentObject.cost;
             }, 0) ?? 0;
+
           dt.margin = this.getMargin(dt.avgprice, r.cost);
-          dt.bundleToProducts = await this._newBundleToProduct(
-            dt.bundleToProducts,
-          );
         }
         if (dt.image)
           dt.image = `${baseUrl}/${process.env.IMAGE_PATH}/${dt.image}`; // If the item is a bundle, set inStock to 0
       }),
     );
-    // Update response data with processed items and return
+   
     return products;
   }
 
@@ -193,11 +187,6 @@ export class ProductService extends AbstractService<Product> {
         },
       );
     }
-    if (dto.isBundle) {
-      dto.bundleToProducts = await this.verifyBundleProducts(
-        dto.bundleToProducts,
-      );
-    }
 
     const result = await super.createRecord({ ...dto, isActive: true });
     if (result) {
@@ -215,6 +204,7 @@ export class ProductService extends AbstractService<Product> {
         }
       }
     }
+
     return result;
   }
 
@@ -260,12 +250,6 @@ export class ProductService extends AbstractService<Product> {
         Product,
         { displayName: dto.displayName, id: optionsWhere.id },
         { message: `Le nom "${dto.displayName}" du produit est déjà utilisé` },
-      );
-    }
-
-    if (dto.isBundle) {
-      dto.bundleToProducts = await this.verifyBundleProducts(
-        dto.bundleToProducts,
       );
     }
 
@@ -337,15 +321,15 @@ export class ProductService extends AbstractService<Product> {
     const products = await this.readPaginatedListRecord(options, page, perPage);
     const array: Array<object> = [];
     for (const item of products.data as any) {
-      //if (!item.hasVariant) {
-      if (!item.isBundle) {
-        array.push(item);
-      } else {
-        if (item?.bundleToProducts.length < 3) {
+      if (!item.hasVariant) {
+        if (!item.isBundle) {
           array.push(item);
+        } else {
+          if (item?.bundleToProducts.length < 3) {
+            array.push(item);
+          }
         }
       }
-      //}
     }
     return array;
   }
@@ -355,10 +339,8 @@ export class ProductService extends AbstractService<Product> {
     page?: number,
     perPage?: number,
   ) {
-    console.log('iuiuiui', options);
-    const authUser = await super.checkSessionBranch();
     const products = await this.readPaginatedListRecord(options, page, perPage);
-    const newArray = this.generateNewProductVersion(products.data, authUser);
+    const newArray = this.generateNewProductVersion(products.data);
 
     return newArray;
   }
@@ -368,9 +350,8 @@ export class ProductService extends AbstractService<Product> {
     page?: number,
     perPage?: number,
   ) {
-    const authUser = await super.checkSessionBranch();
     const products = await this.readPaginatedListRecord(options, page, perPage);
-    const newArray = this.generateNewProductVersion(products.data, authUser);
+    const newArray = this.generateNewProductVersion(products.data);
 
     return newArray;
   }
@@ -382,16 +363,13 @@ export class ProductService extends AbstractService<Product> {
   ) {
     const authUser = await super.checkSessionBranch();
     const products = await this.readPaginatedListRecord(options, page, perPage);
-    const newArray = await this.generateNewProductVersion(
-      products.data,
-      authUser,
-    );
+
+    const newArray = this.generateNewProductVersion(products.data, authUser);
     const bundleProducts = await this.generateNewProductionProductVersion(
       products.data,
       authUser,
     );
-    console.log('eaeolingerlll', newArray);
-    newArray.push(...bundleProducts);
+    (await newArray).push(...bundleProducts);
     return newArray;
   }
 
@@ -410,10 +388,8 @@ export class ProductService extends AbstractService<Product> {
     page?: number,
     perPage?: number,
   ) {
-    const authUser = await super.checkSessionBranch();
-
     const products = await this.readPaginatedListRecord(options, page, perPage);
-    const newArray = this.generateNewProductVersion(products.data, authUser);
+    const newArray = this.generateNewProductVersion(products.data);
 
     return newArray;
   }
@@ -501,16 +477,11 @@ export class ProductService extends AbstractService<Product> {
     return newArray;
   }*/
 
-  getProductBranchPrice(bToProducts, targetBranchId) {
-    const bp = bToProducts.find((e: any) => e.branchId === targetBranchId);
-    return bp;
-  }
   async generateNewProductVersion(products: any[], authUser?: AuthUser) {
     const newArray: any[] = [];
 
     for (const item of products) {
       if (!item.isBundle && item.trackStock) {
-        console.log('IOIOIIOIO', item.hasVariant);
         // Cas avec variantes
         if (item.hasVariant && item.variantToProducts?.length > 0) {
           for (const vp of item.variantToProducts) {
@@ -570,7 +541,6 @@ export class ProductService extends AbstractService<Product> {
                 displayName: item.displayName,
                 price: bp.price > 0 ? bp.price : item.price,
                 inStock: bp.inStock > 0 ? bp.inStock : 0,
-
                 cost: item.cost,
                 sku: item.sku,
                 isBundle: false,
@@ -592,140 +562,6 @@ export class ProductService extends AbstractService<Product> {
     }
 
     return newArray;
-  }
-
-  async generateNewProductBundleVersion(item: any, targetBranchId?: any) {
-    let newArray: any;
-
-    if (item.isBundle && item.isUseProduction) {
-      // Calcul du coût total
-      const totalCost =
-        item.bundleToProducts?.reduce(
-          (sum: number, curr: { cost: number }) => sum + (curr?.cost || 0),
-          0,
-        ) || 0;
-
-      const bundleItemName = this.getBundleItemName(item.bundleToProducts);
-
-      const branchToProducts =
-        item.branchToProducts?.filter((e: any) => e.isAvailable === true) || [];
-
-      if (branchToProducts.length > 0) {
-        const bp = branchToProducts.find(
-          (e: any) => e.branchId === targetBranchId,
-        );
-
-        if (bp) {
-          newArray = {
-            id: item.id,
-            reference: item.reference,
-            barreCode: item.barreCode,
-            displayName: item.displayName,
-            price: bp.price > 0 ? bp.price : item.price,
-            inStock: bp.inStock > 0 ? bp.inStock : 0,
-            cost: totalCost,
-            sku: item.sku,
-            branchToProducts,
-            isBundle: true,
-            bunbleItemName: bundleItemName,
-            hasVariant: item.hasVariant,
-            categoryName: item?.category?.displayName,
-            image: item.image,
-            colorShape: item.colorShape,
-            variantId: null,
-            branchVariantToProducts: [],
-          };
-        }
-      }
-    }
-
-    return newArray;
-  }
-  async generateNewProductSingleNotBundleVersion(
-    item: any,
-    targetBranchId?: AuthUser,
-  ) {
-    let arr: any;
-    //if (!item.isBundle && item.trackStock) {
-    // Cas avec variantes
-    if (item.hasVariant && item.variantToProducts?.length > 0) {
-      for (const vp of item.variantToProducts) {
-        const branchVariantToProducts =
-          vp.branchVariantToProducts?.filter(
-            (e: any) => e.isAvailable === true,
-          ) || [];
-
-        if (branchVariantToProducts.length > 0) {
-          const bp = branchVariantToProducts.find(
-            (e: any) => e.branchId === targetBranchId,
-          );
-
-          if (bp) {
-            arr = {
-              id: item.id,
-              reference: item.reference,
-              variantId: vp.id,
-              hasVariant: true,
-              isBundle: false,
-              isUseProduction: false,
-              categoryName: item?.category?.displayName,
-              categoryId: item?.categoryId,
-              barreCode: vp.barreCode,
-              bunbleItemName: null,
-              displayName: `${item.displayName}(${vp.name})`,
-              price: bp.price > 0 ? bp.price : vp.price,
-              inStock: bp.inStock > 0 ? bp.inStock : 0,
-              cost: vp.cost,
-              sku: vp.sku,
-              image: item.image,
-              colorShape: item.colorShape,
-              branchVariantToProducts,
-              branchToProducts: [],
-            };
-          }
-        }
-      }
-    }
-
-    // Cas sans variantes
-    else if (item.branchToProducts?.length > 0) {
-      const branchToProducts = item.branchToProducts.filter(
-        (e: any) => e.isAvailable === true,
-      );
-
-      if (branchToProducts.length > 0) {
-        const bp = branchToProducts.find(
-          (e: any) => e.branchId === targetBranchId,
-        );
-
-        if (bp) {
-          arr = {
-            id: item.id,
-            reference: item.reference,
-            barreCode: item.barreCode,
-            displayName: item.displayName,
-            price: bp.price > 0 ? bp.price : item.price,
-            inStock: bp.inStock > 0 ? bp.inStock : 0,
-
-            cost: item.cost,
-            sku: item.sku,
-            isBundle: false,
-            isUseProduction: item.isUseProduction,
-            categoryName: item?.category?.displayName,
-            categoryId: item?.categoryId,
-            hasVariant: false,
-            bunbleItemName: null,
-            variantId: null,
-            image: item.image,
-            colorShape: item.colorShape,
-            branchToProducts,
-            branchVariantToProducts: [],
-          };
-        }
-      }
-    }
-    // }
-    return arr;
   }
 
   getBundleItemName(bundleToProducts: any[]): string {
@@ -815,6 +651,7 @@ export class ProductService extends AbstractService<Product> {
               displayName: item.displayName,
               price: bp.price > 0 ? bp.price : item.price,
               inStock: bp.inStock > 0 ? bp.inStock : 0,
+
               cost: totalCost,
               sku: item.sku,
               branchToProducts,
@@ -857,38 +694,17 @@ export class ProductService extends AbstractService<Product> {
     return array;
   }
 
-  async readOneRecord(options?: FindOneOptions<any>) {
+  async readOneRecord(options?: FindOneOptions<Product>) {
     const entity = await this.repository.findOne(options);
     if (entity?.image) {
-      const baseUrl = this.configService.get('APP_BASE_URL'); // Get base URL from config
+      const baseUrl = await this.configService.get('APP_BASE_URL'); // Get base URL from config
       const _image = `${baseUrl}/${process.env.IMAGE_PATH}/${entity.image}`;
       entity.image = _image;
     }
     if (!entity) {
       throw new BadRequestException(this.NOT_FOUND_MESSAGE);
     }
-    if (entity.isBundle) {
-      //const bunPrd: any[] = [];
-      if (!entity.bundleToProducts) {
-        const bdl: any = await this.getDetails(entity.id);
-        entity.bundleToProducts = bdl.bundleToProducts;
-      }
-
-      /*for (const b of entity.bundleToProducts) {
-        const item: any = { ...b };
-        if (b.isVariant) {
-          const variantName: any = await this.returnBundleItems(b.sku);
-          item.name = `${b.bundle.displayName} (${variantName?.name ?? ''})`;
-        } else {
-          item.name = `${b.bundle.displayName}`;
-        }
-        bunPrd.push(item);
-      }*/
-      entity.bundleToProducts = await this._newBundleToProduct(
-        entity.bundleToProducts,
-      );
-    }
-    return entity as any;
+    return entity;
   }
 
   async deleteRecord(optionsWhere: FindOptionsWhere<Product>) {
@@ -988,10 +804,9 @@ export class ProductService extends AbstractService<Product> {
         branchToProducts: true,
         bundleToProducts: {
           product: {
-            bundleToProducts: { bundle: true },
+            bundleToProducts: true,
             branchToProducts: true,
           },
-          bundle: true,
         },
       },
       where: { id: productId },
@@ -1006,7 +821,7 @@ export class ProductService extends AbstractService<Product> {
       // 🔹 Étape 1 : Filtrer les variantes du produit correspondant
       const variantList = product.variantToProducts.filter(
         (variant: { productId: any; sku: any }) =>
-          //variant.productId === deliveryProductData.productId &&
+          variant.productId === deliveryProductData.productId &&
           variant.sku == deliveryProductData.sku,
       );
 
@@ -1017,10 +832,8 @@ export class ProductService extends AbstractService<Product> {
             variant.branchVariantToProducts,
         ) // Récupère toutes les entrées `branchVariantToProducts`
         .filter(
-          (branchVariant: { branchId: any; isAvailable: any }) =>
-            branchVariant.branchId ===
-              deliveryProductData.destinationBranchId &&
-            branchVariant.isAvailable === true,
+          (branchVariant: { branchId: any }) =>
+            branchVariant.branchId === deliveryProductData.destinationBranchId,
         )
         .reduce(
           (total: any, variant: { inStock: any }) => total + variant.inStock,
@@ -1038,80 +851,13 @@ export class ProductService extends AbstractService<Product> {
       if (product.id != deliveryProductData.productId) {
         deliveryProductData = { ...deliveryProductData, productId: product.id };
       }
-      console.log('ddfdf20200522', deliveryProductData);
-
       // Produit simple, on récupère directement le stock dans la branche
-      const branchProduct =
-        product.branchToProducts &&
-        product.branchToProducts.find(
-          (branch: { branchId: any; productId: any; isAvailable: boolean }) =>
-            branch.branchId === deliveryProductData.destinationBranchId &&
-            branch.productId == deliveryProductData.productId &&
-            branch.isAvailable === true,
-        );
+      const branchProduct = product.branchToProducts.find(
+        (branch: { branchId: any; productId: any }) =>
+          branch.branchId === deliveryProductData.destinationBranchId &&
+          branch.productId == deliveryProductData.productId,
+      );
       return branchProduct ? branchProduct.inStock : 0;
     }
-  }
-
-  async verifyBundleProducts(bundleToProducts: any[]) {
-    const newBundleToProducts: any[] = [];
-    for (const item of bundleToProducts) {
-      const __item: any = { ...item };
-      // Chercher dans Product
-      const foundProduct = await this.repository.findOne({
-        where: { sku: item.sku, id: item.bundleId },
-      });
-
-      if (foundProduct && foundProduct?.isBundle) {
-        // <=== vérifier ici !
-        __item.isBundle = true;
-        __item.isVariant = false;
-      } else {
-        const foundVariant = await this.variantRepository.findOne({
-          where: { sku: item.sku, productId: item.bundleId },
-        });
-
-        if (foundVariant) {
-          __item.isVariant = true;
-          __item.isBundle = false;
-        } else {
-          __item.isBundle = false;
-          __item.isVariant = false;
-        }
-      }
-      newBundleToProducts.push(__item);
-    }
-    return newBundleToProducts;
-  }
-
-  async returnVariantBundleItems(bundleItem: { sku: any }) {
-    // Chercher dans Product
-    /* const foundProduct = await this.repository.findOne({
-      where: { sku: bundleItem.sku id: bundleId  },
-    });
-
-    if (foundProduct.isBundle) {
-      return foundProduct;
-    } else {*/
-    const foundVariant = await this.variantRepository.findOne({
-      where: { sku: bundleItem.sku },
-    });
-    return foundVariant;
-    //}
-  }
-
-  async _newBundleToProduct(bundleToProducts: any) {
-    const bunPrd: any[] = [];
-    for (const b of bundleToProducts) {
-      const item: any = { ...b };
-      if (b.isVariant) {
-        const variantName: any = await this.returnVariantBundleItems(b);
-        item.name = `${b.bundle.displayName}(${variantName?.name ?? ''})`;
-      } else {
-        item.name = `${b.bundle.displayName}`;
-      }
-      bunPrd.push(item);
-    }
-    return bunPrd;
   }
 }
